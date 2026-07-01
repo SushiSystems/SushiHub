@@ -86,14 +86,33 @@ same file list a repo already loads for its `[tool]` build config.
 
 ## Installing
 
-Not published to an index yet. Install editable from a sibling checkout:
+sushicli is not published to any package index. It is a checkout that the other
+CLIs inject, so it does not resolve as a normal pip dependency. You do not
+install it directly in normal use:
+
+- **End users** never handle it. The SushiStack bootstrap
+  (`curl … | bash` / `irm … | iex`) clones it into `<workspace>/sushicli`, and
+  `ss install-cli <module>` injects it (editable) into each module CLI's pipx
+  venv automatically.
+- **`ss status`** shows where the checkout is and its state (`fetched`,
+  `linked`, `sibling`, or `missing`), so it is visible rather than a black box.
+
+### Working on sushicli itself
+
+Point the workspace at your own checkout so every CLI uses it:
 
 ```bash
-pip install -e ../sushicli
+ss link sushicli /path/to/sushicli    # records it in modules.local.toml
 ```
 
-Once this repo has a remote, a pinned git dependency works too:
+You can also override the lookup for one command with the `SUSHICLI_DIR`
+environment variable. Resolution order is: `SUSHICLI_DIR` → an `ss link sushicli`
+path → `<workspace>/sushicli` (the fetched checkout) → a sibling checkout next to
+the workspace. Because injection is editable, edits to your checkout apply to the
+installed `sr` / `se` / `ss` without reinstalling.
 
-```
-sushicli @ git+https://github.com/<org>/sushicli.git@v0.1.0
+For a standalone editable install into the current environment:
+
+```bash
+pip install -e .
 ```
