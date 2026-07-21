@@ -30,6 +30,12 @@ _ICX_GLOBS = [
     r"C:/Program Files (x86)/Intel/oneAPI/compiler/*/bin/icx-cl.exe",
     r"C:/Program Files/Intel/oneAPI/compiler/*/bin/icx-cl.exe",
 ]
+# Mirrors toolchains._find_windows_sdk_rc_dir without importing it (that module
+# pulls in package_managers, which imports this one — an import cycle).
+_RC_GLOBS = [
+    r"C:/Program Files (x86)/Windows Kits/10/bin/*/x64/rc.exe",
+    r"C:/Program Files/Windows Kits/10/bin/*/x64/rc.exe",
+]
 # Linux well-known install locations. Neither the apt CUDA toolkit nor oneAPI
 # add themselves to PATH: nvcc lands under /usr/local/cuda*, and icpx/icx under
 # /opt/intel/oneapi/compiler/*/bin (normally exposed only after `setvars.sh`).
@@ -275,6 +281,13 @@ def _resolve_windows(cfg: Config) -> dict[str, str]:
     icx = _first_glob(_ICX_GLOBS) or shutil.which("icx-cl") or shutil.which("icx") or ""
     if icx:
         values["icx_compiler"] = icx
+
+    # The intel-llvm toolchain drives clang++ in GNU-like mode, not clang-cl, so
+    # vcvars is never sourced for it — rc.exe (needed for any target with .rc
+    # resources) would otherwise be invisible to the build.
+    rc = shutil.which("rc") or _first_glob(_RC_GLOBS)
+    if rc:
+        values["rc_exe"] = rc
 
     portable_bin = _tools_dir() / "cmake" / "bin"
     ninja = shutil.which("ninja") or _first_existing([str(_tools_dir() / "ninja.exe")])
