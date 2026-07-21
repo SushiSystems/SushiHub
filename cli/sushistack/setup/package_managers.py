@@ -338,6 +338,27 @@ def _gh_latest_asset(repo: str, asset_glob: str) -> str:
     raise RuntimeError(f"No asset matching '{asset_glob}' in {repo} latest release.")
 
 
+def _gh_latest_asset_including_prerelease(repo: str, asset_glob: str) -> str:
+    """Return the download URL for the newest matching asset, prereleases included.
+
+    ``/releases/latest`` excludes prereleases and drafts, so projects that ship
+    every build as a GitHub "pre-release" (e.g. intel/llvm's nightly SYCL
+    toolchain) never surface there — it falls through to whatever older
+    release is marked stable, which may carry no matching asset at all. This
+    walks the release list newest-first instead, so a nightly-only asset like
+    ``sycl_windows.tar.gz`` is still found.
+    """
+    url = f"https://api.github.com/repos/{repo}/releases?per_page=20"
+    req = urllib.request.Request(url, headers={"User-Agent": "sushiruntime-installer"})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        releases = json.loads(resp.read())
+    for release in releases:
+        for asset in release.get("assets", []):
+            if fnmatch.fnmatch(asset["name"], asset_glob):
+                return asset["browser_download_url"]
+    raise RuntimeError(f"No asset matching '{asset_glob}' in {repo} releases.")
+
+
 def _gh_tagged_asset(repo: str, tag: str, asset_glob: str) -> str:
     """Return the download URL for an asset of a specific release *tag*."""
     url = f"https://api.github.com/repos/{repo}/releases/tags/{tag}"

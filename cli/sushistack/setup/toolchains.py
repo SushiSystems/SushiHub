@@ -32,7 +32,7 @@ from ..config import Config, deps_dir
 from .package_managers import (
     IPackageManager,
     _download,
-    _gh_latest_asset,
+    _gh_latest_asset_including_prerelease,
     _gh_tagged_asset,
     _run,
 )
@@ -156,7 +156,10 @@ def install_intel_llvm(cfg: Config, dry_run: bool) -> str | None:
         return str(root)
 
     try:
-        url = _gh_latest_asset("intel/llvm", asset)
+        # intel/llvm ships every SYCL build as a GitHub pre-release (nightly-*),
+        # so the plain "latest" lookup must be skipped in favor of one that
+        # includes prereleases.
+        url = _gh_latest_asset_including_prerelease("intel/llvm", asset)
     except Exception as exc:
         console.error(f"Could not resolve intel/llvm release asset: {exc}")
         return None
