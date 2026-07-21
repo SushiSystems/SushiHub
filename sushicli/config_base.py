@@ -44,6 +44,10 @@ class ToolConfig:
     # lives in a scoop/standalone install that is not on PATH.
     cmake_exe: str = ""
     ctest_exe: str = ""
+    # rc (resource compiler) is resolved from CMAKE_RC_COMPILER's own default when
+    # empty; configurable because clang-cl/intel-llvm toolchains often don't probe
+    # for rc.exe correctly on Windows.
+    rc_exe: str = ""
     pkgconf_exe: str = ""
     # doxygen is resolved from PATH when empty; configurable because on Windows it
     # commonly installs outside PATH (winget/choco shims or Program Files).
