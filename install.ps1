@@ -38,6 +38,41 @@ function Fail($m) { Write-Host "[ERROR] $m" -ForegroundColor Red; exit 1 }
 
 $RepoUrl = if ($env:SUSHISTACK_REPO_URL) { $env:SUSHISTACK_REPO_URL } else { "https://github.com/sushisystems/sushistack.git" }
 
+function Prompt-WorkspaceDir($defaultDir) {
+    if ($env:SUSHISTACK_DIR) { return $env:SUSHISTACK_DIR }
+    if (-not [Environment]::UserInteractive) { return $defaultDir }
+    try {
+        if ([Console]::IsInputRedirected) { return $defaultDir }
+    } catch { return $defaultDir }
+
+    Write-Host "[INFO] Install location [$defaultDir] (30s to answer, Enter to accept): " -ForegroundColor Cyan -NoNewline
+    $sw = [System.Diagnostics.Stopwatch]::StartNew()
+    $buffer = ""
+    while ($sw.Elapsed.TotalSeconds -lt 30) {
+        if ([Console]::KeyAvailable) {
+            $key = [Console]::ReadKey($true)
+            if ($key.Key -eq "Enter") {
+                Write-Host ""
+                if ([string]::IsNullOrWhiteSpace($buffer)) { return $defaultDir }
+                return $buffer.Trim()
+            } elseif ($key.Key -eq "Backspace") {
+                if ($buffer.Length -gt 0) {
+                    $buffer = $buffer.Substring(0, $buffer.Length - 1)
+                    Write-Host "`b `b" -NoNewline
+                }
+            } elseif (-not [char]::IsControl($key.KeyChar)) {
+                $buffer += $key.KeyChar
+                Write-Host $key.KeyChar -NoNewline
+            }
+        } else {
+            Start-Sleep -Milliseconds 100
+        }
+    }
+    Write-Host ""
+    Info "No input received, using default: $defaultDir"
+    return $defaultDir
+}
+
 function Refresh-Path {
     $env:Path = [System.Environment]::GetEnvironmentVariable("Path","Machine") + ";" +
                 [System.Environment]::GetEnvironmentVariable("Path","User")
@@ -112,7 +147,8 @@ $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $null }
 if ($ScriptDir -and (Test-Path (Join-Path $ScriptDir "cli\manifests"))) {
     $WorkspaceDir = $ScriptDir
 } else {
-    $WorkspaceDir = if ($env:SUSHISTACK_DIR) { $env:SUSHISTACK_DIR } else { Join-Path $HOME "sushistack" }
+    $DefaultWorkspaceDir = Join-Path $HOME "sushistack"
+    $WorkspaceDir = Prompt-WorkspaceDir $DefaultWorkspaceDir
     if (-not (Test-Path (Join-Path $WorkspaceDir ".git"))) {
         Info "Cloning $RepoUrl -> $WorkspaceDir"
         git clone $RepoUrl $WorkspaceDir
