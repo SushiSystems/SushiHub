@@ -76,7 +76,21 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true
 if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/cli/manifests" ]; then
   WORKSPACE_DIR="$SCRIPT_DIR"
 else
-  WORKSPACE_DIR="${SUSHISTACK_DIR:-$HOME/sushistack}"
+  DEFAULT_WORKSPACE_DIR="$HOME/sushistack"
+  if [ -n "${SUSHISTACK_DIR:-}" ]; then
+    WORKSPACE_DIR="$SUSHISTACK_DIR"
+  elif [ -t 0 ] && [ -t 1 ]; then
+    printf '\033[1;34m[INFO]\033[0m Install location [%s] (30s to answer, Enter to accept): ' "$DEFAULT_WORKSPACE_DIR"
+    if IFS= read -r -t 30 REPLY_DIR; then
+      WORKSPACE_DIR="${REPLY_DIR:-$DEFAULT_WORKSPACE_DIR}"
+    else
+      printf '\n'
+      log "No input received, using default: $DEFAULT_WORKSPACE_DIR"
+      WORKSPACE_DIR="$DEFAULT_WORKSPACE_DIR"
+    fi
+  else
+    WORKSPACE_DIR="$DEFAULT_WORKSPACE_DIR"
+  fi
   if [ ! -d "$WORKSPACE_DIR/.git" ]; then
     log "Cloning $REPO_URL -> $WORKSPACE_DIR"
     git clone "$REPO_URL" "$WORKSPACE_DIR"
