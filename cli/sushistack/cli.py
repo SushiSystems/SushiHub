@@ -22,7 +22,6 @@ app = typer.Typer(
     name="ss",
     help="SushiStack CLI — one shared dependency tree and module manager for the stack.",
     no_args_is_help=True,
-    add_completion=False,
     rich_markup_mode="rich",
 )
 
@@ -51,9 +50,12 @@ def home():
 
 
 @app.command("status")
-def status():
+def status(
+    json_output: bool = typer.Option(
+        False, "--json", help="Print machine-readable JSON instead of a table."),
+):
     """Show which modules are cloned and whether dependencies are present."""
-    raise typer.Exit(modules_svc.status())
+    raise typer.Exit(modules_svc.status(json_output=json_output))
 
 
 # --------------------------------------------------------------------------- #
@@ -63,9 +65,10 @@ def status():
 def add(
     modules: List[str] = typer.Argument(
         ..., help="Modules to clone: sushiruntime | sushiengine | sushiai | sushiblas | all."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't clone or install."),
 ):
     """Clone one or more stack modules into the workspace."""
-    raise typer.Exit(modules_svc.add(modules))
+    raise typer.Exit(modules_svc.add(modules, dry_run=dry_run))
 
 
 @app.command("link")
@@ -73,6 +76,7 @@ def link(
     module: str = typer.Argument(
         ..., help="Module name: sushiruntime | sushiengine | sushiai | sushiblas."),
     path: str = typer.Argument(..., help="Path to an existing checkout of that module."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't write the link."),
 ):
     """Register an existing checkout (outside the workspace) as a module.
 
@@ -80,7 +84,7 @@ def link(
     checkout's dependencies and tracks it, with no second clone. The module's own
     CLI resolves the shared deps via SUSHISTACK_HOME.
     """
-    raise typer.Exit(modules_svc.link(module, path))
+    raise typer.Exit(modules_svc.link(module, path, dry_run=dry_run))
 
 
 @app.command("install-cli")
@@ -88,6 +92,7 @@ def install_cli(
     modules: List[str] = typer.Argument(
         ..., help="Modules whose CLI to install: sushiruntime | sushiengine | "
                   "sushiai | sushiblas | all."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't install."),
 ):
     """Install a module's developer CLI (`sr`, `se`) into an isolated pipx venv.
 
@@ -100,16 +105,17 @@ def install_cli(
     install time, so `git pull`s on the checkout would silently stop reaching it.
     """
     from .services import cli_install as cli_install_svc
-    raise typer.Exit(cli_install_svc.install_cli(modules))
+    raise typer.Exit(cli_install_svc.install_cli(modules, dry_run=dry_run))
 
 
 @app.command("update")
 def update(
     modules: Optional[List[str]] = typer.Argument(
         None, help="Modules to update (omit for all present modules)."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't pull."),
 ):
     """Fast-forward (`git pull`) the workspace and the present modules (cloned or linked)."""
-    raise typer.Exit(modules_svc.update(modules))
+    raise typer.Exit(modules_svc.update(modules, dry_run=dry_run))
 
 
 # --------------------------------------------------------------------------- #
@@ -122,6 +128,9 @@ def install(
         help="Pick which components to install in an interactive TUI instead of "
              "installing everything."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't change."),
+    yes: bool = typer.Option(
+        False, "--yes", "-y",
+        help="Assume yes on the LLVM-download prompt, for unattended runs."),
 ):
     """Provision the shared dependencies into the workspace's dependencies/ tree.
 
@@ -135,7 +144,7 @@ def install(
         selection = customize_svc.choose_components()
         if selection is None:
             raise typer.Exit(1)
-    raise typer.Exit(setup_svc.run("provision", dry_run=dry_run, selection=selection))
+    raise typer.Exit(setup_svc.run("provision", dry_run=dry_run, selection=selection, assume_yes=yes))
 
 
 @app.command("sync")
@@ -161,9 +170,11 @@ def remove(
              "portable cmake/ninja — the whole dependencies/ tree."),
     gpu: bool = typer.Option(False, "--gpu", help="Include GPU-only deps in removal."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show what would be removed."),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the confirmation prompt for --all."),
 ):
     """Remove provisioned dependencies. Use [bold]--all[/bold] to reclaim the lot."""
-    raise typer.Exit(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all))
+    raise typer.Exit(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
 
 
 if __name__ == "__main__":

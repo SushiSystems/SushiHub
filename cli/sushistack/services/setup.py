@@ -12,11 +12,12 @@ from ..setup import build_pipeline, build_uninstall_pipeline
 
 
 def run(step: str = "all", dry_run: bool = False,
-        selection: dict[str, bool] | None = None) -> int:
+        selection: dict[str, bool] | None = None, assume_yes: bool = False) -> int:
     """Run one step (or the whole pipeline) and return a process exit code.
 
     By default everything is provisioned; ``selection`` (from --customize) narrows
-    it per component.
+    it per component. ``assume_yes`` pre-answers the LLVM-download consent prompt
+    so unattended runs (CI, scripted installs) don't need a TTY to proceed.
     """
     detect_only = step == "detect"
     console.header("SushiStack Doctor" if detect_only else "SushiStack Install")
@@ -43,12 +44,16 @@ def run(step: str = "all", dry_run: bool = False,
             LLVM_WINDOWS_VERSION, _confirm_timeout, _find_windows_llvm,
         )
         if _find_windows_llvm() is None:
-            ctx.assume_acpp_llvm = _confirm_timeout(
-                f"[bold yellow]AdaptiveCpp needs LLVM {LLVM_WINDOWS_VERSION} "
-                "(a ~2-3 GB download) to build on Windows.[/bold yellow]\n"
-                "Install it now into the deps folder?",
-                default=False,
-            )
+            if assume_yes:
+                console.info("--yes: proceeding with the LLVM download without prompting.")
+                ctx.assume_acpp_llvm = True
+            else:
+                ctx.assume_acpp_llvm = _confirm_timeout(
+                    f"[bold yellow]AdaptiveCpp needs LLVM {LLVM_WINDOWS_VERSION} "
+                    "(a ~2-3 GB download) to build on Windows.[/bold yellow]\n"
+                    "Install it now into the deps folder?",
+                    default=False,
+                )
             if not ctx.assume_acpp_llvm:
                 console.info("Skipping the LLVM download. Re-run `ss install` to retry, "
                              "or `ss install --customize` and deselect AdaptiveCpp.")
@@ -75,6 +80,7 @@ def uninstall(
     gpu: bool = False,
     dry_run: bool = False,
     everything: bool = False,
+    assume_yes: bool = False,
 ) -> int:
     """Remove packages and config files placed by `ss install`. Return exit code."""
     console.header("SushiStack Remove")
@@ -85,6 +91,15 @@ def uninstall(
             "--all wipes the whole shared dependencies/ tree (toolchains, vcpkg, "
             "portable cmake/ninja). Your system git/cmake are NOT touched."
         )
+        if not dry_run and not assume_yes:
+            try:
+                answer = input("Are you sure? [y/N] ").strip().lower()
+            except (EOFError, OSError):
+                console.info("Non-interactive and no --yes given; aborting --all removal.")
+                return 1
+            if answer not in ("y", "yes"):
+                console.info("Aborted.")
+                return 1
 
     try:
         pipeline, ctx = build_uninstall_pipeline(

@@ -262,26 +262,33 @@ def init() -> int:
     return 0
 
 
-def add(names: list[str] | None) -> int:
+def add(names: list[str] | None, dry_run: bool = False) -> int:
     """Clone one or more modules into the workspace. Return exit code."""
     console.header("SushiStack Add")
     resolved = _resolve_names(names)
     if resolved is None:
         return 1
     root = workspace_root()
+    if dry_run:
+        console.info("Dry-run: showing actions without cloning or installing.")
 
     linked = registered_modules()
     failed = False
     for name in resolved:
         if name in linked:
             console.info(f"{name}: linked to {linked[name]} (use `ss link` to change); skipping clone.")
-            _install_module_cli(name, module_dest(root, name), root)
+            if not dry_run:
+                _install_module_cli(name, module_dest(root, name), root)
             continue
         mod = MODULES[name]
         dest = root / mod.directory
         if (dest / ".git").is_dir():
             console.info(f"{name}: already cloned at {dest}")
-            _install_module_cli(name, dest, root)
+            if not dry_run:
+                _install_module_cli(name, dest, root)
+            continue
+        if dry_run:
+            console.info(f"{name}: (dry-run) would clone {mod.repo} -> {dest}")
             continue
         console.info(f"{name}: cloning {mod.repo} -> {dest}")
         if _run_git(["clone", mod.repo, str(dest)], cwd=root) != 0:
@@ -292,11 +299,12 @@ def add(names: list[str] | None) -> int:
         _install_module_cli(name, dest, root)
     if failed:
         return 1
-    console.success("Modules ready. Build them with their own CLI (`sr`, `se`).")
+    if not dry_run:
+        console.success("Modules ready. Build them with their own CLI (`sr`, `se`).")
     return 0
 
 
-def link(name: str, path: str) -> int:
+def link(name: str, path: str, dry_run: bool = False) -> int:
     """Register an existing checkout as a module, in place (no clone). Return code.
 
     For developers whose working repos live outside the workspace tree: links the
@@ -304,9 +312,11 @@ def link(name: str, path: str) -> int:
     The module's own CLI still resolves the shared deps via SUSHISTACK_HOME.
     """
     console.header("SushiStack Link")
+    name = _ALIASES.get(name, name)
     if name not in MODULES and name != SUSHICLI_NAME:
         console.error(f"Unknown module '{name}'. Choose from: "
-                      f"{', '.join(MODULES)}, or {SUSHICLI_NAME}.")
+                      f"{', '.join(MODULES)} (or their aliases: {', '.join(_ALIASES)}), "
+                      f"or {SUSHICLI_NAME}.")
         return 1
     target = Path(path).expanduser().resolve()
     if not target.is_dir():
@@ -314,6 +324,9 @@ def link(name: str, path: str) -> int:
         return 1
     if not (target / ".git").is_dir():
         console.warn(f"{target} is not a git checkout; linking anyway.")
+    if dry_run:
+        console.info(f"(dry-run) would link {name} -> {target}")
+        return 0
     _write_link(name, target)
     console.success(f"Linked {name} -> {target}")
     fragment = target / MODULE_MANIFEST_REL
@@ -323,19 +336,21 @@ def link(name: str, path: str) -> int:
     return 0
 
 
-def update(names: list[str] | None) -> int:
+def update(names: list[str] | None, dry_run: bool = False) -> int:
     """git pull the modules that are present (cloned or linked). Return exit code."""
     console.header("SushiStack Update")
     resolved = _resolve_names(names)
     if resolved is None:
         return 1
     root = workspace_root()
+    if dry_run:
+        console.info("Dry-run: showing actions without pulling.")
 
     # The workspace repo itself (this CLI's own source, cli/ + setup pipeline) is
     # a git checkout too. Pull it here so a single `ss update` reaches every fix,
     # not just the ones in modules — otherwise an editable-installed `ss` goes
     # stale until someone remembers to pull the umbrella by hand.
-    _self_update(root, dry_run=False)
+    _self_update(root, dry_run=dry_run)
 
     failed = False
     any_present = False
@@ -346,6 +361,9 @@ def update(names: list[str] | None) -> int:
                 console.warn(f"{name}: not present (run `ss add {name}` or `ss link {name} <path>`).")
             continue
         any_present = True
+        if dry_run:
+            console.info(f"{name}: (dry-run) would git pull ({dest})")
+            continue
         console.info(f"{name}: git pull ({dest})")
         if _run_git(["pull", "--ff-only"], cwd=dest) != 0:
             console.error(f"{name}: update failed.")
@@ -355,34 +373,24 @@ def update(names: list[str] | None) -> int:
     return 1 if failed else 0
 
 
-def status() -> int:
-    """Report which modules are present and where dependencies live."""
-    from rich.table import Table
-
-    console.header("SushiStack Status")
-    root = workspace_root()
-    linked = registered_modules()
-    console.info(f"Workspace: {root}")
-
-    table = Table(show_header=True, header_style=console.accent)
-    table.add_column("Module")
-    table.add_column("Location")
-    table.add_column("State")
+def _status_rows(root: Path, linked: dict[str, str]) -> list[tuple[str, str, str]]:
+    """Build (module, location, state) rows for both the table and JSON views."""
+    rows = []
     for name, mod in MODULES.items():
         dest = module_dest(root, name)
         if name in linked:
             state = "linked" if (dest / ".git").is_dir() else "linked (missing)"
             location = str(dest)
         else:
-            state = "cloned" if (dest / ".git").is_dir() else "—"
+            state = "cloned" if (dest / ".git").is_dir() else "absent"
             location = mod.directory
-        table.add_row(name, location, state)
+        rows.append((name, location, state))
 
     # The shared CLI presentation layer. Not a build module, but shown so it is
     # not a black box: the umbrella fetches it, and a dev can `ss link sushicli`.
     cli_dir = sushicli_dir(root)
     if cli_dir is None:
-        table.add_row(SUSHICLI_NAME, "—", "missing")
+        rows.append((SUSHICLI_NAME, "", "missing"))
     else:
         cli_dir = cli_dir.resolve()
         if SUSHICLI_NAME in linked:
@@ -391,11 +399,46 @@ def status() -> int:
             state = "fetched"
         else:
             state = "sibling"
-        table.add_row(SUSHICLI_NAME, str(cli_dir), state)
+        rows.append((SUSHICLI_NAME, str(cli_dir), state))
+    return rows
+
+
+def status(json_output: bool = False) -> int:
+    """Report which modules are present and where dependencies live."""
+    root = workspace_root()
+    linked = registered_modules()
+    rows = _status_rows(root, linked)
+    deps = deps_dir()
+    deps_present = deps.is_dir() and any(deps.iterdir())
+
+    if json_output:
+        import json
+
+        payload = {
+            "workspace": str(root),
+            "modules": [
+                {"name": name, "location": location, "state": state}
+                for name, location, state in rows
+            ],
+            "dependencies": {"path": str(deps), "present": deps_present},
+        }
+        console.console.print(json.dumps(payload, indent=2))
+        return 0
+
+    from rich.table import Table
+
+    console.header("SushiStack Status")
+    console.info(f"Workspace: {root}")
+
+    table = Table(show_header=True, header_style=console.accent)
+    table.add_column("Module")
+    table.add_column("Location")
+    table.add_column("State")
+    for name, location, state in rows:
+        table.add_row(name, location or "—", state if state != "absent" else "—")
     console.console.print(table)
 
-    deps = deps_dir()
-    if deps.is_dir() and any(deps.iterdir()):
+    if deps_present:
         console.info(f"Dependencies: {deps} (present). Verify with `ss doctor`.")
     else:
         console.info(f"Dependencies: {deps} (empty). Provision with `ss install`.")
