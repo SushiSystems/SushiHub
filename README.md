@@ -57,13 +57,15 @@ cd sushiruntime && sr build
 | Command | What it does |
 |---|---|
 | `ss init` | Write the `.sushistack` workspace marker and add `dependencies/` to `.gitignore`. |
-| `ss install [--customize] [--dry-run]` | Download and install shared dependencies. `--customize` opens an interactive picker to select which toolchains to install. |
-| `ss add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|all>` | Clone one or more modules into the workspace. Aliases: `sr`, `se`, `sa`, `sb`. |
-| `ss link <module> <path>` | Register an existing checkout outside the workspace as a module (no clone). Also accepts `sushicli` to point at your own checkout. |
-| `ss install-cli <module…> [--no-editable]` | Install a module's own developer CLI (`sr`, `se`) into an isolated pipx venv and inject `sushicli`. |
-| `ss update [module…]` | Run `git pull --ff-only` on present modules (cloned or linked). Omit arguments to update all. |
+| `ss install [--customize] [--dry-run] [--yes]` | Download and install shared dependencies. `--customize` opens an interactive picker to select which toolchains to install. `--yes` assumes yes on the LLVM-download prompt, for unattended runs. |
+| `ss add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|all> [--dry-run]` | Clone one or more modules into the workspace. Aliases: `sr`, `se`, `sa`, `sb`. |
+| `ss link <module> <path> [--dry-run]` | Register an existing checkout outside the workspace as a module (no clone). Also accepts `sushicli` to point at your own checkout. Accepts the same aliases as `ss add`. |
+| `ss install-cli <module…> [--dry-run]` | Install a module's own developer CLI (`sr`, `se`) into an isolated pipx venv and inject `sushicli`. Always editable. |
+| `ss update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules (cloned or linked). Omit arguments to update all. |
 | `ss sync [--dry-run]` | Install missing dependencies, then update all modules. |
-| `ss status` | Show which modules are present and whether dependencies are installed. |
+| `ss status [--json]` | Show which modules are present and whether dependencies are installed. `--json` prints machine-readable output for scripting. |
 | `ss doctor` | Check tools, compilers, and dependencies; report what is missing. |
-| `ss remove [--gpu] [--all] [--dry-run]` | Remove installed dependencies. `--all` removes the entire `dependencies/` tree. |
+| `ss remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the entire `dependencies/` tree and asks for confirmation unless `--yes` is given. |
 | `ss home` | Print the workspace root and the `dependencies/` path. |
+
+Shell completion: run `ss --install-completion` once to enable tab-completion for your shell.

@@ -57,7 +57,7 @@ def _dist_name(pkg_dir: Path) -> str:
         return str(tomllib.load(fh)["project"]["name"])
 
 
-def install_cli(names: list[str] | None) -> int:
+def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
     """Install the developer CLI of one or more modules. Return exit code.
 
     Always editable, against the checkout it was invoked from: a non-editable
@@ -70,6 +70,8 @@ def install_cli(names: list[str] | None) -> int:
     if resolved is None:
         return 1
     root = workspace_root()
+    if dry_run:
+        console.info("Dry-run: showing actions without installing.")
 
     sushicli = sushicli_dir(root)
     if sushicli is None:
@@ -78,6 +80,19 @@ def install_cli(names: list[str] | None) -> int:
             "sibling. The bootstrap normally fetches it; run it again, "
             "`ss link sushicli <path>`, or set SUSHICLI_DIR.")
         return 1
+
+    if dry_run:
+        failed = False
+        for name in resolved:
+            pkg_dir = module_dest(root, name) / "cli"
+            if not (pkg_dir / "pyproject.toml").is_file():
+                console.warn(f"{name}: no cli/ package at {pkg_dir}; "
+                             "clone or link the module first. Skipping.")
+                failed = True
+                continue
+            console.info(f"{name}: (dry-run) would install {_dist_name(pkg_dir)} from {pkg_dir} "
+                         f"and inject sushicli from {sushicli}")
+        return 1 if failed else 0
 
     try:
         pipx = _ensure_pipx()
