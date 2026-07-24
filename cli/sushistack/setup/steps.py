@@ -46,13 +46,17 @@ def _check_cmd_ok(cmd: list[str]) -> bool:
         return False
 
 
-def _dep_installed(dep: Dependency, mgr: IPackageManager, platform: str) -> bool:
+def _dep_installed(dep: Dependency, mgr: IPackageManager | None, platform: str,
+                   vcpkg: IPackageManager | None = None) -> bool:
     if dep.check_cmd and _check_cmd_ok(dep.check_cmd):
         return True
     pkgs = dep.packages_for(platform)
-    if not pkgs:
-        return False
-    return all(mgr.is_installed(p) for p in pkgs)
+    if pkgs:
+        return mgr is not None and all(mgr.is_installed(p) for p in pkgs)
+    fallback = dep.vcpkg_fallback_ports(platform)
+    if fallback:
+        return vcpkg is not None and all(vcpkg.is_installed(p) for p in fallback)
+    return False
 
 
 def _first_available(managers: list[IPackageManager]) -> IPackageManager | None:
@@ -79,6 +83,10 @@ class DetectStep(Step):
         linux = ("apt", "dnf", "yum", "pacman", "zypper")
         return next((m for m in self._managers
                      if m.name in linux and m.available()), None)
+
+    def _vcpkg_manager(self) -> IPackageManager | None:
+        """The vcpkg manager, if wired in — the Linux fallback for apt-less ports."""
+        return next((m for m in self._managers if m.name == "vcpkg"), None)
 
     def _add_toolchain_rows(self, ctx: InstallContext, table: Table,
                             owner_of) -> None:
@@ -149,13 +157,14 @@ class DetectStep(Step):
         # is reported present even when its check_cmd tool (e.g. pkg-config) is
         # not on PATH.
         dep_mgr = self._dep_manager(plat)
+        vcpkg_mgr = self._vcpkg_manager()
         for dep in self._source.selected(plat, ctx.gpu):
-            if dep_mgr is not None:
-                present = _dep_installed(dep, dep_mgr, plat)
+            if dep_mgr is not None or vcpkg_mgr is not None:
+                present = _dep_installed(dep, dep_mgr, plat, vcpkg_mgr)
             else:
                 present = bool(dep.check_cmd) and _check_cmd_ok(dep.check_cmd)
             ctx.detected[dep.name] = present
-            pkgs = ", ".join(dep.packages_for(plat))
+            pkgs = ", ".join(dep.packages_for(plat) or dep.vcpkg_fallback_ports(plat))
             table.add_row(dep.name, _mark(present), dep.owner,
                           f"{dep.description} ({pkgs})")
 
@@ -350,23 +359,46 @@ class InstallDepsStep(Step):
         assert isinstance(mgr, LinuxPackageManager)  # linux_managers only holds these
 
         console.info(f"Using package manager: {mgr.name}")
+        vcpkg = self._manager("vcpkg")
 
         # Translate the generic apt toolchain list to native package names.
         pkgs: list[str] = list(mgr.translate_apt(_LINUX_TOOLCHAIN_APT))
+        vcpkg_ports: list[str] = []
         for dep in self._source.selected("linux", ctx.gpu):
-            if _dep_installed(dep, mgr, "linux"):
+            if _dep_installed(dep, mgr, "linux", vcpkg):
                 console.info(f"{dep.name}: already installed, skipping.")
                 continue
-            pkgs.extend(mgr.translate_apt(dep.linux_apt))
+            if dep.linux_apt:
+                pkgs.extend(mgr.translate_apt(dep.linux_apt))
+            else:
+                # No apt package at all (vk-bootstrap, cgltf, …) — the only route
+                # is vcpkg (see Dependency.vcpkg_fallback_ports).
+                vcpkg_ports.extend(dep.vcpkg_fallback_ports("linux"))
 
         pkgs = _dedup(pkgs)
-        if not pkgs:
-            console.info("All packages already present.")
-            return StepResult.SKIPPED
+        vcpkg_ports = _dedup(vcpkg_ports)
 
-        console.info(f"Installing via {mgr.name}: {', '.join(pkgs)}")
-        ok = mgr.install(pkgs, ctx.dry_run)
-        ctx.installed.extend(pkgs)
+        ok = True
+        if pkgs:
+            console.info(f"Installing via {mgr.name}: {', '.join(pkgs)}")
+            ok = mgr.install(pkgs, ctx.dry_run)
+            ctx.installed.extend(pkgs)
+        else:
+            console.info("No apt packages to install.")
+
+        if vcpkg_ports:
+            if vcpkg is None:
+                console.warn(f"No vcpkg manager available; cannot install "
+                             f"{', '.join(vcpkg_ports)} (no apt package exists for "
+                             f"these on Linux). Install them manually.")
+                ok = False
+            else:
+                console.info(f"Installing via vcpkg: {', '.join(vcpkg_ports)}")
+                ok = vcpkg.install(vcpkg_ports, ctx.dry_run) and ok
+                ctx.installed.extend(vcpkg_ports)
+
+        if not pkgs and not vcpkg_ports:
+            console.info("All packages already present.")
 
         self._install_toolchains(ctx, mgr=mgr, vcpkg=None)
 
@@ -693,14 +725,22 @@ class UninstallStep(Step):
             None,
         )
         assert mgr is None or isinstance(mgr, LinuxPackageManager)  # linux_names only holds these
+        vcpkg = self._manager("vcpkg")
         pkgs: list[str] = []
+        vcpkg_ports: list[str] = []
         for dep in self._source.selected("linux", ctx.gpu):
             pkgs.extend(mgr.translate_apt(dep.linux_apt) if mgr else dep.linux_apt)
+            vcpkg_ports.extend(dep.vcpkg_fallback_ports("linux"))
         pkgs = _dedup(pkgs)
+        vcpkg_ports = _dedup(vcpkg_ports)
 
         if mgr and pkgs:
             console.info(f"Removing via {mgr.name}: {', '.join(pkgs)}")
             mgr.remove(pkgs, ctx.dry_run)
+
+        if vcpkg and vcpkg_ports:
+            console.info(f"Removing vcpkg ports: {', '.join(vcpkg_ports)}")
+            vcpkg.remove(vcpkg_ports, ctx.dry_run)
 
         if ctx.everything:
             self._remove_installed_toolchains(ctx)

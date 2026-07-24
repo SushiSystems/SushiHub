@@ -935,13 +935,19 @@ class DirectDownloadWindowsManager(IPackageManager):
 
 
 class VcpkgManager(IPackageManager):
-    """Windows vcpkg for C++ library ports (hwloc, gtest, pkgconf, …)."""
+    """Vcpkg for C++ library ports (hwloc, gtest, pkgconf, …).
+
+    Primarily Windows' library manager, but also used on Linux as the fallback
+    for ports with no apt package at all (see
+    :meth:`Dependency.vcpkg_fallback_ports`) — vcpkg itself is cross-platform;
+    only the bootstrap script and executable name differ per OS.
+    """
 
     name = "vcpkg"
 
     def __init__(self, cfg: Config) -> None:
         self._cfg = cfg
-        self._triplet = cfg.vcpkg_triplet or "x64-windows"
+        self._triplet = cfg.vcpkg_triplet or ("x64-windows" if cfg.platform == "windows" else "x64-linux")
 
     def _root(self) -> Path:
         root = self._cfg.expand(self._cfg.vcpkg_root) if self._cfg.vcpkg_root else ""
@@ -952,7 +958,8 @@ class VcpkgManager(IPackageManager):
         return deps_dir() / "vcpkg"
 
     def _exe(self) -> Path:
-        return self._root() / "vcpkg.exe"
+        name = "vcpkg.exe" if self._cfg.platform == "windows" else "vcpkg"
+        return self._root() / name
 
     def available(self) -> bool:
         return self._exe().is_file() or shutil.which("vcpkg") is not None
@@ -972,8 +979,14 @@ class VcpkgManager(IPackageManager):
                        str(root)], dry_run, check=True)
             if rc != 0 and not dry_run:
                 return False
-        bootstrap = root / "bootstrap-vcpkg.bat"
-        rc = _run(["cmd", "/c", str(bootstrap), "-disableMetrics"], dry_run, check=True)
+        if self._cfg.platform == "windows":
+            bootstrap = root / "bootstrap-vcpkg.bat"
+            rc = _run(["cmd", "/c", str(bootstrap), "-disableMetrics"], dry_run, check=True)
+        else:
+            bootstrap = root / "bootstrap-vcpkg.sh"
+            if not dry_run:
+                bootstrap.chmod(bootstrap.stat().st_mode | 0o111)
+            rc = _run([str(bootstrap), "-disableMetrics"], dry_run, check=True)
         return rc == 0 or dry_run
 
     def is_installed(self, pkg: str) -> bool:

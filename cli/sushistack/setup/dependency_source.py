@@ -60,6 +60,20 @@ class Dependency:
         """Package names for the given platform ('windows' | other = linux)."""
         return self.windows_vcpkg if platform == "windows" else self.linux_apt
 
+    def vcpkg_fallback_ports(self, platform: str) -> list[str]:
+        """Vcpkg ports to install on Linux when this dep has no apt package.
+
+        vcpkg port names are the same cross-platform, so ``windows_vcpkg`` also
+        names the Linux ports for a library that ships no apt package at all
+        (``linux_apt = []`` in the manifest, e.g. vk-bootstrap, cgltf) — without
+        this, such a dependency is silently unprovisionable on Linux. Empty
+        on Windows (windows_vcpkg is already the primary path there) and empty
+        whenever an apt package exists (apt is the native, preferred route).
+        """
+        if platform == "windows" or self.linux_apt:
+            return []
+        return self.windows_vcpkg
+
 
 class IDependencySource(ABC):
     """Source of the dependency list. Abstraction the steps depend on."""
@@ -77,13 +91,14 @@ class IDependencySource(ABC):
         """Dependencies relevant to this platform/GPU choice with packages.
 
         Filters out gpu-only entries when ``gpu`` is False and entries that
-        declare no package for this platform.
+        declare no package for this platform — including no apt package *and*
+        no vcpkg fallback (see :meth:`Dependency.vcpkg_fallback_ports`).
         """
         out: list[Dependency] = []
         for dep in self.all():
             if dep.gpu_only and not gpu:
                 continue
-            if dep.packages_for(platform):
+            if dep.packages_for(platform) or dep.vcpkg_fallback_ports(platform):
                 out.append(dep)
         return out
 

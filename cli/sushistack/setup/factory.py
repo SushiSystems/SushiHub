@@ -36,7 +36,10 @@ STEP_NAMES = ("detect", "install", "configure", "verify", "provision", "all")
 def _managers_for(cfg: Config) -> list[IPackageManager]:
     if cfg.is_windows:
         return [WingetManager(), DirectDownloadWindowsManager(), VcpkgManager(cfg)]
-    return [AptManager(), DnfManager(), YumManager(), PacmanManager(), ZypperManager()]
+    # VcpkgManager also serves Linux: it is the only route for ports with no apt
+    # package at all (vk-bootstrap, cgltf — see Dependency.vcpkg_fallback_ports).
+    return [AptManager(), DnfManager(), YumManager(), PacmanManager(), ZypperManager(),
+            VcpkgManager(cfg)]
 
 
 def build_pipeline(
