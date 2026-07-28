@@ -57,7 +57,7 @@ cd sushiruntime && sr build
 | Command | What it does |
 |---|---|
 | `ss init` | Write the `.sushistack` workspace marker and add `dependencies/` to `.gitignore`. |
-| `ss install [--customize] [--dry-run] [--yes]` | Download and install shared dependencies. `--customize` opens an interactive picker to select which toolchains to install. `--yes` assumes yes on the LLVM-download prompt, for unattended runs. |
+| `ss install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker to select which toolchains to install. `--yes` assumes yes on the LLVM-download prompt, for unattended runs. `--refresh-toolchains` re-downloads the SYCL toolchain even when one is already installed — an install is otherwise reused forever, and a bundle that predates a capability the build needs (compiler-rt's sanitizer runtimes, say) would keep failing at an unrelated-looking link error. Reused installs report the release they came from and say so when they carry no sanitizer runtime. |
 | `ss add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|all> [--dry-run]` | Clone one or more modules into the workspace. Aliases: `sr`, `se`, `sa`, `sb`. |
 | `ss link <module> <path> [--dry-run]` | Register an existing checkout outside the workspace as a module (no clone). Also accepts `sushicli` to point at your own checkout. Accepts the same aliases as `ss add`. |
 | `ss install-cli <module…> [--dry-run]` | Install a module's own developer CLI (`sr`, `se`) into an isolated pipx venv and inject `sushicli`. Always editable. |

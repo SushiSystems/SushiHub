@@ -12,7 +12,8 @@ from ..setup import build_pipeline, build_uninstall_pipeline
 
 
 def run(step: str = "all", dry_run: bool = False,
-        selection: dict[str, bool] | None = None, assume_yes: bool = False) -> int:
+        selection: dict[str, bool] | None = None, assume_yes: bool = False,
+        refresh_toolchains: bool = False) -> int:
     """Run one step (or the whole pipeline) and return a process exit code.
 
     By default everything is provisioned; ``selection`` (from --customize) narrows
@@ -31,7 +32,8 @@ def run(step: str = "all", dry_run: bool = False,
             console.info(f"Custom selection: {', '.join(chosen) if chosen else '(nothing)'}.")
 
     try:
-        pipeline, ctx = build_pipeline(only=step, selection=selection, dry_run=dry_run)
+        pipeline, ctx = build_pipeline(only=step, selection=selection, dry_run=dry_run,
+                                      refresh_toolchains=refresh_toolchains)
     except (ValueError, FileNotFoundError) as exc:
         console.error(str(exc))
         return 1

@@ -47,6 +47,7 @@ def build_pipeline(
     only: str = "all",
     selection: dict[str, bool] | None = None,
     dry_run: bool = False,
+    refresh_toolchains: bool = False,
     cfg: Config | None = None,
     source: IDependencySource | None = None,
     managers: list[IPackageManager] | None = None,
@@ -100,6 +101,7 @@ def build_pipeline(
         cfg=cfg, gpu=sel["gpu"], dry_run=dry_run, oneapi=sel["oneapi"],
         install_intel_llvm=sel["install_intel_llvm"], install_acpp=sel["install_acpp"],
         active_toolchain=DEFAULT_ACTIVE_TOOLCHAIN,
+        refresh_toolchains=refresh_toolchains,
     )
     return InstallPipeline(ordered), ctx
 
