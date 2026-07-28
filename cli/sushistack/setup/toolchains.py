@@ -20,6 +20,7 @@ the intel-llvm path is enough to build, so an acpp build failure is non-fatal.
 from __future__ import annotations
 
 import glob as _glob
+import json
 import os
 import shutil
 import subprocess
@@ -32,7 +33,7 @@ from ..config import Config, deps_dir
 from .package_managers import (
     IPackageManager,
     _download,
-    _gh_latest_asset_including_prerelease,
+    _gh_latest_release_asset,
     _gh_tagged_asset,
     _run,
 )
@@ -138,45 +139,126 @@ def toolchains_dir() -> Path:
 # intel/llvm nightly bundle
 # --------------------------------------------------------------------------- #
 
-def install_intel_llvm(cfg: Config, dry_run: bool) -> str | None:
+#: Records which release a toolchain tree came from, written beside the bundle.
+#: Without it an install is a black box — the tree carries no version anywhere a
+#: tool can read, so a stale bundle stays invisible until something it lacks
+#: fails much further downstream.
+TOOLCHAIN_STAMP = ".sushi_toolchain.json"
+
+
+def read_toolchain_stamp(root: Path) -> dict[str, str]:
+    """Return the recorded provenance of a toolchain tree, or an empty dict.
+
+    :param root: Bundle root (the directory holding ``bin/`` and ``lib/``).
+    :return: The stamp's fields (``source``, ``tag``), empty when absent or
+        unreadable — an older install predates stamping and is simply unknown.
+    """
+    try:
+        return json.loads((root / TOOLCHAIN_STAMP).read_text())
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _write_toolchain_stamp(root: Path, source: str, tag: str) -> None:
+    """Record where a freshly installed toolchain tree came from."""
+    try:
+        (root / TOOLCHAIN_STAMP).write_text(
+            json.dumps({"source": source, "tag": tag}, indent=2))
+    except OSError:
+        pass  # provenance is diagnostic, never worth failing an install over
+
+
+def has_sanitizer_runtime(root: Path) -> bool:
+    """Report whether a SYCL bundle ships compiler-rt's sanitizer runtimes.
+
+    A bundle without them compiles fine and only fails at *link* time, with a
+    message naming a clang_rt library rather than the real cause, so this is
+    probed directly: the answer decides whether `sr build --type asan` can work
+    at all. Both compiler-rt layouts are covered — the per-target directory and
+    the older ``lib/windows`` / ``lib/linux`` one.
+
+    :param root: Bundle root (the directory holding ``bin/`` and ``lib/``).
+    :return: True when at least one AddressSanitizer runtime library is present.
+    """
+    return any((root / "lib" / "clang").glob("*/lib/**/*clang_rt.asan*"))
+
+
+def install_intel_llvm(cfg: Config, dry_run: bool,
+                       refresh: bool = False) -> str | None:
     """Download + extract the intel/llvm SYCL bundle. Return its root dir.
 
-    The clang++ inside is the intel-llvm toolchain compiler. Already-present
-    installs are reused (idempotent), so re-running setup is cheap.
+    The clang++ inside is the intel-llvm toolchain compiler. An already-present
+    install is reused, so re-running setup is cheap — but "present" is not the
+    same as "current": bundles gain capabilities over time (compiler-rt's
+    sanitizer runtimes on Windows, for one), and a tree that predates the one you
+    need fails later at a link step that names a library rather than the cause.
+    A reused install therefore reports its recorded release and says plainly when
+    it carries no sanitizer runtime, and ``refresh`` replaces it in place.
+
+    :param cfg: Resolved configuration; selects the platform's asset.
+    :param dry_run: Report the action without touching the filesystem.
+    :param refresh: Re-download over an existing install (``--refresh-toolchains``).
+    :return: The bundle root on success, None when it could not be installed.
     """
     root = toolchains_dir() / "llvm-sycl"
     clang = root / "bin" / ("clang++.exe" if cfg.is_windows else "clang++")
-    if clang.is_file():
-        console.info(f"intel/llvm bundle already present: {root}")
+    asset = "sycl_windows.tar.gz" if cfg.is_windows else "sycl_linux.tar.gz"
+
+    if clang.is_file() and not refresh:
+        stamp = read_toolchain_stamp(root)
+        known = stamp.get("tag") or "an unrecorded release"
+        console.info(f"intel/llvm bundle already present ({known}): {root}")
+        if not has_sanitizer_runtime(root):
+            console.warn(
+                "This bundle ships no compiler-rt sanitizer runtimes, so "
+                "`sr build --type asan` cannot link. Current bundles do carry "
+                "them — run [bold cyan]ss install --refresh-toolchains[/bold cyan] "
+                "to replace it. (A newer bundle is the fix; a separate LLVM "
+                "install is not.)")
         return str(root)
 
-    asset = "sycl_windows.tar.gz" if cfg.is_windows else "sycl_linux.tar.gz"
     if dry_run:
-        console.info(f"(dry-run) would download intel/llvm '{asset}' to {root}")
+        verb = "would refresh" if clang.is_file() else "would download"
+        console.info(f"(dry-run) {verb} intel/llvm '{asset}' at {root}")
         return str(root)
 
     try:
         # intel/llvm ships every SYCL build as a GitHub pre-release (nightly-*),
         # so the plain "latest" lookup must be skipped in favor of one that
         # includes prereleases.
-        url = _gh_latest_asset_including_prerelease("intel/llvm", asset)
+        tag, url = _gh_latest_release_asset("intel/llvm", asset)
     except Exception as exc:
         console.error(f"Could not resolve intel/llvm release asset: {exc}")
         return None
 
+    if refresh and clang.is_file():
+        current = read_toolchain_stamp(root).get("tag")
+        if current == tag:
+            console.info(f"intel/llvm bundle is already {tag}; nothing to refresh.")
+            return str(root)
+        console.info(f"Refreshing intel/llvm bundle: {current or 'unrecorded'} -> {tag}")
+
     with tempfile.TemporaryDirectory() as tmp:
         archive = Path(tmp) / asset
         try:
-            console.info("Downloading intel/llvm SYCL bundle (~300-400 MB) ...")
+            console.info(f"Downloading intel/llvm SYCL bundle {tag} (~300-500 MB) ...")
             _download(url, archive)
             _extract_tar_gz(archive, root)
         except Exception as exc:
             console.error(f"intel/llvm bundle install failed: {exc}")
-            shutil.rmtree(root, ignore_errors=True)
+            # Only wipe a tree we were creating: a failed refresh must leave the
+            # working install it was replacing intact rather than removing the
+            # only compiler on the machine.
+            if not refresh:
+                shutil.rmtree(root, ignore_errors=True)
             return None
 
     if clang.is_file():
-        console.success(f"intel/llvm bundle installed: {root}")
+        _write_toolchain_stamp(root, "intel/llvm", tag)
+        console.success(f"intel/llvm bundle installed ({tag}): {root}")
+        if not has_sanitizer_runtime(root):
+            console.warn("This bundle ships no compiler-rt sanitizer runtimes; "
+                         "`sr build --type asan` will not link against it.")
         return str(root)
     console.error(f"intel/llvm bundle extracted but {clang.name} is missing.")
     return None

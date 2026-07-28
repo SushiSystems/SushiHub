@@ -348,6 +348,22 @@ def _gh_latest_asset_including_prerelease(repo: str, asset_glob: str) -> str:
     walks the release list newest-first instead, so a nightly-only asset like
     ``sycl_windows.tar.gz`` is still found.
     """
+    return _gh_latest_release_asset(repo, asset_glob)[1]
+
+
+def _gh_latest_release_asset(repo: str, asset_glob: str) -> tuple[str, str]:
+    """Return ``(tag, url)`` for the newest matching asset, prereleases included.
+
+    The tag half is what lets an installer record *which* build it placed, so a
+    later run can report the installed version and tell whether refreshing would
+    change anything. Resolution is otherwise identical to
+    ``_gh_latest_asset_including_prerelease``, which delegates here.
+
+    :param repo: ``owner/name`` of the GitHub repository.
+    :param asset_glob: Shell-style pattern the asset filename must match.
+    :return: The release tag and the asset's download URL.
+    :raises RuntimeError: If no release in the recent window carries a match.
+    """
     url = f"https://api.github.com/repos/{repo}/releases?per_page=20"
     req = urllib.request.Request(url, headers={"User-Agent": "sushiruntime-installer"})
     with urllib.request.urlopen(req, timeout=30) as resp:
@@ -355,7 +371,7 @@ def _gh_latest_asset_including_prerelease(repo: str, asset_glob: str) -> str:
     for release in releases:
         for asset in release.get("assets", []):
             if fnmatch.fnmatch(asset["name"], asset_glob):
-                return asset["browser_download_url"]
+                return release.get("tag_name", ""), asset["browser_download_url"]
     raise RuntimeError(f"No asset matching '{asset_glob}' in {repo} releases.")
 
 

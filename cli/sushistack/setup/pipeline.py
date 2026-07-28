@@ -55,6 +55,11 @@ class InstallContext:
     install_intel_llvm: bool = True
     install_acpp: bool = True
     active_toolchain: str | None = None
+    # Re-download a toolchain that is already present. Off by default — a present
+    # toolchain is the whole point of an idempotent install — and set by
+    # ``ss install --refresh-toolchains`` when the installed bundle predates
+    # something the build now needs.
+    refresh_toolchains: bool = False
     # Consent for the heavy Windows LLVM download acpp needs. Gathered up front
     # (before the progress spinner) so the prompt is actually answerable; the
     # toolchain installer never prompts mid-pipeline.

@@ -320,7 +320,8 @@ class InstallDepsStep(Step):
         warns loudly.
         """
         if ctx.install_intel_llvm:
-            llvm = toolchains.install_intel_llvm(ctx.cfg, ctx.dry_run)
+            llvm = toolchains.install_intel_llvm(
+                ctx.cfg, ctx.dry_run, refresh=ctx.refresh_toolchains)
             if llvm:
                 ctx.resolved_paths["llvm_root"] = llvm
             else:

@@ -131,6 +131,9 @@ def install(
     yes: bool = typer.Option(
         False, "--yes", "-y",
         help="Assume yes on the LLVM-download prompt, for unattended runs."),
+    refresh_toolchains: bool = typer.Option(
+        False, "--refresh-toolchains",
+        help="Re-download the SYCL toolchain even if one is already installed."),
 ):
     """Provision the shared dependencies into the workspace's dependencies/ tree.
 
@@ -144,7 +147,8 @@ def install(
         selection = customize_svc.choose_components()
         if selection is None:
             raise typer.Exit(1)
-    raise typer.Exit(setup_svc.run("provision", dry_run=dry_run, selection=selection, assume_yes=yes))
+    raise typer.Exit(setup_svc.run("provision", dry_run=dry_run, selection=selection,
+                                   assume_yes=yes, refresh_toolchains=refresh_toolchains))
 
 
 @app.command("sync")
