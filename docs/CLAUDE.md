@@ -4,7 +4,7 @@
 
 When starting work on this project:
 
-1. Read `docs/CONTRIBUTING.md` first and follow its rules exactly.
+1. Read sushiruntime's `docs/CONTRIBUTING.md` (the stack's style authority; this repo has no CONTRIBUTING.md of its own) first and follow its rules exactly.
 2. Then read every top-level `.md` file directly under `docs/` (not its subdirectories — skip `docs/slop/`, the internal design-plan corpus, and `docs/api/`, the generated Doxygen page) to build context before making changes.
 
 ## How to work
