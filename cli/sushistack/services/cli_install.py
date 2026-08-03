@@ -1,4 +1,11 @@
-"""`ss install-cli` service: install a module's own developer CLI (`sr`, `se`).
+"""`ss install-cli` service: install a module's own developer CLI.
+
+One program name per module — `sr`, `se`, `sa`, `sb` — resolved from
+``MODULES`` in :mod:`sushistack.services.modules`, which is the single place
+that knows what the stack contains. Nothing here is per-module: the logic reads
+the distribution name out of the module's own ``cli/pyproject.toml``, so a
+module added to that registry works the day it is added, with no change to this
+file.
 
 The umbrella owns this so there is a single install seam for the whole stack: no
 module ships its own bootstrap script. Each module CLI depends on ``sushicli``
@@ -62,8 +69,8 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
 
     Always editable, against the checkout it was invoked from: a non-editable
     install freezes the CLI at whatever revision was on disk at install time, so
-    later `git pull`s on the module silently stop reaching the installed `sr`/`se`
-    until someone thinks to reinstall by hand.
+    later `git pull`s on the module silently stop reaching the installed
+    `sr`/`se`/`sa`/`sb` until someone thinks to reinstall by hand.
     """
     console.header("SushiStack Install-CLI")
     resolved = _resolve_names(names)

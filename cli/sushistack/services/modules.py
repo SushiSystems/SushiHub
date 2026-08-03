@@ -38,7 +38,10 @@ class Module:
 
 # The known stack modules. Names are the exact program names — there is no
 # program called "runtime", it is "sushiruntime" — so no one confuses them. The
-# directory matches the name so `sr`/`se` find their siblings.
+# directory matches the name because that is what every module's own
+# cmake/Runtime.cmake (and sushiai's cmake/BLAS.cmake) resolves a sibling
+# checkout by: a flat <workspace>/<module> layout is what makes their
+# add_subdirectory fallback find the dependency.
 MODULES: dict[str, Module] = {
     "sushiruntime": Module("sushiruntime", "https://github.com/sushisystems/sushiruntime.git", "sushiruntime"),
     "sushiengine":  Module("sushiengine",  "https://github.com/sushisystems/sushiengine.git",  "sushiengine"),
@@ -300,7 +303,8 @@ def add(names: list[str] | None, dry_run: bool = False) -> int:
     if failed:
         return 1
     if not dry_run:
-        console.success("Modules ready. Build them with their own CLI (`sr`, `se`).")
+        console.success("Modules ready. Build them with their own CLI "
+                        "(`sr`, `se`, `sa`, `sb`).")
     return 0
 
 

@@ -1,8 +1,9 @@
 """CLI output for the SushiStack CLI.
 
 Thin wrapper around :mod:`sushicli` — the actual theme/icon/renderer logic
-(and its `[cli]` config schema) lives there and is shared with the
-sushiruntime and sushiengine CLIs. See sushicli's README to change colors.
+(and its `[cli]` config schema) lives there and is shared with every module
+CLI in the stack — sushiruntime, sushiengine, sushiai and sushiblas. See
+sushicli's README to change colors.
 """
 
 from __future__ import annotations

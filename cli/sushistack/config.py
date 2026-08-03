@@ -27,7 +27,8 @@ from sushicli.config_base import ToolConfig, load_tool_config, write_tool_sectio
 from sushicli.workspace import has_marker, read_toml, resolve_env_path, walk_up
 
 # Marker file written at the workspace root by `ss init`. Its presence is how any
-# `ss`/`sr`/`se` invocation locates the shared workspace from a nested directory.
+# stack CLI invocation (`ss`, `sr`, `se`, `sa`, `sb`) locates the shared
+# workspace from a nested directory.
 WORKSPACE_MARKER = ".sushistack"
 
 
