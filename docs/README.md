@@ -2,7 +2,7 @@
 
 A shared workspace for the Sushi stack. Installs the toolchains and libraries all modules need into one `dependencies/` directory and manages the module checkouts.
 
-Each module has its own CLI (`sr`, `se`) for building and testing. `ss` only handles dependencies and module lifecycle.
+Each module has its own CLI for building and testing — `sr` (sushiruntime), `se` (sushiengine), `sa` (sushiai), `sb` (sushiblas). `ss` only handles dependencies and module lifecycle.
 
 ## Layout
 
@@ -14,10 +14,18 @@ sushistack/
   sushicli/                ← shared CLI presentation layer (fetched automatically)
   sushiruntime/            ← added by `ss add sushiruntime`
   sushiengine/             ← added by `ss add sushiengine`
+  sushiai/                 ← added by `ss add sushiai`
+  sushiblas/               ← added by `ss add sushiblas`
   .sushistack              ← workspace marker
 ```
 
 Modules resolve their compiler and vcpkg from `../dependencies`.
+
+The flat layout is load-bearing, not cosmetic: `sushiblas` depends on
+`sushiruntime` and `sushiai` depends on both, and each resolves the others by
+looking for a sibling checkout next to itself (`../sushiruntime`,
+`../sushiblas`) when no installed package is found. Keeping every module
+directly under the workspace root is what makes that fallback land.
 
 ## Install
 
@@ -46,11 +54,14 @@ python cli/install.py                # install the `ss` CLI via pipx
 
 ss init                              # write the .sushistack marker and .gitignore entries
 ss install                           # download toolchains and libraries
-ss add sushiruntime sushiengine      # clone modules into the workspace (aliases: sr se)
-ss install-cli sushiruntime          # install that module's own CLI (`sr`)
+ss add all                           # clone every module (or name them: sushiruntime sushiai …)
 
 cd sushiruntime && sr build
 ```
+
+`ss add` already installs each cloned module's own CLI (`sr`, `se`, `sa`, `sb`).
+`ss install-cli <module…>` is the way to reinstall one on demand — after
+pointing a module at a different checkout with `ss link`, say.
 
 ## `ss` commands
 
@@ -60,7 +71,7 @@ cd sushiruntime && sr build
 | `ss install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker to select which toolchains to install. `--yes` assumes yes on the LLVM-download prompt, for unattended runs. `--refresh-toolchains` re-downloads the SYCL toolchain even when one is already installed — an install is otherwise reused forever, and a bundle that predates a capability the build needs (compiler-rt's sanitizer runtimes, say) would keep failing at an unrelated-looking link error. Reused installs report the release they came from and say so when they carry no sanitizer runtime. |
 | `ss add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|all> [--dry-run]` | Clone one or more modules into the workspace. Aliases: `sr`, `se`, `sa`, `sb`. |
 | `ss link <module> <path> [--dry-run]` | Register an existing checkout outside the workspace as a module (no clone). Also accepts `sushicli` to point at your own checkout. Accepts the same aliases as `ss add`. |
-| `ss install-cli <module…> [--dry-run]` | Install a module's own developer CLI (`sr`, `se`) into an isolated pipx venv and inject `sushicli`. Always editable. |
+| `ss install-cli <module…> [--dry-run]` | Install a module's own developer CLI (`sr`, `se`, `sa`, `sb`) into an isolated pipx venv and inject `sushicli`. Accepts the same names, aliases and `all` as `ss add`. Always editable. |
 | `ss update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules (cloned or linked). Omit arguments to update all. |
 | `ss sync [--dry-run]` | Install missing dependencies, then update all modules. |
 | `ss status [--json]` | Show which modules are present and whether dependencies are installed. `--json` prints machine-readable output for scripting. |

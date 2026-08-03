@@ -1,9 +1,10 @@
 """SushiStack developer CLI (`ss`).
 
 The umbrella that provisions one shared dependency tree for the whole stack and
-manages the module checkouts (sushiruntime, sushiengine, …) that live inside the
-workspace. Each module keeps its own CLI (`sr`, `se`) for building and testing;
-`ss` only owns downloading, installing, and module lifecycle.
+manages the module checkouts (sushiruntime, sushiengine, sushiai, sushiblas)
+that live inside the workspace. Each module keeps its own CLI — `sr`, `se`,
+`sa`, `sb` — for building and testing; `ss` only owns downloading, installing,
+and module lifecycle.
 
 Thin Typer layer: commands parse arguments and delegate to the service layer in
 ``sushistack.services``.
@@ -94,7 +95,7 @@ def install_cli(
                   "sushiai | sushiblas | all."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't install."),
 ):
-    """Install a module's developer CLI (`sr`, `se`) into an isolated pipx venv.
+    """Install a module's developer CLI (`sr`, `se`, `sa`, `sb`) into an isolated pipx venv.
 
     The single install seam for the stack: no module ships its own bootstrap
     script. This installs the module's [cyan]cli/[/cyan] package and injects the

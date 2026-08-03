@@ -86,7 +86,8 @@ def build_pipeline(
     elif only == "provision":
         # `ss install`: detect + install + write config, but no verify. The
         # workspace has no single project to build, so VerifyStep (which compiles
-        # and smoke-tests a checkout) is left to each module's own `sr`/`se`.
+        # and smoke-tests a checkout) is left to each module's own CLI
+        # (`sr`, `se`, `sa`, `sb`).
         ordered = [
             all_steps["detect"],
             all_steps["install"],
