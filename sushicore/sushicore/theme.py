@@ -12,7 +12,7 @@ from dataclasses import dataclass, fields, replace
 
 @dataclass(frozen=True)
 class Theme:
-    """Style tokens used by :class:`sushicli.console.Console`.
+    """Style tokens used by :class:`sushicore.console.Console`.
 
     Values are Rich style strings (e.g. ``"bold blue"``), kept as plain
     strings so a theme can be fully described in TOML with no code.

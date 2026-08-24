@@ -5,7 +5,7 @@ not via a ``Theme`` object — it reads a set of module-level style constants in
 ``typer.rich_utils`` at render time. There is no config seam to plug into, so
 monkeypatching those constants at startup is the only way to make ``--help``
 match everything else this package themes. This is why the coloring lives in
-its own module: it is the one part of sushicli that reaches into another
+its own module: it is the one part of sushicore that reaches into another
 package's internals instead of composing a clean abstraction.
 """
 

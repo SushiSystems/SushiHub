@@ -1,4 +1,4 @@
-# sushicli
+# sushicore
 
 Shared, config-driven CLI presentation layer for the Sushi* developer CLIs
 (`sr` / sushiruntime, `se` / sushiengine, `ss` / sushistack). One seam for
@@ -10,23 +10,23 @@ three hardcoded `console.py` files.
 
 Small, swappable pieces (SOLID), not one monolith:
 
-- `Theme` (`sushicli.theme`) — pure data: style tokens (`info`, `success`,
+- `Theme` (`sushicore.theme`) — pure data: style tokens (`info`, `success`,
   `warn`, `error`, `cmd`, `header`, `panel_border`). Presets: `default`,
   `mono`, `muted`. Register your own with `register_theme(name, Theme(...))`.
-- `IconSet` (`sushicli.icons`) — pure data: the prefix/glyph printed before a
+- `IconSet` (`sushicore.icons`) — pure data: the prefix/glyph printed before a
   line. Presets: `text` (`[INFO]`, ...), `emoji`, `minimal`, `none`.
   Register your own with `register_icon_set(...)`.
-- `Renderer` (`sushicli.renderer`) — a `Protocol` describing how a themed
+- `Renderer` (`sushicore.renderer`) — a `Protocol` describing how a themed
   message actually gets drawn. `RichRenderer` is the default (colored, via
   Rich); `PlainRenderer` is the no-color fallback used for `NO_COLOR`,
   `color = "never"`, or a non-TTY stream. Any object implementing the same
   four methods is a drop-in replacement — e.g. a future JSON renderer for
   machine-readable CI logs.
-- `Console` (`sushicli.console`) — the facade every CLI actually calls
+- `Console` (`sushicore.console`) — the facade every CLI actually calls
   (`console.info(...)`, `console.error(...)`, ...). It only translates
   semantic calls into renderer calls using a theme + icon set; it never picks
   a color itself.
-- `build_console()` (`sushicli.__init__`) — the factory that wires the above
+- `build_console()` (`sushicore.__init__`) — the factory that wires the above
   together from layered config. This is the one function a CLI needs to call.
 
 Themes and icon sets are pure data, so most customization needs **no code at
@@ -40,8 +40,8 @@ resolves for build config):
 
 ```toml
 [cli]
-theme = "default"   # preset name — see sushicli.theme.known_themes()
-icons = "text"      # preset name — see sushicli.icons.known_icon_sets()
+theme = "default"   # preset name — see sushicore.theme.known_themes()
+icons = "text"      # preset name — see sushicore.icons.known_icon_sets()
 color = "auto"      # auto | always | never
 
 [cli.colors]        # optional: partial override merged onto the preset
@@ -66,7 +66,7 @@ machine-local) or export `SUSHI_CLI_THEME=mono` — no code change, no rebuild.
 ```python
 # sushiruntime/console.py (or sushiengine/, sushistack/)
 from pathlib import Path
-from sushicli import build_console
+from sushicore import build_console
 from .config import config_dir  # each repo's own config-dir discovery
 
 _cfg_dir = config_dir()
@@ -86,28 +86,28 @@ same file list a repo already loads for its `[tool]` build config.
 
 ## Installing
 
-sushicli is not published to any package index. It is a checkout that the other
+sushicore is not published to any package index. It is a checkout that the other
 CLIs inject, so it does not resolve as a normal pip dependency. You do not
 install it directly in normal use:
 
 - **End users** never handle it. The SushiStack bootstrap
-  (`curl … | bash` / `irm … | iex`) clones it into `<workspace>/sushicli`, and
+  (`curl … | bash` / `irm … | iex`) clones it into `<workspace>/sushicore`, and
   `ss install-cli <module>` injects it (editable) into each module CLI's pipx
   venv automatically.
 - **`ss status`** shows where the checkout is and its state (`fetched`,
   `linked`, `sibling`, or `missing`), so it is visible rather than a black box.
 
-### Working on sushicli itself
+### Working on sushicore itself
 
 Point the workspace at your own checkout so every CLI uses it:
 
 ```bash
-ss link sushicli /path/to/sushicli    # records it in modules.local.toml
+ss link sushicore /path/to/sushicore    # records it in modules.local.toml
 ```
 
-You can also override the lookup for one command with the `SUSHICLI_DIR`
-environment variable. Resolution order is: `SUSHICLI_DIR` → an `ss link sushicli`
-path → `<workspace>/sushicli` (the fetched checkout) → a sibling checkout next to
+You can also override the lookup for one command with the `SUSHICORE_DIR`
+environment variable. Resolution order is: `SUSHICORE_DIR` → an `ss link sushicore`
+path → `<workspace>/sushicore` (the fetched checkout) → a sibling checkout next to
 the workspace. Because injection is editable, edits to your checkout apply to the
 installed `sr` / `se` / `ss` without reinstalling.
 

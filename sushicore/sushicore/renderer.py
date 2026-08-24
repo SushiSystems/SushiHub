@@ -1,7 +1,7 @@
 """Rendering backends.
 
 ``Renderer`` is the seam the rest of the package depends on (DIP): the
-:class:`~sushicli.console.Console` facade only ever talks to this Protocol,
+:class:`~sushicore.console.Console` facade only ever talks to this Protocol,
 never to Rich directly. Any object implementing these four methods is a
 drop-in renderer (LSP) — swap in a plain-text renderer for CI logs, a JSON
 renderer for machine consumption, etc., without touching Console or anything

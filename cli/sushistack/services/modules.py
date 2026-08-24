@@ -49,12 +49,12 @@ MODULES: dict[str, Module] = {
     "sushiblas":    Module("sushiblas",    "https://github.com/sushisystems/sushiblas.git",    "sushiblas"),
 }
 
-# sushicli is the shared CLI presentation layer, not a stack build module: it
+# sushicore is the shared CLI presentation layer, not a stack build module: it
 # ships no dependency fragment, is never built, and stays out of MODULES so it is
 # excluded from `ss add all`, readiness, and dependency aggregation. It lives
-# inside this repository (see `sushicli/`), so there is nothing to clone and no
+# inside this repository (see `sushicore/`), so there is nothing to clone and no
 # checkout for anyone to manage -- cloning SushiStack already produced it.
-SUSHICLI_NAME = "sushicli"
+SUSHICORE_NAME = "sushicore"
 
 
 # Short aliases for the module names, matching each module's own CLI program
@@ -91,16 +91,16 @@ def module_dest(root: Path, name: str) -> Path:
     return root / MODULES[name].directory
 
 
-def sushicli_dir(root: Path) -> Path | None:
-    """Resolve the in-repo sushicli package to inject, or None if it is missing.
+def sushicore_dir(root: Path) -> Path | None:
+    """Resolve the in-repo sushicore package to inject, or None if it is missing.
 
-    sushicli ships inside this repository, so this is a fixed path, not a search:
-    ``<workspace>/sushicli``. It stays a function (and stays nullable) because it
+    sushicore ships inside this repository, so this is a fixed path, not a search:
+    ``<workspace>/sushicore``. It stays a function (and stays nullable) because it
     is still injected as a separate distribution -- it is published to no index,
     so pipx cannot resolve it as an ordinary dependency -- and a corrupt or
     partial checkout should be reported rather than crash the caller.
     """
-    pkg = root / SUSHICLI_NAME
+    pkg = root / SUSHICORE_NAME
     return pkg if (pkg / "pyproject.toml").is_file() else None
 
 
@@ -170,7 +170,7 @@ def _install_module_cli(name: str, dest: Path, root: Path) -> bool:
     """Install a cloned module's own CLI (`sr`, `se`, …) so it is ready to use.
 
     Mirrors how the umbrella installs its own `ss` CLI: pipx-install the module's
-    `cli/` package, then inject the shared sushicli presentation layer (which is
+    `cli/` package, then inject the shared sushicore presentation layer (which is
     not a resolvable pip dependency). Best-effort — a module without a `cli/`
     package, or a pipx we can't locate, is a warning, not a hard failure.
     """
@@ -190,19 +190,19 @@ def _install_module_cli(name: str, dest: Path, root: Path) -> bool:
         console.error(f"{name}: CLI install failed.")
         return False
 
-    # sushicli isn't published to any index, so pipx can't resolve it as a normal
+    # sushicore isn't published to any index, so pipx can't resolve it as a normal
     # dependency; inject it (editable) into the venv pipx just created.
-    cli_shared = sushicli_dir(root)
+    cli_shared = sushicore_dir(root)
     if cli_shared is None:
-        console.warn(f"{name}: sushicli is missing from "
-                     f"{root / SUSHICLI_NAME}; the CLI may fail to start. It ships "
-                     "with this repository -- `git checkout -- sushicli` to restore it.")
+        console.warn(f"{name}: sushicore is missing from "
+                     f"{root / SUSHICORE_NAME}; the CLI may fail to start. It ships "
+                     "with this repository -- `git checkout -- sushicore` to restore it.")
         return False
     pkg = _cli_package_name(cli_dir, name)
     if subprocess.run(
         [*pipx, "inject", pkg, "--editable", str(cli_shared)]
     ).returncode != 0:
-        console.warn(f"{name}: failed to inject sushicli into {pkg}.")
+        console.warn(f"{name}: failed to inject sushicore into {pkg}.")
         return False
     return True
 
@@ -307,9 +307,9 @@ def link(name: str, path: str, dry_run: bool = False) -> int:
     """
     console.header("SushiStack Link")
     name = _ALIASES.get(name, name)
-    if name == SUSHICLI_NAME:
-        console.error(f"{SUSHICLI_NAME} ships inside this repository and cannot be "
-                      "linked. Edit it in place, at `sushicli/`.")
+    if name == SUSHICORE_NAME:
+        console.error(f"{SUSHICORE_NAME} ships inside this repository and cannot be "
+                      "linked. Edit it in place, at `sushicore/`.")
         return 1
     if name not in MODULES:
         console.error(f"Unknown module '{name}'. Choose from: "
@@ -386,8 +386,8 @@ def _status_rows(root: Path, linked: dict[str, str]) -> list[tuple[str, str, str
     # The shared CLI presentation layer. Not a build module, but shown so a
     # damaged checkout is visible: it ships in this repository, so the only two
     # states are present and missing.
-    cli_dir = sushicli_dir(root)
-    rows.append((SUSHICLI_NAME, SUSHICLI_NAME if cli_dir else "",
+    cli_dir = sushicore_dir(root)
+    rows.append((SUSHICORE_NAME, SUSHICORE_NAME if cli_dir else "",
                  "in-repo" if cli_dir else "missing"))
     return rows
 
