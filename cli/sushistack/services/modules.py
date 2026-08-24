@@ -51,12 +51,10 @@ MODULES: dict[str, Module] = {
 
 # sushicli is the shared CLI presentation layer, not a stack build module: it
 # ships no dependency fragment, is never built, and stays out of MODULES so it is
-# excluded from `ss add all`, readiness, and dependency aggregation. It is tooling
-# the umbrella fetches automatically. A developer can still point the workspace at
-# their own checkout with `ss link sushicli <path>`; the bootstrap otherwise
-# clones it into <workspace>/sushicli so an end user never handles it.
+# excluded from `ss add all`, readiness, and dependency aggregation. It lives
+# inside this repository (see `sushicli/`), so there is nothing to clone and no
+# checkout for anyone to manage -- cloning SushiStack already produced it.
 SUSHICLI_NAME = "sushicli"
-SUSHICLI_REPO = "https://github.com/sushisystems/sushicli.git"
 
 
 # Short aliases for the module names, matching each module's own CLI program
@@ -75,7 +73,6 @@ _ALIASES: dict[str, str] = {
 _GITIGNORE_LINES = [
     "# Managed by `ss init`: shared dependencies and cloned modules are not tracked.",
     "/dependencies/",
-    f"/{SUSHICLI_NAME}/",
     *(f"/{m.directory}/" for m in MODULES.values()),
     "/cli/config.local.toml",
     "/cli/modules.local.toml",
@@ -95,24 +92,16 @@ def module_dest(root: Path, name: str) -> Path:
 
 
 def sushicli_dir(root: Path) -> Path | None:
-    """Resolve the sushicli checkout to inject, or None when it cannot be found.
+    """Resolve the in-repo sushicli package to inject, or None if it is missing.
 
-    Order: ``SUSHICLI_DIR`` env, then a developer's ``ss link sushicli`` path,
-    then the ``<workspace>/sushicli`` the bootstrap fetches, then a sibling
-    checkout. Only a directory holding ``pyproject.toml`` counts.
+    sushicli ships inside this repository, so this is a fixed path, not a search:
+    ``<workspace>/sushicli``. It stays a function (and stays nullable) because it
+    is still injected as a separate distribution -- it is published to no index,
+    so pipx cannot resolve it as an ordinary dependency -- and a corrupt or
+    partial checkout should be reported rather than crash the caller.
     """
-    import os
-
-    override = os.environ.get("SUSHICLI_DIR")
-    candidates = [Path(override)] if override else []
-    linked = registered_modules().get(SUSHICLI_NAME)
-    if linked:
-        candidates.append(Path(linked))
-    candidates += [root / SUSHICLI_NAME, root.parent / SUSHICLI_NAME]
-    for cand in candidates:
-        if (cand / "pyproject.toml").is_file():
-            return cand
-    return None
+    pkg = root / SUSHICLI_NAME
+    return pkg if (pkg / "pyproject.toml").is_file() else None
 
 
 def _write_link(name: str, path: Path) -> None:
@@ -205,8 +194,9 @@ def _install_module_cli(name: str, dest: Path, root: Path) -> bool:
     # dependency; inject it (editable) into the venv pipx just created.
     cli_shared = sushicli_dir(root)
     if cli_shared is None:
-        console.warn(f"{name}: sushicli checkout not found; the CLI may fail to "
-                     "start. Fetch it into the workspace or `ss link sushicli <path>`.")
+        console.warn(f"{name}: sushicli is missing from "
+                     f"{root / SUSHICLI_NAME}; the CLI may fail to start. It ships "
+                     "with this repository -- `git checkout -- sushicli` to restore it.")
         return False
     pkg = _cli_package_name(cli_dir, name)
     if subprocess.run(
@@ -317,10 +307,13 @@ def link(name: str, path: str, dry_run: bool = False) -> int:
     """
     console.header("SushiStack Link")
     name = _ALIASES.get(name, name)
-    if name not in MODULES and name != SUSHICLI_NAME:
+    if name == SUSHICLI_NAME:
+        console.error(f"{SUSHICLI_NAME} ships inside this repository and cannot be "
+                      "linked. Edit it in place, at `sushicli/`.")
+        return 1
+    if name not in MODULES:
         console.error(f"Unknown module '{name}'. Choose from: "
-                      f"{', '.join(MODULES)} (or their aliases: {', '.join(_ALIASES)}), "
-                      f"or {SUSHICLI_NAME}.")
+                      f"{', '.join(MODULES)} (or their aliases: {', '.join(_ALIASES)}).")
         return 1
     target = Path(path).expanduser().resolve()
     if not target.is_dir():
@@ -390,20 +383,12 @@ def _status_rows(root: Path, linked: dict[str, str]) -> list[tuple[str, str, str
             location = mod.directory
         rows.append((name, location, state))
 
-    # The shared CLI presentation layer. Not a build module, but shown so it is
-    # not a black box: the umbrella fetches it, and a dev can `ss link sushicli`.
+    # The shared CLI presentation layer. Not a build module, but shown so a
+    # damaged checkout is visible: it ships in this repository, so the only two
+    # states are present and missing.
     cli_dir = sushicli_dir(root)
-    if cli_dir is None:
-        rows.append((SUSHICLI_NAME, "", "missing"))
-    else:
-        cli_dir = cli_dir.resolve()
-        if SUSHICLI_NAME in linked:
-            state = "linked"
-        elif cli_dir == (root / SUSHICLI_NAME).resolve():
-            state = "fetched"
-        else:
-            state = "sibling"
-        rows.append((SUSHICLI_NAME, str(cli_dir), state))
+    rows.append((SUSHICLI_NAME, SUSHICLI_NAME if cli_dir else "",
+                 "in-repo" if cli_dir else "missing"))
     return rows
 
 
