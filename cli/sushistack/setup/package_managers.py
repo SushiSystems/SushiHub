@@ -189,12 +189,21 @@ def ensure_cuda_toolkit(dry_run: bool) -> bool:
     Ubuntu's own ``nvidia-cuda-toolkit`` is often years behind, so we add NVIDIA's
     ``cuda-keyring`` network repo — the method NVIDIA documents — and install a
     *pinned* ``cuda-toolkit-12-6``, not the unversioned ``cuda-toolkit`` meta-package.
-    NVIDIA has been dropping older GPU architectures from ptxas in newer major
-    releases (CUDA 13 removed Pascal/``sm_6x`` outright), and SushiRuntime's default
-    ``SR_CUDA_ARCH`` targets Pascal (61) — installing "latest" silently produces a
-    toolchain that reports present (`nvcc --version` succeeds) but fails at the
-    ptxas link step for anyone on Pascal/Maxwell/Volta hardware. Best-effort and
-    non-fatal: a build can still run CPU-only (SPIR/OpenCL) without it.
+
+    The version pin exists to keep **Pascal** buildable, and that is a hard
+    requirement rather than a legacy courtesy: Pascal is hardware this project is
+    actively developed on. NVIDIA drops older architectures from ptxas across
+    major releases — CUDA 13 removed ``sm_6x`` outright — and installing "latest"
+    produces a toolchain that reports present (``nvcc --version`` succeeds) but
+    fails at the ptxas link step for anyone on Pascal/Maxwell/Volta hardware. Do
+    not raise or unpin this without a Pascal build proving the replacement works.
+
+    (SushiRuntime's ``SR_CUDA_ARCH`` has no default and is resolved from
+    ``nvidia-smi``, so on a Pascal box it resolves to 61 by itself; this pin is
+    what makes that resolution actually compilable.)
+
+    Best-effort and non-fatal: a build can still run CPU-only (SPIR/OpenCL)
+    without it.
     """
     if _binary_works("nvcc"):
         console.info("CUDA toolkit already present (nvcc found).")
