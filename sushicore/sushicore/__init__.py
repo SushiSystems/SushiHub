@@ -1,9 +1,9 @@
-"""sushicli — shared, config-driven CLI presentation layer for sr / se / ss.
+"""sushicore — shared, config-driven CLI presentation layer for sr / se / ss.
 
 Public surface: :func:`build_console` assembles a :class:`Console` from
-layered TOML config + environment, using pluggable :mod:`~sushicli.theme` and
-:mod:`~sushicli.icons` presets rendered through a pluggable
-:mod:`~sushicli.renderer` backend. Each piece can be registered, overridden,
+layered TOML config + environment, using pluggable :mod:`~sushicore.theme` and
+:mod:`~sushicore.icons` presets rendered through a pluggable
+:mod:`~sushicore.renderer` backend. Each piece can be registered, overridden,
 or swapped independently — see the module docstrings for how.
 """
 

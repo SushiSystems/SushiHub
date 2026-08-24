@@ -99,7 +99,7 @@ def install_cli(
 
     The single install seam for the stack: no module ships its own bootstrap
     script. This installs the module's [cyan]cli/[/cyan] package and injects the
-    shared [cyan]sushicli[/cyan] presentation layer that ships in this repository.
+    shared [cyan]sushicore[/cyan] presentation layer that ships in this repository.
 
     Always installed editable, against the checkout it was invoked from -- a
     non-editable install would freeze the CLI at whatever revision existed at

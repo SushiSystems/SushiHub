@@ -1,14 +1,14 @@
 """CLI output for the SushiStack CLI.
 
-Thin wrapper around :mod:`sushicli` — the actual theme/icon/renderer logic
+Thin wrapper around :mod:`sushicore` — the actual theme/icon/renderer logic
 (and its `[cli]` config schema) lives there and is shared with every module
 CLI in the stack — sushiruntime, sushiengine, sushiai and sushiblas. See
-sushicli's README to change colors.
+sushicore's README to change colors.
 """
 
 from __future__ import annotations
 
-from sushicli import build_console
+from sushicore import build_console
 
 from .config import config_dir
 

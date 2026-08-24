@@ -28,20 +28,20 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PACKAGE_NAME = "sushistack-cli"
 
 
-def find_sushicli_dir() -> Path:
-	"""Return the in-repo sushicli package directory.
+def find_sushicore_dir() -> Path:
+	"""Return the in-repo sushicore package directory.
 
-	sushicli ships inside this repository, so there is nothing to look up and
+	sushicore ships inside this repository, so there is nothing to look up and
 	nothing to fetch: cloning SushiStack has already produced it. It is still a
 	separate distribution (its own pyproject.toml) because pipx installs it as
 	one -- it is not published to any index, so pipx's isolated venv cannot
 	resolve it as a normal dependency and it is injected from this path instead.
 	"""
-	pkg = REPO_ROOT / "sushicli"
+	pkg = REPO_ROOT / "sushicore"
 	if not (pkg / "pyproject.toml").is_file():
 		sys.exit(
 			f"[ERROR] {pkg} is missing its pyproject.toml. This is part of the "
-			"SushiStack repository; re-clone or `git checkout -- sushicli`."
+			"SushiStack repository; re-clone or `git checkout -- sushicore`."
 		)
 	return pkg
 
@@ -84,15 +84,15 @@ def ensure_pipx() -> str:
 
 def install() -> int:
 	pkg_dir = find_package_dir()
-	sushicli_dir = find_sushicli_dir()
+	sushicore_dir = find_sushicore_dir()
 
 	pipx = ensure_pipx().split()
 	rc = run([*pipx, "install", "--force", "--editable", str(pkg_dir)])
 	if rc == 0:
-		# sushicli isn't a resolvable pip dependency (see pyproject.toml); inject
-		# it into the venv pipx just created, always editable so future sushicli
+		# sushicore isn't a resolvable pip dependency (see pyproject.toml); inject
+		# it into the venv pipx just created, always editable so future sushicore
 		# edits apply without reinstalling this CLI.
-		rc = run([*pipx, "inject", PACKAGE_NAME, "--editable", str(sushicli_dir)])
+		rc = run([*pipx, "inject", PACKAGE_NAME, "--editable", str(sushicore_dir)])
 
 	if rc == 0:
 		print("\n[SUCCESS] CLI installed. Try:  ss --help   (or: sushistack --help)")

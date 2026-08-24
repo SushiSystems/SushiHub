@@ -10,8 +10,8 @@ keeps one seam: every Sushi* CLI points this loader at its own
 Schema (in any of the given TOML files)::
 
     [cli]
-    theme = "default"      # preset name; see sushicli.theme
-    icons = "text"         # preset name; see sushicli.icons
+    theme = "default"      # preset name; see sushicore.theme
+    icons = "text"         # preset name; see sushicore.icons
     color = "auto"         # auto | always | never
 
     [cli.colors]           # optional partial override merged onto the preset
