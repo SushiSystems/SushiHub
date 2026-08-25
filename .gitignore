@@ -15,3 +15,6 @@ __pycache__/
 *.pyc
 /cli/build/
 cli/config.local.toml.bak
+
+# Scratch workspace for plan execution.
+.superpowers/
