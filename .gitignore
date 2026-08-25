@@ -18,3 +18,4 @@ cli/config.local.toml.bak
 
 # Scratch workspace for plan execution.
 .superpowers/
+.argv-baseline/
