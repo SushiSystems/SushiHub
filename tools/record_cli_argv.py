@@ -8,7 +8,12 @@ build code on a machine that is not going to sit through five builds.
 
 Commands whose argv is a string rather than a list are passed through untouched:
 that is the vcvars64 snapshot, which must really run or the environment every
-other command is measured under would be wrong.
+other command is measured under would be wrong. SushiRuntime's Linux equivalent,
+_snapshot_linux's sourcing of oneAPI's setvars.sh, does NOT get this treatment:
+it calls subprocess.run(["bash", "-c", script]), a list, so this recorder stubs
+it like any other command instead of letting it run. A Linux capture is
+therefore taken under an unsourced environment, and its argv should not be
+trusted as evidence of what setvars.sh would have changed.
 
 subprocess.run/Popen and shutil.rmtree are not the only ways a command can touch
 disk: SushiBLAS/SushiAI's package-consumer path deploys DLLs with shutil.copy2,
