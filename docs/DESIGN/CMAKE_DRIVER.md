@@ -133,8 +133,11 @@ than that in three of them — see above).
   Read directly rather than through `cmake -L`, so it costs nothing and works on a tree
   whose configure failed part way through.
 - `home_directory(build_dir)` and `is_stale(build_dir, root)` — SushiRuntime's check for a
-  tree configured against a different source path, generalised. Every module can meet a
-  build tree carried over from a container mount; only one of them noticed before this.
+  tree configured against a different source path, generalised into `sushicore` so any
+  module can reach it through `CMakeDriver.needs_configure`'s `root` argument. Every module
+  can meet a build tree carried over from a container mount, and the check is now available
+  to all of them — but only SushiRuntime's `project.py` actually passes `root=`; see
+  "Deliberately not in scope" for wiring the other three.
 
 **sushicore/cmake_driver.py** — `CMakeDriver(console, runner)`
 
@@ -185,7 +188,10 @@ could be reverted alone.
   the `resolve_exe` PATH/Path defect described above, which turned out to be in all five.
 - **D2 — cmake_cache.py and needs_configure.** Four modules; SushiDSP was not touched, as
   planned. Gave SushiEngine, SushiAI, SushiBLAS and (on top of its own stamp file)
-  SushiRuntime the stale-source-path check.
+  SushiRuntime `cmake_cache.py` and the `root` argument on `needs_configure`, making the
+  stale-source-path check reachable from all four. Only SushiRuntime's call site passes
+  `root=`, though; SushiEngine, SushiAI and SushiBLAS call `needs_configure` without it, so
+  `is_stale` never runs for them. See "Deliberately not in scope".
 - **D3 — CMakeDriver.** All five. The configure, compile, ctest, clean and doxygen
   invocations — the largest phase, and the only one that touched what reaches the
   compiler. Two items it shipped were then trimmed on review rather than kept as
@@ -366,3 +372,9 @@ builds. It was not run as part of this programme.
   design has.
 - SushiDSP's missing `clean` and `doxygen` commands.
 - Merging SushiRuntime's and SushiEngine's `_configure_args`.
+- Passing `root=` from SushiEngine's, SushiAI's and SushiBLAS's `needs_configure` calls.
+  `CMakeDriver.needs_configure` already accepts `root` and `cmake_cache.is_stale` already
+  implements the check; only those three call sites omit the argument, so `is_stale` never
+  runs for them today. Left for later because it changes what those commands do — a warning
+  that can newly fire on a stale tree — and would need its own argv verification, which this
+  phase's diff does not cover.
