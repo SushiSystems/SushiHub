@@ -66,7 +66,7 @@ jobs:
           # missing for that consumer's own cli/tests to import cleanly -- read
           # off each consumer's own `cli` job rather than assumed. Only
           # sushiengine needs one: its cli/tests build synthetic rasters with
-          # numpy, and test_dependency_provisioning.py parses this very
+          # numpy, and test_dependency_provisioning.py parses its own repository's
           # ci.yml with PyYAML; both ship in its `dev` extra
           # (sushiengine/cli/pyproject.toml) alongside pytest. sushiruntime,
           # sushiai, sushiblas and sushidsp declare no such extra -- their
