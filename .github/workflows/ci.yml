@@ -22,3 +22,105 @@ jobs:
         run: pip install -e "./sushicore[test]"
       - name: Test
         run: python -m pytest sushicore/tests -q
+
+  # ---------------------------------------------------------------------------
+  # Consumer CLI contract
+  # ---------------------------------------------------------------------------
+  # sushicore is a hard import-time dependency of six CLIs -- ss (this repo) and
+  # sr / se / sa / sb / sd in sushiruntime / sushiengine / sushiai / sushiblas /
+  # sushidsp -- and it is published to no index, so none of them can pin it as
+  # an ordinary pip dependency. Each of those five repositories already runs a
+  # `cli` job that checks out this repository's published main and tests
+  # itself against it; that proves the wiring works, but only from the
+  # consumer's side, and only after a breaking change has already merged here.
+  # The `sushicore` job above tests sushicore in isolation -- its 44 tests
+  # never import a single consumer. Until this job, nothing ran in the other
+  # direction: a change that breaks a consumer could land on this repo's main
+  # with CI green, and the first the stack would hear of it is one of the five
+  # turning red on its next unrelated push, for a reason that isn't in that
+  # repository at all. Nothing but a job living here can catch that before it
+  # reaches them.
+  #
+  # This job closes that gap: it installs the sushicore checked out under
+  # test -- the commit this workflow is actually validating, not main -- into
+  # the same environment as each consumer's CLI, then runs that consumer's own
+  # test suite against it, exactly as its own `cli` job does. A matrix over
+  # the five consumers means a break names the consumer it broke instead of
+  # producing one opaque red job; fail-fast is off so one consumer's breakage
+  # can't hide another's.
+  #
+  # One asymmetry is inherent to the design, not an oversight: the five
+  # consumer repositories are checked out at ref: main, because none of them
+  # tags releases for this job to pin to instead. That means this job can also
+  # go red from a change that landed in a consumer's own main, not in
+  # sushicore -- a red build here does not by itself prove sushicore is the
+  # guilty party; check what moved in the named consumer before assuming the
+  # regression is local to this repository.
+  consumers:
+    name: Consumer CLI contract (${{ matrix.consumer.name }})
+    strategy:
+      fail-fast: false
+      matrix:
+        consumer:
+          # cli_extra installs whatever a plain `pip install -e cli` would leave
+          # missing for that consumer's own cli/tests to import cleanly -- read
+          # off each consumer's own `cli` job rather than assumed. Only
+          # sushiengine needs one: its cli/tests build synthetic rasters with
+          # numpy, and test_dependency_provisioning.py parses this very
+          # ci.yml with PyYAML; both ship in its `dev` extra
+          # (sushiengine/cli/pyproject.toml) alongside pytest. sushiruntime,
+          # sushiai, sushiblas and sushidsp declare no such extra -- their
+          # cli/tests import nothing beyond pytest, already installed below.
+          - name: sushiruntime
+            repo: SushiSystems/SushiRuntime
+            cli_extra: ""
+          - name: sushiengine
+            repo: SushiSystems/SushiEngine
+            cli_extra: "[dev]"
+          - name: sushiai
+            repo: SushiSystems/SushiAI
+            cli_extra: ""
+          - name: sushiblas
+            repo: SushiSystems/SushiBLAS
+            cli_extra: ""
+          - name: sushidsp
+            repo: SushiSystems/SushiDSP
+            cli_extra: ""
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sushicore at the commit under test
+        uses: actions/checkout@v4
+        with:
+          path: sushistack
+
+      - name: Check out ${{ matrix.consumer.name }}
+        # Public under SushiSystems, so the default GITHUB_TOKEN reads it --
+        # the mirror image of the checkout each consumer's own `cli` job does
+        # of this repository.
+        #
+        # ref: main because none of these repositories tag releases; there is
+        # nothing else to pin to. That makes this the one part of the job that
+        # is not hermetic to sushistack -- see the block comment above.
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.consumer.repo }}
+          ref: main
+          path: ${{ matrix.consumer.name }}
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install sushicore, then the consumer's CLI
+        # Order matters: pip cannot resolve sushicore from an index, so it
+        # must already be in the environment before the consumer's CLI is
+        # installed against it (see sushiengine/.github/workflows/ci.yml's
+        # `cli` job, which this mirrors).
+        run: |
+          python -m pip install --upgrade pip pytest
+          python -m pip install -e ./sushistack/sushicore
+          python -m pip install -e "./${{ matrix.consumer.name }}/cli${{ matrix.consumer.cli_extra }}"
+
+      - name: Run the consumer's CLI tests
+        working-directory: ${{ matrix.consumer.name }}
+        run: python -m pytest cli/tests -q
