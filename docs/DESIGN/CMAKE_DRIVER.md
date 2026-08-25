@@ -76,19 +76,22 @@ SushiDSP does today and must keep doing until it is wired to `load_build_env`.
   tree configured against a different source path, generalised. Every module can meet a
   build tree carried over from a container mount; only one of them notices today.
 
-**sushicore/cmake_driver.py** — `CMakeDriver(profile, console, config, runner)`
+**sushicore/cmake_driver.py** — `CMakeDriver(console, runner)`
 
-- `cmake()` / `ctest()` — the configured executable or the bare name.
+Every method takes the resolved configuration as its first argument, so the driver stores no
+configuration of its own and two lanes of the same module can share one.
+
+- `cmake(cfg)` / `ctest(cfg)` — the configured executable or the bare name.
 - `needs_configure(build_dir, generator, expect=None, root=None)` — the generator sentinel
   (`build.ninja` or `Makefile`), the stale-source-path check, and an optional mapping of
   cache entry to expected value. That mapping is how SushiEngine's `CMAKE_BUILD_TYPE` and
   `SUSHIENGINE_EXECUTION_BACKEND` checks are expressed without the driver naming either.
   SushiRuntime keeps its own stamp file on top; it is a superset, not a variant.
-- `configure(args, cwd)`, `compile(build_dir, targets, jobs)`,
-  `ctest_run(build_dir, label_regex, filter, repeat)` — the invocation shapes.
+- `configure(args, cwd)`, `compile(cfg, build_dir, cwd, env, config, targets, jobs)`,
+  `ctest_run(cfg, build_dir, env, label_regex, filter, repeat)` — the invocation shapes.
 - `clean_tree(build_dir)` — remove and report.
-- `doxygen(doxyfile, cwd, env)` — including the "not installed" guidance, which today
-  exists in four slightly different spellings.
+- `doxygen(cfg, doxyfile, cwd, env, install_hint)` — including the "not installed"
+  guidance, which today exists in four slightly different spellings.
 
 ## What stays in each module
 
@@ -97,9 +100,11 @@ SushiDSP does today and must keep doing until it is wired to `load_build_env`.
 `ExecutionBackend` and `CleanType`, SushiAI's demo targets.
 
 The enums stay for a reason beyond policy: Typer builds each `--suite` and `-t` option by
-reflecting on the enum class, and a Python enum with members cannot be subclassed. Only
-the suite-label regex **table** is shared, keyed by string; each module still declares the
-enum whose members it actually has.
+reflecting on the enum class, and a Python enum with members cannot be subclassed. Their
+label tables stay with them, because a table enumerates the suites that module actually has
+— eight in SushiRuntime, four elsewhere — and a shared one would either be a union nobody
+can run or a lowest common denominator nobody wants. The driver takes the selected regex as
+a parameter and never sees the table.
 
 ## Phases
 
@@ -129,8 +134,13 @@ each build type, `test` for each suite, `run`, `clean`, `doxygen` — once at th
 commit and once after, and diff the recorded argv lists. If every flag reaching cmake and
 ctest is identical, the build is identical, and nothing had to be compiled to know it.
 
-Each phase also runs its repositories' CLI test suites. A real `se build` at the end is the
-last check, and belongs to whoever owns a machine that builds.
+Each phase also runs its repositories' CLI test suites, and each new sushicore module gets
+unit tests of its own. That is not incidental: sushicore has no tests and this repository
+runs no CI today, which is not a floor three modules deciding what reaches a compiler can
+stand on. The first task of the plan lays both.
+
+A real `se build` at the end is the last check, and belongs to whoever owns a machine that
+builds.
 
 ## Deliberately not in scope
 
