@@ -138,6 +138,18 @@ def _matrix(project, module: str) -> list[tuple[str, dict]]:
 
 
 def main(argv: list[str]) -> int:
+    """Capture one module's argv. Contract: one capture per process, not one per call.
+
+    ``importlib.import_module`` caches the target's ``<module>.services.project``
+    (and everything it imports) in ``sys.modules`` for the life of the process.
+    A second in-process call -- for a different module, or the same one again --
+    would silently reuse that cached import rather than re-reading whatever is on
+    disk now. For this tool that is the one wrong answer that must never happen:
+    a stale cached module compared against fresh disk state reports "no diff"
+    when the two were never actually compared. So this is invoked once per
+    process (`python tools/record_cli_argv.py <module> <out.json>`, one process
+    per module) and never looped in-process.
+    """
     if len(argv) != 3:
         print(__doc__)
         return 2
@@ -150,6 +162,7 @@ def main(argv: list[str]) -> int:
         print(f"No sibling checkout at {module_root}")
         return 2
 
+    _RECORDS.clear()
     sys.path.insert(0, str(module_root / "cli"))
     _install_stubs()
     project = importlib.import_module(f"{module}.services.project")
