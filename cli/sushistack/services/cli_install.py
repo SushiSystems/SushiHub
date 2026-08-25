@@ -1,6 +1,6 @@
 """`ss install-cli` service: install a module's own developer CLI.
 
-One program name per module — `sr`, `se`, `sa`, `sb` — resolved from
+One program name per module — `sr`, `se`, `sa`, `sb`, `sd` — resolved from
 ``MODULES`` in :mod:`sushistack.services.modules`, which is the single place
 that knows what the stack contains. Nothing here is per-module: the logic reads
 the distribution name out of the module's own ``cli/pyproject.toml``, so a
