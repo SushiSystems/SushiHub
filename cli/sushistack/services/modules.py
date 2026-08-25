@@ -47,6 +47,7 @@ MODULES: dict[str, Module] = {
     "sushiengine":  Module("sushiengine",  "https://github.com/sushisystems/sushiengine.git",  "sushiengine"),
     "sushiai":      Module("sushiai",      "https://github.com/sushisystems/sushiai.git",      "sushiai"),
     "sushiblas":    Module("sushiblas",    "https://github.com/sushisystems/sushiblas.git",    "sushiblas"),
+    "sushidsp":     Module("sushidsp",     "https://github.com/sushisystems/sushidsp.git",     "sushidsp"),
 }
 
 # sushicore is the shared CLI presentation layer, not a stack build module: it
@@ -65,6 +66,7 @@ _ALIASES: dict[str, str] = {
     "se": "sushiengine",
     "sa": "sushiai",
     "sb": "sushiblas",
+    "sd": "sushidsp",
 }
 
 # Lines `ss init` ensures are present in the workspace .gitignore: the shared
