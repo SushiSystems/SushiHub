@@ -80,3 +80,7 @@ pointing a module at a different checkout with `ss link`, say.
 | `ss home` | Print the workspace root and the `dependencies/` path. |
 
 Shell completion: run `ss --install-completion` once to enable tab-completion for your shell.
+
+## Reference
+
+* [Known issues](reference/KNOWN_ISSUES.md): failures that turn out to be a toolchain, a package manager or a vendor rather than this workspace, with the symptom, the cause and the rule for each.
