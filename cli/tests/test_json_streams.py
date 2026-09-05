@@ -28,8 +28,17 @@ def _runner() -> CliRunner:
 
 
 def _run(args, cwd):
-    """Invoke ``ss`` in-process with *cwd* as the workspace."""
-    return _runner().invoke(app, args, env={**os.environ, "SUSHISTACK_HOME": str(cwd)})
+    """Invoke ``ss`` in-process from *cwd*, with *cwd* as the workspace.
+
+    ``ss init`` marks the directory the process runs in, not ``SUSHISTACK_HOME``,
+    so the run happens inside the throwaway workspace and never in the checkout.
+    """
+    previous = Path.cwd()
+    os.chdir(cwd)
+    try:
+        return _runner().invoke(app, args, env={**os.environ, "SUSHISTACK_HOME": str(cwd)})
+    finally:
+        os.chdir(previous)
 
 
 def _events(result):
