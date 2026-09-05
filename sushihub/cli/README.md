@@ -7,7 +7,7 @@ workspace. It builds nothing. Each module has its own CLI for that: `sr` (sushir
 ## Layout
 
 ```
-cli/
+sushihub/cli/
   sushistack/            the Python package behind `ss`
     cli.py               the Typer application: one function per subcommand
     config.py            workspace root, config dir, the registered-modules file
@@ -81,7 +81,7 @@ has not built them yet.
 
 ## How dependencies are chosen
 
-`ss install` merges every `cli/manifests/*.deps.toml` fragment with each present module's own
+`ss install` merges every `sushihub/cli/manifests/*.deps.toml` fragment with each present module's own
 `cli/sushistack.deps.toml`, keeps the entries that name a package for the current platform, and
 installs the ones that are missing. No dependency name lives in the installer code. The SYCL
 toolchains and CUDA are sushiruntime's entries, not this repository's; the base fragment carries
@@ -97,8 +97,8 @@ fragment declares a dependency of that name, so an empty workspace gets the base
 | File | Owner | Purpose |
 |---|---|---|
 | `<workspace>/.sushistack` | `ss init` | Marks the workspace root; every `ss` and module CLI walks up to it. |
-| `cli/config.local.toml` | `ss install` | Resolved toolchain paths for this machine, read by every module CLI through `sushicore`. |
-| `cli/modules.local.toml` | `ss link` | Modules that live outside the workspace tree, by name and path. |
+| `sushihub/cli/config.local.toml` | `ss install` | Resolved toolchain paths for this machine, read by every module CLI through `sushicore`. |
+| `sushihub/cli/modules.local.toml` | `ss link` | Modules that live outside the workspace tree, by name and path. |
 | `<workspace>/dependencies/` | `ss install`, `ss remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |
 | OS credential store, `sushistack` / `sushi-id` | `ss login`, `ss logout` | The Sushi ID session as one JSON document: both tokens and the access token's expiry. |
 
@@ -107,4 +107,4 @@ fragment declares a dependency of that name, so an empty workspace gets the base
 `ss` imports `sushicore` for its console, its config schema and its workspace helpers. The package
 is not on any index; `install.py` injects the checkout under `<workspace>/sushicore` into the
 pipx venv, editable. `SUSHICORE_DIR` or `ss link sushicore <path>` points it elsewhere. See
-`../sushicore/docs/README.md`.
+`../../sushicore/docs/README.md`.

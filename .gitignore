@@ -6,15 +6,15 @@
 /sushiblas/
 
 # Local machine config written by `ss install` / `ss link`.
-/cli/config.local.toml
-/cli/modules.local.toml
+/sushihub/cli/config.local.toml
+/sushihub/cli/modules.local.toml
 
 # Python / tooling cruft.
 __pycache__/
 *.egg-info/
 *.pyc
-/cli/build/
-cli/config.local.toml.bak
+/sushihub/cli/build/
+sushihub/cli/config.local.toml.bak
 
 # Scratch workspace for plan execution.
 .superpowers/

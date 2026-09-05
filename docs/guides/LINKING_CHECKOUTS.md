@@ -8,7 +8,7 @@ ss link sushiruntime D:/Projects/sushiruntime
 ss install-cli sushiruntime            # point `sr` at that checkout
 ```
 
-`ss link` writes the name and path to `cli/modules.local.toml`, which is git-ignored. From then on
+`ss link` writes the name and path to `sushihub/cli/modules.local.toml`, which is git-ignored. From then on
 `ss status`, `ss update`, `ss sync` and the dependency aggregation treat the linked checkout like a
 cloned one: its `cli/sushistack.deps.toml` contributes to what `ss install` provisions, and
 `ss update` pulls it.
@@ -29,5 +29,5 @@ reinstalling.
 
 ## Undoing a link
 
-There is no `ss unlink` yet. Remove the line from `cli/modules.local.toml` and run
+There is no `ss unlink` yet. Remove the line from `sushihub/cli/modules.local.toml` and run
 `ss install-cli <module>` again so the CLI points back at the workspace copy.

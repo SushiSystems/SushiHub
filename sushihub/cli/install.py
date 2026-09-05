@@ -2,8 +2,8 @@
 """Install the SushiStack `ss` CLI.
 
 Usage:
-    python cli/install.py            # install / upgrade (always editable)
-    python cli/install.py --uninstall
+    python sushihub/cli/install.py            # install / upgrade (always editable)
+    python sushihub/cli/install.py --uninstall
 
 Strategy:
   * All platforms -> pipx (isolated, puts `ss` on PATH; pipx is bootstrapped if absent).
@@ -24,7 +24,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parents[2]
 PACKAGE_NAME = "sushistack-cli"
 
 
@@ -49,11 +49,11 @@ def find_sushicore_dir() -> Path:
 def find_package_dir() -> Path:
 	"""Return the directory containing the CLI's pyproject.toml."""
 	# Prefer common locations, then fall back to a shallow search.
-	for name in ("cli", ".tools", "tools"):
+	for name in ("sushihub/cli", "cli", ".tools", "tools"):
 		candidate = REPO_ROOT / name / "pyproject.toml"
 		if candidate.is_file():
 			return candidate.parent
-	for pyproject in REPO_ROOT.glob("*/pyproject.toml"):
+	for pyproject in REPO_ROOT.glob("*/*/pyproject.toml"):
 		return pyproject.parent
 	sys.exit("[ERROR] Could not find the CLI package (no pyproject.toml under the repo root).")
 

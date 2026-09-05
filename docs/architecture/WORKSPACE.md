@@ -6,7 +6,8 @@ its root and one shared dependency tree beside them.
 ```
 sushistack/
   .sushistack              workspace marker, written by `ss init`
-  cli/                     the `ss` command and its dependency manifests
+  sushihub/cli/            the `ss` command and its dependency manifests
+  sushihub/gui/            the desktop application
   sushicore/               the shared CLI engine, tracked in this repository
   dependencies/            toolchains, vcpkg, cmake and ninja; git-ignored, filled by `ss install`
   sushiruntime/            added by `ss add sushiruntime`
@@ -41,8 +42,8 @@ machinery through `sushicore` and keeps its own build policy. The line between t
 ## Three forms of presence
 
 A module under the root is *cloned* when it holds `.git`, *binary* when it holds `sushi-release.json`,
-and *linked* when `cli/modules.local.toml` points at a checkout elsewhere. Every `ss` command asks
-one place, `cli/sushistack/services/presence.py`. A binary install contributes no dependency
+and *linked* when `sushihub/cli/modules.local.toml` points at a checkout elsewhere. Every `ss` command asks
+one place, `sushihub/cli/sushistack/services/presence.py`. A binary install contributes no dependency
 fragment and is never pulled; `ss add` fetches its next release. A module CLI finds either kind of
 root through `sushicore`'s `ModuleProfile.markers()`.
 

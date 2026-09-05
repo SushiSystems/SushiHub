@@ -71,9 +71,9 @@ if [ "$need_bootstrap" -eq 1 ]; then
 fi
 
 # Locate or clone the workspace. The SushiStack repo is identified by its
-# cli/manifests tree (it ships no CMakeLists.txt).
+# sushihub/cli/manifests tree (it ships no CMakeLists.txt).
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
-if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/cli/manifests" ]; then
+if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/sushihub/cli/manifests" ]; then
   WORKSPACE_DIR="$SCRIPT_DIR"
 else
   DEFAULT_WORKSPACE_DIR="$HOME/sushistack"
@@ -101,7 +101,7 @@ log "Workspace: $WORKSPACE_DIR"
 
 # Install the ss CLI.
 log "Installing the ss CLI..."
-python3 cli/install.py
+python3 sushihub/cli/install.py
 
 PIPX_BIN_DIR=$(python3 -m pipx environment --value PIPX_BIN_DIR)
 SS_CMD="$PIPX_BIN_DIR/ss"

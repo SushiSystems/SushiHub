@@ -16,7 +16,7 @@ link step with an unknown-architecture error for `sm_61`.
 support. NVIDIA drops older architectures from ptxas across major releases, and CUDA 13 removed
 `sm_6x` outright. SushiRuntime's `SR_CUDA_ARCH` has no default; `cmake/gpu/Cuda.cmake` resolves
 it from `nvidia-smi`, so on a Pascal box it resolves to `61` on its own, and only a 12.x toolkit
-can compile that. `ensure_cuda_toolkit` in `cli/sushistack/setup/package_managers.py` therefore
+can compile that. `ensure_cuda_toolkit` in `sushihub/cli/sushistack/setup/package_managers.py` therefore
 installs the pinned `cuda-toolkit-12-6` package, never the unversioned `cuda-toolkit`
 meta-package. The same reason drives `_cuda_repo_tag`: NVIDIA's apt repos for Ubuntu releases
 newer than 24.04 carry only CUDA 13.x, so an exact distro tag there 404s on the 12.6 package and
@@ -36,7 +36,7 @@ to rebuild the already-installed port with different features and asks for `--re
 
 **Cause.** vcpkg treats a feature change on an installed port as a removal plus a reinstall of
 everything depending on it, and only does that when told to with `--recurse`. `VcpkgManager.install`
-in `cli/sushistack/setup/package_managers.py` runs a plain `vcpkg install <port>:<triplet>` with
+in `sushihub/cli/sushistack/setup/package_managers.py` runs a plain `vcpkg install <port>:<triplet>` with
 no way to add that flag, and no `ss install` option exposes it.
 
 **Rule.** After a feature-set change, run the install once by hand with the workspace's vcpkg
@@ -57,7 +57,7 @@ way round, with no change in the code under test.
 
 **Cause.** Three different SYCL toolchains are in use. `ss install` downloads the newest
 intel/llvm nightly bundle at the time it runs (`install_intel_llvm` in
-`cli/sushistack/setup/toolchains.py`), and the install is then reused forever unless
+`sushihub/cli/sushistack/setup/toolchains.py`), and the install is then reused forever unless
 `--refresh-toolchains` is given, so two developer machines can differ from one another. The
 engine's CI job pins a specific nightly by date (`INTEL_LLVM_DATE` in
 `sushiengine/.github/workflows/ci.yml`). The runtime's CI job builds inside

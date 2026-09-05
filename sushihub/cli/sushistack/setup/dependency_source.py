@@ -6,7 +6,7 @@ The installer must not hard-code package names. Instead it asks an
 SushiStack owns no single manifest. Each module declares what it needs, and the
 installer aggregates those fragments into one shared dependency set:
 
-  * ``cli/manifests/*.deps.toml`` — base fragments shipped with the workspace
+  * ``sushihub/cli/manifests/*.deps.toml`` — base fragments shipped with the workspace
     (the module-independent build/toolchain infrastructure).
   * ``<module>/cli/sushistack.deps.toml`` — a fragment a module contributes from
     its own repo (kept under cli/, not the repo root).
@@ -34,7 +34,7 @@ from ..services.presence import is_binary
 #: Path, relative to a module's repo root, of the fragment it contributes.
 MODULE_MANIFEST_REL = Path("cli") / "sushistack.deps.toml"
 
-#: Owner label for the base fragments under cli/manifests/ — the build/toolchain
+#: Owner label for the base fragments under sushihub/cli/manifests/ — the build/toolchain
 #: infrastructure every module shares, owned by no single module.
 SHARED_OWNER = "shared"
 
@@ -107,7 +107,7 @@ class IDependencySource(ABC):
 def manifest_sources() -> list[tuple[Path, str]]:
     """Every dependency fragment plus the module that owns it.
 
-    Each entry is ``(path, owner)``: shipped fragments under ``cli/manifests/``
+    Each entry is ``(path, owner)``: shipped fragments under ``sushihub/cli/manifests/``
     are owned by :data:`SHARED_OWNER` (the module-independent build/toolchain
     infrastructure); a module's ``cli/sushistack.deps.toml`` is owned by the
     module's directory name. Shared fragments come first (sorted, stable order),
@@ -200,7 +200,7 @@ class TomlDependencySource(IDependencySource):
         if not self._sources:
             raise FileNotFoundError(
                 "No dependency manifests found. Expected at least "
-                "cli/manifests/*.deps.toml in the SushiStack workspace."
+                "sushihub/cli/manifests/*.deps.toml in the SushiStack workspace."
             )
         merged: dict[str, Dependency] = {}
         for path, owner in self._sources:

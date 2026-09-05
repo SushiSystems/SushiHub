@@ -11,6 +11,7 @@ import jsonschema
 import pytest
 from typer.testing import CliRunner
 
+from sushicore.workspace import WORKSPACE_CLI_DIR
 from sushistack.cli import app
 from sushistack.services import session
 from sushistack.services.identity import SushiId
@@ -18,7 +19,7 @@ from sushistack.services.token_store import MemoryStore, Tokens
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi ID server fixture
 
-CONTRACT = Path(__file__).resolve().parents[2] / "sushihub" / "contract"
+CONTRACT = Path(__file__).resolve().parents[2] / "contract"
 MANIFESTS = Path(__file__).resolve().parents[1] / "manifests"
 
 
@@ -57,10 +58,10 @@ def _events(result):
 def workspace(tmp_path):
     """Build a throwaway workspace with the marker, the base manifest and a config."""
     (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
-    (tmp_path / "cli" / "manifests").mkdir(parents=True)
-    (tmp_path / "cli" / "manifests" / "base.deps.toml").write_text(
+    (tmp_path / WORKSPACE_CLI_DIR / "manifests").mkdir(parents=True)
+    (tmp_path / WORKSPACE_CLI_DIR / "manifests" / "base.deps.toml").write_text(
         (MANIFESTS / "base.deps.toml").read_text(encoding="utf-8"), encoding="utf-8")
-    (tmp_path / "cli" / "config.toml").write_text(
+    (tmp_path / WORKSPACE_CLI_DIR / "config.toml").write_text(
         '[cli]\ntheme = "default"\n', encoding="utf-8")
     return tmp_path
 
