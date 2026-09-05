@@ -959,6 +959,17 @@ class DirectDownloadWindowsManager(IPackageManager):
         return ok
 
 
+def _port_name(pkg: str) -> str:
+    """Return a vcpkg port reference without the feature list it may carry.
+
+    A manifest names a port with the features it wants — ``imgui[glfw-binding]``
+    — and ``vcpkg install`` takes that spelling, but ``vcpkg list`` reports the
+    port under its bare name. Matching the spelling as written would leave every
+    featured port permanently missing, so it is reinstalled on every run.
+    """
+    return pkg.split("[", 1)[0]
+
+
 class VcpkgManager(IPackageManager):
     """Vcpkg for C++ library ports (hwloc, gtest, pkgconf, …).
 
@@ -1025,7 +1036,7 @@ class VcpkgManager(IPackageManager):
             )
         except OSError:
             return False
-        return result.returncode == 0 and pkg.lower() in result.stdout.lower()
+        return result.returncode == 0 and _port_name(pkg).lower() in result.stdout.lower()
 
     def install(self, pkgs: list[str], dry_run: bool) -> bool:
         if not pkgs:
