@@ -15,7 +15,7 @@ after by a recorder that stubs `subprocess`.
 
 **Tech Stack:** Python 3.10+, pytest, Typer, Rich, CMake, CTest, Ninja.
 
-**Spec:** `docs/DESIGN/CMAKE_DRIVER.md` in this repository.
+**Spec:** `docs/agent/specs/2026-08-25-cmake-driver-design.md` in this repository.
 
 ## Global Constraints
 
@@ -1661,13 +1661,13 @@ Then commit each consumer separately, naming its exact file path.
 
 - [ ] **Step 8: Close out the design document**
 
-Modify `sushistack/docs/DESIGN/CMAKE_DRIVER.md`: change the status line to name the commits
+Modify `sushistack/docs/agent/specs/2026-08-25-cmake-driver-design.md`: change the status line to name the commits
 that landed each phase, and record the final line counts of the five `project.py` files
 alongside their starting counts (747, 565, 724, 563, 159).
 
 ```bash
 cd /d/Projects/sushistack
-git add docs/DESIGN/CMAKE_DRIVER.md
+git add docs/agent/specs/2026-08-25-cmake-driver-design.md
 git commit -m "docs: record what the cmake driver programme actually landed"
 ```
 
