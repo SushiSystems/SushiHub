@@ -6,14 +6,15 @@
     Bootstraps Python and Git — using winget when available, direct downloads
     otherwise (no Microsoft Store required). Clones the SushiStack workspace,
     installs the `ss` CLI, then provisions the shared dependency tree with
-    `ss install`. The portable CMake/Ninja and the SYCL toolchains are downloaded
-    by `ss install` into <workspace>\dependencies, so only Python and Git are
-    bootstrapped here. `ss install` provisions everything (all SYCL toolchains +
-    CUDA); to choose a subset, run `ss install --customize` interactively after.
+    `ss install`. The portable CMake/Ninja lands in <workspace>\dependencies, so
+    only Python and Git are bootstrapped here. `ss install` provisions what the
+    present modules declare, which in a fresh workspace is the base build tools
+    alone; to choose a different set, run `ss install --customize` after.
 
 .PARAMETER Add
-    Space- or comma-separated module list to clone into the workspace after deps
-    are provisioned, e.g. -Add "sushiruntime sushiengine". Default: none.
+    Space- or comma-separated module list to clone into the workspace, e.g.
+    -Add "sushiruntime sushiengine". Each module brings the toolchains it
+    declares as it arrives. Default: none.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File install.ps1
@@ -134,7 +135,7 @@ function Ensure-Git {
 
 # Bootstrap only what `ss` itself needs to run and clone: Python and Git. CMake,
 # Ninja, and the SYCL toolchains are downloaded portably into the shared
-# <workspace>\dependencies by `ss install`.
+# <workspace>\dependencies by `ss install` and `ss add`.
 Ensure-Python
 Ensure-Git
 
@@ -165,7 +166,7 @@ $PipxBinDir = python -m pipx environment --value PIPX_BIN_DIR
 $SsCmd = Join-Path $PipxBinDir "ss.exe"
 if (-not (Test-Path $SsCmd)) { $SsCmd = "ss" }
 
-# Mark the workspace, then provision the shared dependency tree (everything).
+# Mark the workspace, then provision what it declares today: the base tools.
 & $SsCmd init
 
 $flags = @("install")
@@ -175,7 +176,7 @@ Info "Running: ss $($flags -join ' ')"
 $ssExit = $LASTEXITCODE
 if ($ssExit -ne 0) { exit $ssExit }
 
-# Optionally clone the requested modules into the workspace.
+# Optionally clone the requested modules; `ss add` provisions what each needs.
 $modules = ($Add -replace ',', ' ').Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
 if ($modules.Count -gt 0) {
     Info "Adding modules: $($modules -join ' ')"

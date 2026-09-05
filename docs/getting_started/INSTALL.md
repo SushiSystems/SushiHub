@@ -30,21 +30,23 @@ cd sushistack
 python cli/install.py                # install `ss` via pipx, inject sushicore
 
 ss init                              # write the .sushistack marker and .gitignore entries
-ss install                           # download toolchains and libraries
-ss add all                           # clone every module, or name them: sushiruntime sushiai …
+ss install                           # download what the present modules declare
+ss add all                           # clone every module with its toolchains, or name them
 
 cd sushiruntime && sr build
 ```
 
-`ss add` installs each cloned module's own CLI. `ss install-cli <module…>` reinstalls one on
-demand, for instance after `ss link` pointed a module at a different checkout.
+`ss add` installs each cloned module's own CLI and then provisions the dependencies the new
+modules declare. `ss install-cli <module…>` reinstalls a CLI on demand, for instance after
+`ss link` pointed a module at a different checkout.
 
-## What `ss install` downloads today
+## What `ss install` downloads
 
-Everything: the intel/llvm SYCL bundle, AdaptiveCpp with the LLVM it builds against, oneAPI and
-CUDA, whether or not a module that needs them is present. `ss install --customize` narrows the
-selection interactively. Making the selection follow the present modules is on the backlog; see
-`../design/REMAINING_WORK.md`.
+What the modules in the workspace declare. In an empty workspace that is the base fragment
+alone: cmake, ninja, gtest, opencl and pkgconf. A toolchain arrives with the module that asks
+for it, so `ss add sushiruntime` is what pulls the intel/llvm SYCL bundle, AdaptiveCpp with the
+LLVM it builds against, oneAPI and CUDA. Pass `--skip-install` to `ss add` or `ss link` to defer
+that, and `ss install --customize` to add or drop a component by hand.
 
 ## Checking the result
 

@@ -3,17 +3,17 @@
 #
 # Bootstraps Python, pip, and Git, clones the SushiStack workspace, installs the
 # `ss` CLI, then provisions the shared dependency tree with `ss install`. The
-# portable CMake/Ninja and the SYCL toolchains are downloaded by `ss install`
-# into <workspace>/dependencies, so only Python and Git need bootstrapping here.
+# portable CMake/Ninja lands in <workspace>/dependencies, so only Python and Git
+# need bootstrapping here.
 #
-# `ss install` provisions everything (all SYCL toolchains + CUDA) — SYCL is heavy
-# by nature and a missing toolchain only causes confusion. To choose a subset,
-# run `ss install --customize` interactively after this script.
+# `ss install` provisions what the present modules declare, which in a fresh
+# workspace is the base build tools alone. Each module added below brings its own
+# toolchains as it arrives; `ss install --customize` picks a different set.
 #
 # Supports Debian/Ubuntu (apt), Fedora/RHEL (dnf/yum), Arch (pacman), and
 # openSUSE (zypper).
 #
-# Module checkouts (cloned into the workspace after deps are provisioned):
+# Module checkouts (cloned into the workspace, each with the toolchains it needs):
 #   --add "sushiruntime sushiengine"  space- or comma-separated list (default: none)
 #
 # Usage (bare machine):
@@ -107,14 +107,14 @@ PIPX_BIN_DIR=$(python3 -m pipx environment --value PIPX_BIN_DIR)
 SS_CMD="$PIPX_BIN_DIR/ss"
 if [ ! -x "$SS_CMD" ]; then SS_CMD="ss"; fi
 
-# Mark the workspace, then provision the shared dependency tree (everything).
+# Mark the workspace, then provision what it declares today: the base tools.
 "$SS_CMD" init
 log "Running: ss install $DRY_FLAG"
 "$SS_CMD" install $DRY_FLAG
 SS_EXIT=$?
 if [ "$SS_EXIT" -ne 0 ]; then exit "$SS_EXIT"; fi
 
-# Optionally clone the requested modules into the workspace.
+# Optionally clone the requested modules; `ss add` provisions what each needs.
 if [ -n "$MODULES" ]; then
   log "Adding modules: $MODULES"
   # shellcheck disable=SC2086
