@@ -38,6 +38,12 @@ MODULE_MANIFEST_REL = Path("cli") / "sushistack.deps.toml"
 #: infrastructure every module shares, owned by no single module.
 SHARED_OWNER = "shared"
 
+#: Suffix every shipped fragment's filename carries; what precedes it names the owner.
+SHIPPED_MANIFEST_SUFFIX = ".deps.toml"
+
+#: Stem of the shipped fragment that belongs to no single component.
+SHARED_MANIFEST_STEM = "base"
+
 #: Reserved table name a fragment uses to declare module-level metadata
 #: (currently ``depends_on``) rather than a dependency.
 MODULE_META_TABLE = "module"
@@ -104,14 +110,34 @@ class IDependencySource(ABC):
         return out
 
 
+def _owner_for_shipped(path: Path) -> str:
+    """Name the component a shipped fragment belongs to.
+
+    ``base.deps.toml`` is the infrastructure every module shares and is owned by
+    :data:`SHARED_OWNER`; every other fragment this repository ships belongs to
+    the component its filename names, so ``gui.deps.toml`` is the desktop
+    application's alone. The distinction is what keeps a component's ports out
+    of the shared set that decides which toolchains get provisioned.
+
+    Args:
+        path: A fragment under ``sushihub/cli/manifests/``.
+
+    Returns:
+        The owner label the dependencies read from *path* carry.
+    """
+    stem = path.name[: -len(SHIPPED_MANIFEST_SUFFIX)] if path.name.endswith(
+        SHIPPED_MANIFEST_SUFFIX) else path.stem
+    return SHARED_OWNER if stem == SHARED_MANIFEST_STEM else stem
+
+
 def manifest_sources() -> list[tuple[Path, str]]:
     """Every dependency fragment plus the module that owns it.
 
-    Each entry is ``(path, owner)``: shipped fragments under ``sushihub/cli/manifests/``
-    are owned by :data:`SHARED_OWNER` (the module-independent build/toolchain
-    infrastructure); a module's ``cli/sushistack.deps.toml`` is owned by the
-    module's directory name. Shared fragments come first (sorted, stable order),
-    then modules in the workspace, then linked external checkouts.
+    Each entry is ``(path, owner)``: a shipped fragment under
+    ``sushihub/cli/manifests/`` is owned as :func:`_owner_for_shipped` says;
+    a module's ``cli/sushistack.deps.toml`` is owned by the module's directory
+    name. Shipped fragments come first (sorted, stable order), then modules in
+    the workspace, then linked external checkouts.
 
     A binary install is skipped: the release carries the libraries it was built
     against, so a fragment left in its tree declares nothing this workspace has
@@ -120,7 +146,8 @@ def manifest_sources() -> list[tuple[Path, str]]:
     sources: list[tuple[Path, str]] = []
     manifests_dir = config_dir() / "manifests"
     if manifests_dir.is_dir():
-        sources.extend((p, SHARED_OWNER) for p in sorted(manifests_dir.glob("*.deps.toml")))
+        sources.extend((p, _owner_for_shipped(p))
+                       for p in sorted(manifests_dir.glob("*" + SHIPPED_MANIFEST_SUFFIX)))
     try:
         root = workspace_root()
     except SystemExit:

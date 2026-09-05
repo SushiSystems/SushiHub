@@ -46,3 +46,12 @@ def test_build_pipeline_merges_an_explicit_selection_over_the_derived_one(fake_c
     _p, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[],
                              selection={"install_intel_llvm": False, "oneapi": True})
     assert not ctx.install_intel_llvm and ctx.oneapi
+
+
+def test_a_shipped_fragment_is_owned_by_the_name_in_its_filename():
+    from pathlib import Path
+
+    from sushistack.setup.dependency_source import SHARED_OWNER, _owner_for_shipped
+
+    assert _owner_for_shipped(Path("manifests/base.deps.toml")) == SHARED_OWNER
+    assert _owner_for_shipped(Path("manifests/gui.deps.toml")) == "gui"
