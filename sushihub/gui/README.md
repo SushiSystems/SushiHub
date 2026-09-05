@@ -66,20 +66,39 @@ with `path` and `present`; the status screen draws whichever arrives.
 
 ## Building
 
-C++17, CMake 3.25 or newer, Ninja, and vcpkg in manifest mode. `vcpkg.json` names the four
-ports: `imgui` with the GLFW and OpenGL3 bindings, `glfw3`, `nlohmann-json` and `gtest`. The
-imgui port must be 1.91.1 or newer, which is where `ImGuiChildFlags_Borders` arrived.
+`ss` builds it. C++17, CMake 3.25 or newer, Ninja.
 
-The toplevel `CMakeLists.txt` picks the vcpkg toolchain in this order: a `CMAKE_TOOLCHAIN_FILE`
-the caller passed, then `$VCPKG_ROOT`, then the workspace's own tree at `dependencies/vcpkg`.
-The last one is what `ss install` provisions, so a workspace checkout configures with no
-environment set up.
+```
+ss install     # once: imgui, glfw3 and nlohmann-json arrive
+ss gui build   # --type debug|release|relwithdebinfo, --clean, -D VAR=VALUE
+ss gui test    # --filter <pattern>, --repeat <n>
+ss gui run     # an optional target, then anything after -- goes to the program
+ss gui clean
+```
+
+The ports are declared in `sushihub/cli/manifests/gui.deps.toml`: `imgui` with the GLFW and
+OpenGL3 bindings, `glfw3`, and `nlohmann-json`. `gtest` comes from the base fragment, because
+every module in the stack tests with it. `ss install` puts them in the workspace's shared
+`dependencies/vcpkg` tree, in classic mode. The imgui port must be 1.91.1 or newer, which is
+where `ImGuiChildFlags_Borders` arrived.
+
+`ss gui build` configures into `build/ss` with the vcpkg toolchain file, the triplet and
+`VCPKG_MANIFEST_MODE=OFF`, and on Windows it spawns cmake under a snapshot of the environment
+`vcvars64.bat` produces. A `cmake` run from a plain PowerShell has neither, which is why one
+reports that it found no compiler.
+
+The presets remain for an IDE, and configure into `build/<preset>`:
 
 ```
 cmake --preset windows-x64
 cmake --build --preset windows-x64
 ctest --preset windows-x64
 ```
+
+They need what `ss gui build` arranges for itself: a shell that has already run `vcvars64.bat`,
+and `VCPKG_MANIFEST_MODE=OFF` set in the environment or passed as a cache variable. The toplevel
+`CMakeLists.txt` picks the vcpkg toolchain in this order: a `CMAKE_TOOLCHAIN_FILE` the caller
+passed, then `$VCPKG_ROOT`, then the workspace's own tree at `dependencies/vcpkg`.
 
 `linux-x64` is the same three commands on Linux. Both presets are Ninja Multi-Config with Debug
 and Release; the build and test presets default to Debug, and `windows-x64-release` builds the

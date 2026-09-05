@@ -1,8 +1,9 @@
 # The `ss` command
 
 `ss` provisions the shared dependency tree and manages the module checkouts of a SushiStack
-workspace. It builds nothing. Each module has its own CLI for that: `sr` (sushiruntime), `se`
-(sushiengine), `sa` (sushiai), `sb` (sushiblas), `sd` (sushidsp).
+workspace. The one thing it builds is the desktop application in `sushihub/gui`, which belongs
+to the workspace rather than to a module. Every module has its own CLI: `sr` (sushiruntime),
+`se` (sushiengine), `sa` (sushiai), `sb` (sushiblas), `sd` (sushidsp).
 
 ## Layout
 
@@ -11,7 +12,9 @@ sushihub/cli/
   sushistack/            the Python package behind `ss`
     cli.py               the Typer application: one function per subcommand
     config.py            workspace root, config dir, the registered-modules file
-    services/            module lifecycle, CLI installation, the interactive picker
+    gui_config.py        the desktop application's profile, config and root
+    gui_env.py           its build environment, vcvars snapshot included
+    services/            module lifecycle, CLI installation, the picker, the gui build policy
     setup/               the dependency engine: manifests, package managers, toolchains, the pipeline
   manifests/             dependency fragments this repository ships (*.deps.toml)
   config.toml            defaults for the [tool], [cli] and [identity] tables
@@ -39,6 +42,10 @@ them. See "Machine-readable output".
 | `ss doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `ss remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
 | `ss home` | Print the workspace root and the `dependencies/` path. |
+| `ss gui build [--type debug\|release\|relwithdebinfo] [--clean] [-D VAR=VALUE…]` | Configure and compile the desktop application into `sushihub/gui/build/ss`, under the Visual Studio environment on Windows, against the shared vcpkg tree. |
+| `ss gui test [--filter <pattern>] [--repeat <n>]` | Run the application's CTest suites. `--filter` selects by test name, `--repeat` re-runs each until it fails. |
+| `ss gui run [target] [-- args…]` | Launch a program from the application's build tree; the application itself when no target is named. |
+| `ss gui clean` | Remove `sushihub/gui/build/ss`. The presets' own build trees are untouched. |
 | `ss login` | Sign in to Sushi ID: print a code, open the browser at the device page, wait for the grant, and store the session in this machine's credential store. |
 | `ss logout` | Forget the stored Sushi ID session. Sushi ID is not told. |
 | `ss whoami` | Print the signed-in account: its id, its email and how many licences it holds. |
@@ -86,6 +93,11 @@ has not built them yet.
 installs the ones that are missing. No dependency name lives in the installer code. The SYCL
 toolchains and CUDA are sushiruntime's entries, not this repository's; the base fragment carries
 only cmake, ninja, gtest, opencl and pkgconf.
+
+A shipped fragment is owned by the name in its filename, with `base.deps.toml` the exception
+that owns nothing and is owned by `shared`. So `gui.deps.toml`, which names the desktop
+application's imgui, glfw3 and nlohmann-json, is owned by `gui` and `ss doctor` groups those
+three rows under it.
 
 The toolchain selection follows the same rule: a component is installed when a present module's
 fragment declares a dependency of that name, so an empty workspace gets the base tools alone.

@@ -63,6 +63,9 @@ def workspace(tmp_path):
         (MANIFESTS / "base.deps.toml").read_text(encoding="utf-8"), encoding="utf-8")
     (tmp_path / WORKSPACE_CLI_DIR / "config.toml").write_text(
         '[cli]\ntheme = "default"\n', encoding="utf-8")
+    gui = tmp_path / "sushihub" / "gui"
+    gui.mkdir(parents=True)
+    (gui / "CMakeLists.txt").write_text("", encoding="utf-8")
     return tmp_path
 
 
@@ -141,6 +144,16 @@ def test_every_read_only_command_streams_valid_events(workspace, args):
     for ev in events:
         v.validate(ev)
     assert events[-1]["event"] == "result"
+
+
+def test_gui_clean_under_json_streams_valid_events(workspace):
+    r = _run(["--json", "gui", "clean"], workspace)
+    v = jsonschema.Draft202012Validator(_schema("events.schema.json"))
+    events = _events(r)
+    assert events, r.stderr
+    for ev in events:
+        v.validate(ev)
+    assert events[-1]["event"] == "result" and events[-1]["ok"] is True
 
 
 @pytest.fixture

@@ -25,3 +25,19 @@ def test_add_is_described_with_its_argument_and_flags():
     assert by_name["modules"]["kind"] == "argument" and by_name["modules"]["multiple"] is True
     assert by_name["dry_run"]["flags"] == ["--dry-run"] and by_name["dry_run"]["type"] == "boolean"
     assert "[cyan]" not in add["help"]
+
+
+def test_a_nested_group_is_listed_by_its_children():
+    names = [c["name"] for c in catalogue(app)["commands"]]
+    assert {"gui build", "gui test", "gui run", "gui clean"} <= set(names)
+    assert "gui" not in names
+    assert names == sorted(names)
+
+
+def test_gui_build_is_described_with_its_type_choice_and_its_defines():
+    build = next(c for c in catalogue(app)["commands"] if c["name"] == "gui build")
+    by_name = {p["name"]: p for p in build["params"]}
+    assert by_name["build_type"]["type"] == "choice"
+    assert by_name["build_type"]["choices"] == ["debug", "release", "relwithdebinfo"]
+    assert by_name["clean"]["type"] == "boolean"
+    assert by_name["define"]["multiple"] is True and by_name["define"]["flags"] == ["-D"]

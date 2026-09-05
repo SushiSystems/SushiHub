@@ -107,6 +107,32 @@ def _command(name: str, command: click.Command) -> dict:
     }
 
 
+def _flatten(group: click.Group, prefix: str = "") -> list[dict]:
+    """Describe every leaf command under *group*, sorted, with its full name.
+
+    A nested group is not a command a caller can run, so it contributes its
+    children under ``"<group> <child>"`` and no entry of its own. Sorting at each
+    level leaves the whole list sorted: a group's name is a prefix of its
+    children's, and the space that follows it sorts before any other character.
+
+    Args:
+        group: The Click group to walk.
+        prefix: What every name at this level starts with, ``""`` at the root.
+
+    Returns:
+        One entry per runnable command, in name order.
+    """
+    described: list[dict] = []
+    for name in sorted(getattr(group, "commands", {})):
+        command = group.commands[name]
+        full = prefix + name
+        if isinstance(command, click.Group):
+            described.extend(_flatten(command, full + " "))
+        else:
+            described.append(_command(full, command))
+    return described
+
+
 def _version() -> str:
     """Return the installed distribution's version, or ``0`` when it is not installed."""
     from importlib.metadata import PackageNotFoundError, version
@@ -120,6 +146,9 @@ def _version() -> str:
 def catalogue(app: typer.Typer) -> dict:
     """Serialise *app*'s commands, sorted by name, as the catalogue the contract fixes.
 
+    A command inside a sub-group is named "<group> <command>", which is what a
+    caller types and what the desktop application spawns.
+
     Args:
         app: The Typer application to describe.
 
@@ -127,10 +156,9 @@ def catalogue(app: typer.Typer) -> dict:
         A dict matching ``sushihub/contract/describe.schema.json``.
     """
     group = typer.main.get_command(app)
-    commands = getattr(group, "commands", {})
     return {
         "program": app.info.name or group.name or "",
         "version": _version(),
         "contract": CONTRACT_VERSION,
-        "commands": [_command(name, commands[name]) for name in sorted(commands)],
+        "commands": _flatten(group),
     }
