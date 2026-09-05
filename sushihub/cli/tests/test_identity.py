@@ -34,7 +34,7 @@ from sushistack.services.token_store import (
 def _workspace_with_identity(tmp_path, url: str):
     """Write a throwaway workspace whose config.toml pins the Sushi ID url."""
     (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
-    (tmp_path / WORKSPACE_CLI_DIR).mkdir()
+    (tmp_path / WORKSPACE_CLI_DIR).mkdir(parents=True)
     (tmp_path / WORKSPACE_CLI_DIR / "config.toml").write_text(
         f'[identity]\nurl = "{url}"\n', encoding="utf-8")
     return tmp_path
