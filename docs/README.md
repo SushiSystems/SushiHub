@@ -25,6 +25,8 @@ Each component's own facts live beside its code:
 - `../cli/README.md` — the `ss` command: every subcommand, the files it reads and writes.
 - `../sushicore/docs/README.md` — the shared CLI engine: presentation layer, config plumbing, the
   cmake driver, and how a Sushi CLI consumes it.
+- `../sushihub/contract/README.md` — the JSON contract between `ss` and the desktop application:
+  event shapes and the command catalogue.
 
 ## Guides
 
