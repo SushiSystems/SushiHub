@@ -3,14 +3,18 @@
 Two schemas in this directory describe everything a program needs to drive `ss` without parsing
 a terminal. `events.schema.json` covers one line of output; `describe.schema.json` covers the
 command catalogue. Both are JSON Schema draft 2020-12. The desktop application validates against
-them and so does `cli/tests/test_json_streams.py`, so a stream that violates either is a defect on
-the `ss` side, not a case for the reader to tolerate.
+them and so does `../cli/tests/test_json_streams.py`, so a stream that violates either is a defect
+on the `ss` side, not a case for the reader to tolerate.
 
 The design behind them is `docs/agent/specs/2026-09-05-hub-design.md`, section 7.
 
-A third page in this directory, `sushi-id.md`, is the other half of the contract: the four Sushi ID
-endpoints `ss login`, `ss logout`, `ss whoami` and `ss license` call. It faces sushiweb rather than
-the desktop application, and it has no schema because the shapes are small enough to read.
+A third page in this directory, `sushi-id.md`, is the other half of the contract: the six Sushi ID
+endpoints `ss` calls. Four of them sign a machine in and read the account, for `ss login`,
+`ss logout`, `ss whoami` and `ss license`. The other two serve `ss add sushiengine` and
+`ss update sushiengine`: `POST /api/licenses/token` issues the licence token `ss` writes beside a
+binary install, and `POST /api/releases/resolve` answers with a signed download URL, a sha256 and a
+size. That page faces sushiweb rather than the desktop application, and it has no schema because
+the shapes are small enough to read.
 
 ## What `ss` prints under `--json`
 
