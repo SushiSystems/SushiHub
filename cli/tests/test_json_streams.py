@@ -43,3 +43,14 @@ def test_describe_schema_accepts_the_documented_example():
         {"name": "add", "help": "h", "applies_to": ["cloned", "linked", "binary"], "params": [
             {"name": "modules", "kind": "argument", "type": "string", "multiple": True, "required": True,
              "default": None, "choices": None, "flags": [], "help": "x"}]}]})
+
+
+def test_set_machine_before_first_print_switches_to_json(capsys):
+    import importlib
+
+    from sushistack import console as c
+
+    importlib.reload(c)
+    c.set_machine(True)
+    c.info("hello")
+    assert json.loads(capsys.readouterr().out.strip())["event"] == "line"
