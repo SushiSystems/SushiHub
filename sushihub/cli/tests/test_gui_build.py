@@ -48,8 +48,11 @@ def test_an_explicit_compiler_still_wins(workspace):
     assert cfg.resolved_compiler(Path(workspace)) == "C:/tools/clang++.exe"
 
 
-def test_the_loaded_config_runs_the_application_by_default(workspace):
-    assert load_gui_config().target_bin == "sushihub_gui"
+def test_run_launches_the_application_by_default():
+    """The run target comes from the profile, never from the workspace's shared [tool] table."""
+    from sushistack.gui_config import GUI_PROFILE
+
+    assert GUI_PROFILE.default_target == "sushihub_gui"
 
 
 class RecordingDriver:

@@ -70,7 +70,6 @@ class GuiConfig(StackConfig):
     :class:`sushicore.stack_config.StackConfig`.
     """
 
-    target_bin: str = "sushihub_gui"
 
     def resolved_compiler(self, root: Path) -> str:
         """Return the configured C++ compiler, or '' to let CMake choose one.
