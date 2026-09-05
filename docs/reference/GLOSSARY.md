@@ -10,10 +10,10 @@ sushiengine. Each has a CLI (`sr`, `sb`, `sa`, `sd`, `se`) and a dependency frag
 `cli/sushistack.deps.toml`. `sushicore` is not a module: it is never built and ships inside this
 repository.
 
-**Presence** — the form in which a module exists in a workspace. Today two: *cloned* (a checkout
-under the workspace root) and *linked* (a checkout elsewhere, registered in
-`cli/modules.local.toml`). A third, *binary* (a downloaded release with no source), is designed in
-`docs/agent/specs/2026-09-05-hub-design.md`.
+**Presence** — the form in which a module exists in a workspace, read from disk: *cloned* (a checkout
+under the workspace root), *linked* (a checkout elsewhere, registered in `cli/modules.local.toml`),
+*binary* (a downloaded release whose root holds `sushi-release.json`), or *absent*.
+`cli/sushistack/services/presence.py` answers it; `ss status` shows it.
 
 **Dependency fragment** — a `*.deps.toml` file naming packages per platform. This repository ships
 the base fragment under `cli/manifests/`; each module ships its own. `ss install` merges them.
