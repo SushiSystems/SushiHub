@@ -25,7 +25,10 @@ from ..config import (
     workspace_root,
 )
 from ..setup.dependency_source import MODULE_MANIFEST_REL
+from . import licence_file, releases, session
+from .identity import ReleaseInfo, SushiId, SushiIdError
 from .presence import Presence, describe, presence_of, read_release
+from .releases import ReleaseCorrupt
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,16 @@ MODULES: dict[str, Module] = {
 # inside this repository (see `sushicore/`), so there is nothing to clone and no
 # checkout for anyone to manage -- cloning SushiStack already produced it.
 SUSHICORE_NAME = "sushicore"
+
+# The one module sold rather than published: it is cloned by whoever has access
+# to its repository and downloaded as a compiled release by everyone else. The
+# other four are open source and have a single path, the clone. See
+# docs/agent/specs/2026-09-05-hub-design.md, §3.
+BINARY_MODULE = "sushiengine"
+
+# How long `git ls-remote` may take to answer before the source counts as out of
+# reach, in seconds.
+REACHABLE_TIMEOUT = 15
 
 
 # Short aliases for the module names, matching each module's own CLI program
@@ -132,6 +145,106 @@ def _run_git(args: list[str], cwd: Path) -> int:
     except FileNotFoundError:
         console.error("git not found on PATH. Install git and try again.")
         return 1
+
+
+def _source_reachable(repo: str) -> bool:
+    """Report whether this machine's Git identity can read *repo*.
+
+    Asks the remote for its default branch and nothing else, so a private
+    repository the credentials do not open answers a non-zero exit code rather
+    than a clone that fails halfway.
+
+    Args:
+        repo: The clone URL to ask about.
+    """
+    try:
+        return subprocess.run(
+            ["git", "ls-remote", "--exit-code", "-h", repo, "HEAD"],
+            capture_output=True, timeout=REACHABLE_TIMEOUT).returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def _install_binary(name: str, dest: Path, client: SushiId,
+                    info: ReleaseInfo | None = None) -> bool:
+    """Unpack a release of *name* at *dest* and write its licence beside it.
+
+    Args:
+        name: The module, which is also the product slug Sushi ID knows.
+        dest: Where the module lives in the workspace.
+        client: A Sushi ID client with a live session.
+        info: The release to install; the latest one when None.
+
+    Returns:
+        Whether both landed. A refusal from Sushi ID, a download that does not
+        match what was declared and a directory that will not be written are all
+        reported here and answered with False.
+    """
+    try:
+        release = releases.install_release(name, dest, client, console, info=info)
+        expires_at = licence_file.write_licence(dest, client, name)
+    except (SushiIdError, ReleaseCorrupt, OSError) as error:
+        console.error(f"{name}: {error}")
+        return False
+    console.success(f"{name}: installed binary {release.version} ({release.platform}) "
+                    f"at {dest}; licence valid to {expires_at}.")
+    return True
+
+
+def _add_binary(name: str, dest: Path, requested: bool) -> bool:
+    """Install *name* from its release, having found no other way to bring it in.
+
+    Args:
+        name: The module to install.
+        dest: Where the module lives in the workspace.
+        requested: Whether the binary form was asked for with ``--binary``
+            rather than chosen because the source is out of reach.
+
+    Returns:
+        Whether the module is installed afterwards.
+    """
+    client = session.client()
+    if client.access_token() is None:
+        if requested:
+            console.error(f"{name}: a binary install needs a Sushi ID licence. "
+                          "Run `ss login` first.")
+        else:
+            console.error(
+                f"{name}: neither way in is open. The source needs a Git identity with "
+                f"access to {MODULES[name].repo}; the binary needs a licence, which "
+                "`ss login` signs you in for.")
+        return False
+    return _install_binary(name, dest, client)
+
+
+def _update_binary(name: str, dest: Path) -> bool:
+    """Reinstall *name* when Sushi ID holds a release newer than the one at *dest*.
+
+    Args:
+        name: The module to refresh.
+        dest: The unpacked install.
+
+    Returns:
+        Whether the install is the latest release afterwards. One that already
+        was counts as success and downloads nothing.
+    """
+    client = session.client()
+    if client.access_token() is None:
+        console.error(f"{name}: a binary install is refreshed through Sushi ID. "
+                      "Run `ss login` first.")
+        return False
+    try:
+        info = client.resolve_release(name, releases.host_platform())
+    except SushiIdError as error:
+        console.error(f"{name}: {error}")
+        return False
+    installed = read_release(dest)
+    if installed is not None and installed.version == info.version:
+        console.info(f"{name}: binary {installed.version} is the latest release.")
+        return True
+    was = installed.version if installed else "an unreadable install"
+    console.info(f"{name}: {was} -> {info.version}; downloading.")
+    return _install_binary(name, dest, client, info=info)
 
 
 def _pipx_cmd() -> list[str] | None:
@@ -266,12 +379,16 @@ def _provision(dry_run: bool) -> int:
 
 
 def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = False,
-        provision=None) -> int:
-    """Clone one or more modules into the workspace. Return exit code.
+        binary: bool = False, provision=None) -> int:
+    """Bring one or more modules into the workspace. Return exit code.
 
-    A module that arrives brings dependencies with it, so the provision pipeline
-    runs once afterwards — unless nothing new arrived or *skip_install* is set.
+    Four of the five modules are cloned. sushiengine is cloned when this
+    machine's Git identity reaches its repository and *binary* was not asked
+    for, and downloaded as a compiled release otherwise; a release brings its
+    own dependencies, so it never runs the provision pipeline.
 
+    @param binary Install sushiengine from its release even when the source is
+        within reach.
     @param provision Runs the provision pipeline; injected by tests.
     """
     console.header("SushiStack Add")
@@ -303,6 +420,18 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             console.info(f"{name}: already cloned at {dest}")
             if not dry_run:
                 _install_module_cli(name, dest, root)
+            continue
+        if name == BINARY_MODULE and (binary or not _source_reachable(mod.repo)):
+            if dry_run:
+                console.info(f"{name}: (dry-run) would install its release -> {dest}")
+                continue
+            if not _add_binary(name, dest, requested=binary):
+                failed = True
+            continue
+        if binary:
+            console.error(f"{name}: only {BINARY_MODULE} is sold as a binary; every "
+                          "other module is cloned. Drop --binary.")
+            failed = True
             continue
         if dry_run:
             console.info(f"{name}: (dry-run) would clone {mod.repo} -> {dest}")
@@ -378,7 +507,12 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
 
 
 def update(names: list[str] | None, dry_run: bool = False) -> int:
-    """git pull the modules that are present (cloned or linked). Return exit code."""
+    """Bring every present module up to date. Return exit code.
+
+    A checkout, cloned or linked, is fast-forwarded with git. A binary install
+    asks Sushi ID for the latest release and downloads it when its version
+    differs from the installed one, then writes the licence again.
+    """
     console.header("SushiStack Update")
     resolved = _resolve_names(names)
     if resolved is None:
@@ -400,9 +534,12 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
         dest = module_dest(root, name)
         state = presence_of(root, name, linked)
         if state is Presence.BINARY:
-            _, text = describe(root, name, linked)
-            console.info(f"{name}: {text}; updates come through `ss add {name}`.")
             any_present = True
+            if dry_run:
+                console.info(f"{name}: (dry-run) would ask Sushi ID for a newer release ({dest})")
+                continue
+            if not _update_binary(name, dest):
+                failed = True
             continue
         if state is Presence.ABSENT:
             if names and names != ["all"]:

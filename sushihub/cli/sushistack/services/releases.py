@@ -137,14 +137,17 @@ def unpack(archive: Path, into: Path) -> None:
 
 
 def install_release(name: str, root: Path, client: SushiId, console, *,
+                    info: ReleaseInfo | None = None,
                     http: Callable = urllib.request.urlopen) -> Release:
-    """Resolve, download, verify and unpack the latest release of *name* at *root*.
+    """Resolve, download, verify and unpack a release of *name* at *root*.
 
     Args:
         name: The module, which is also the product slug Sushi ID knows.
         root: The directory the module occupies in the workspace.
         client: A Sushi ID client with a live session.
         console: Where the download's progress events go.
+        info: The release to install; the latest one, resolved through *client*,
+            when None.
         http: What opens the download URL; the seam a test replaces.
 
     Returns:
@@ -155,7 +158,7 @@ def install_release(name: str, root: Path, client: SushiId, console, *,
             archive is not a release.
         SushiIdError: Sushi ID refused to resolve a release for this account.
     """
-    info = client.resolve_release(name, host_platform())
+    info = info or client.resolve_release(name, host_platform())
     root.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{name}-", dir=root.parent))
     try:

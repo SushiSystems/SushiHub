@@ -454,7 +454,7 @@ def test_a_licence_token_without_a_session_is_refused_before_the_request(fake_id
 def _bind(monkeypatch, fake_id, store, **kwargs):
     """Point the four commands at *fake_id* with *store* as their credential store."""
     client = SushiId(fake_id.url, store, **kwargs)
-    monkeypatch.setattr(session, "_client", lambda: client)
+    monkeypatch.setattr(session, "client", lambda: client)
     return client
 
 

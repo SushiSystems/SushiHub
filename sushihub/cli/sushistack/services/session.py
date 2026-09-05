@@ -2,9 +2,9 @@
 
 Each function drives :class:`~sushistack.services.identity.SushiId` and writes to
 the console, and returns the exit code and the payload the ``result`` event
-carries. One factory, :func:`_client`, decides which server and which credential
-store the four talk to, so a test replaces the pair in one place. The endpoints
-are in ``sushihub/contract/sushi-id.md``.
+carries. One factory, :func:`client`, decides which server and which credential
+store every Sushi ID call in `ss` talks to, so a test replaces the pair in one
+place. The endpoints are in ``sushihub/contract/sushi-id.md``.
 """
 
 from __future__ import annotations
@@ -28,8 +28,8 @@ class Outcome(NamedTuple):
     payload: dict
 
 
-def _client() -> SushiId:
-    """Build the client the four commands use: the configured server, the keyring."""
+def client() -> SushiId:
+    """Build the client every Sushi ID call uses: the configured server, the keyring."""
     return SushiId(identity_url(), KeyringStore())
 
 
@@ -43,9 +43,9 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
         open_browser: What opens the verification URI; :func:`webbrowser.open`
             when None.
     """
-    client = _client()
+    id_client = client()
     try:
-        code = client.start_device_login()
+        code = id_client.start_device_login()
     except LoginError as error:
         console.error(str(error))
         return Outcome(1, {})
@@ -55,13 +55,13 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
     (open_browser or webbrowser.open)(code.verification_uri)
 
     try:
-        client.wait_for_token(
+        id_client.wait_for_token(
             code, on_poll=lambda polls: console.progress(LOGIN_LABEL, polls, 0, None))
     except LoginError as error:
         console.error(str(error))
         return Outcome(1, {})
 
-    account = client.me()
+    account = id_client.me()
     email = account.email if account else ""
     console.success(f"Signed in to Sushi ID as {email}." if email else "Signed in to Sushi ID.")
     return Outcome(0, {"email": email})
@@ -69,14 +69,14 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
 
 def logout() -> Outcome:
     """Forget the stored session, whether or not there was one."""
-    _client().logout()
+    client().logout()
     console.success("Signed out of Sushi ID.")
     return Outcome(0, {})
 
 
 def whoami() -> Outcome:
     """Print the signed-in account as a two-column table."""
-    account = _client().me()
+    account = client().me()
     if account is None:
         console.warn("Not signed in. Run `ss login`.")
         return Outcome(1, {})
@@ -92,7 +92,7 @@ def whoami() -> Outcome:
 
 def license() -> Outcome:
     """Print the licences the signed-in account holds, one row each."""
-    account = _client().me()
+    account = client().me()
     if account is None:
         console.warn("Not signed in. Run `ss login`.")
         return Outcome(1, {})
