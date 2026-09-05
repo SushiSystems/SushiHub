@@ -94,8 +94,7 @@ def _confirm(items, checked) -> bool:
         console.console.print()
     else:
         console.warn("Nothing selected — this installs no toolchains.")
-    answer = input("Are you sure? [y/N] ").strip().lower()
-    return answer in ("y", "yes")
+    return console.prompt("Are you sure? (y/N)", "n").strip().lower() in ("y", "yes")
 
 
 def _initial_checks(items, defaults: dict[str, bool] | None) -> list[bool]:

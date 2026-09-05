@@ -14,8 +14,6 @@ import shutil
 import subprocess
 from pathlib import Path
 
-from rich.table import Table
-
 from .. import console
 from ..config import config_dir
 from . import probe
@@ -67,11 +65,10 @@ def _first_available(managers: list[IPackageManager]) -> IPackageManager | None:
     return None
 
 
-#: The three statuses an inventory row can carry, and how each is styled.
+#: The three statuses an inventory row can carry.
 _OK = "OK"
 _MISSING = "MISSING"
 _NOT_NEEDED = "NOT NEEDED"
-_STATUS_STYLE = {_OK: "green", _MISSING: "red", _NOT_NEEDED: "dim"}
 
 #: What each discrete-GPU vendor implies for the compute SDK that gets installed.
 _VENDOR_SDK = {
@@ -253,16 +250,11 @@ class DetectStep(Step):
         # the row ordering and the readiness report below both read.
         all_deps = self._source.all()
 
-        table = Table(show_header=True, header_style=console.accent,
-                      title="Environment inventory")
-        table.add_column("Component")
-        table.add_column("Status")
-        table.add_column("Owner", style="cyan")
-        table.add_column("Detail", style="dim")
-        for name, status, owner, detail in self.inventory_rows(ctx, all_deps):
-            style = _STATUS_STYLE[status]
-            table.add_row(name, f"[{style}]{status}[/{style}]", owner, detail)
-        console.console.print(table)
+        console.table(
+            ["Component", "Status", "Owner", "Detail"],
+            [list(row) for row in self.inventory_rows(ctx, all_deps)],
+            title="Environment inventory",
+        )
 
         from ..config import deps_dir
         console.info(f"Vendored dependencies go in one folder: {deps_dir()}")

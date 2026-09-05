@@ -94,12 +94,7 @@ def uninstall(
             "portable cmake/ninja). Your system git/cmake are NOT touched."
         )
         if not dry_run and not assume_yes:
-            try:
-                answer = input("Are you sure? [y/N] ").strip().lower()
-            except (EOFError, OSError):
-                console.info("Non-interactive and no --yes given; aborting --all removal.")
-                return 1
-            if answer not in ("y", "yes"):
+            if console.prompt("Are you sure? (y/N)", "n").strip().lower() not in ("y", "yes"):
                 console.info("Aborted.")
                 return 1
 
