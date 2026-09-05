@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -18,9 +19,15 @@ from sushistack.services import session
 from sushistack.services.identity import (
     Account,
     Licence,
+    LicenceToken,
     LoginDenied,
     LoginExpired,
+    NoLicence,
+    NoRelease,
+    ReleaseInfo,
     SushiId,
+    SushiIdError,
+    UnknownProduct,
 )
 from sushistack.services.token_store import (
     KEYRING_SERVICE,
@@ -131,7 +138,7 @@ class FakeIdState:
     """What the fake Sushi ID remembers between two requests."""
 
     def __init__(self) -> None:
-        """Start with a grant nobody has approved yet."""
+        """Start with a grant nobody has approved yet and one licensed release."""
         self.approved = False
         self.denied = False
         self.expired = False
@@ -143,13 +150,22 @@ class FakeIdState:
         self.licenses = [{"product": "sushiengine", "holder": "account",
                           "expires_at": "2027-03-01"},
                          {"product": "sushiai", "holder": "org", "expires_at": None}]
+        self.products = {"sushiengine"}
+        self.licensed = {"sushiengine"}
+        self.licence_token = "licence-jwt"
+        self.release_version = "1.4.2"      # None: the product has no release
+        self.release_blob = b""             # what /download/<name> serves
+        self.release_sha256: str | None = None   # None: the blob's own digest
+        self.release_size: int | None = None     # None: the blob's own length
+        self.rate_limited = False
+        self.resolved: list[dict] = []      # every /api/releases/resolve body
 
 
 def _handler_for(state: FakeIdState):
-    """Build a request handler answering the four endpoints out of *state*."""
+    """Build a request handler answering the six endpoints out of *state*."""
 
     class Handler(BaseHTTPRequestHandler):
-        """The four routes of sushihub/contract/sushi-id.md, served from memory."""
+        """The six routes of sushihub/contract/sushi-id.md, served from memory."""
 
         def log_message(self, fmt, *args):
             """Say nothing; the assertions are the test's output, not an access log."""
@@ -168,10 +184,57 @@ def _handler_for(state: FakeIdState):
             length = int(self.headers.get("Content-Length", "0"))
             return json.loads(self.rfile.read(length) or b"{}")
 
+        def _bearer(self) -> bool:
+            """Record the Authorization header and report whether it carries a token."""
+            bearer = self.headers.get("Authorization", "")
+            state.bearers.append(bearer)
+            return bearer.startswith("Bearer ")
+
+        def _licence_token(self, body: dict) -> None:
+            """Answer the licence-token endpoint for the product *body* names."""
+            product = body.get("product")
+            if product not in state.products:
+                self._reply(404, {"error": "unknown_product"})
+            elif product not in state.licensed:
+                self._reply(403, {"error": "no_licence"})
+            else:
+                self._reply(200, {"licence_token": state.licence_token,
+                                  "expires_at": "2026-10-05T00:00:00Z"})
+
+        def _resolve_release(self, body: dict) -> None:
+            """Answer the release endpoint, pointing its url at this same server."""
+            state.resolved.append(body)
+            product = body.get("product")
+            if state.rate_limited:
+                self._reply(429, {"error": "rate_limited"})
+            elif product not in state.products:
+                self._reply(404, {"error": "unknown_product"})
+            elif product not in state.licensed:
+                self._reply(403, {"error": "no_licence"})
+            elif state.release_version is None:
+                self._reply(404, {"error": "no_release"})
+            else:
+                digest = hashlib.sha256(state.release_blob).hexdigest()
+                self._reply(200, {
+                    "version": state.release_version,
+                    "platform": body.get("platform"),
+                    "url": f"http://{self.headers.get('Host')}/download/{product}.zip",
+                    "sha256": state.release_sha256 or digest,
+                    "size": (len(state.release_blob) if state.release_size is None
+                             else state.release_size),
+                    "expires_at": "2026-09-05T00:10:00Z"})
+
         def do_POST(self):
-            """Answer the device-code, device-token and refresh endpoints."""
+            """Answer the device, refresh, licence-token and release endpoints."""
             body = self._body()
-            if self.path == "/api/device/code":
+            if self.path in ("/api/licenses/token", "/api/releases/resolve"):
+                if not self._bearer():
+                    self._reply(401, {"error": "unauthorized"})
+                elif self.path == "/api/licenses/token":
+                    self._licence_token(body)
+                else:
+                    self._resolve_release(body)
+            elif self.path == "/api/device/code":
                 self._reply(200, {"device_code": "dev-1", "user_code": "WXYZ-1234",
                                   "verification_uri": "http://127.0.0.1/activate",
                                   "expires_in": 600, "interval": 1})
@@ -198,7 +261,14 @@ def _handler_for(state: FakeIdState):
                 self._reply(404, {})
 
         def do_GET(self):
-            """Answer the account endpoint for a request carrying a bearer token."""
+            """Answer the account endpoint, and serve the release the resolver named."""
+            if self.path.startswith("/download/"):
+                self.send_response(200)
+                self.send_header("Content-Type", "application/zip")
+                self.send_header("Content-Length", str(len(state.release_blob)))
+                self.end_headers()
+                self.wfile.write(state.release_blob)
+                return
             bearer = self.headers.get("Authorization", "")
             state.bearers.append(bearer)
             if self.path != "/api/me" or not bearer.startswith("Bearer "):
@@ -327,6 +397,58 @@ def test_logout_forgets_the_session(fake_id):
     store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
     SushiId(fake_id.url, store).logout()
     assert store.load() is None
+
+
+def _signed_in(fake_id) -> SushiId:
+    """Build a client whose store already holds a live session."""
+    return SushiId(fake_id.url, MemoryStore(Tokens("access-1", "refresh-1", 1e12)),
+                   now=lambda: 0.0)
+
+
+def test_licence_token_is_issued_for_a_licensed_product(fake_id):
+    token = _signed_in(fake_id).licence_token("sushiengine")
+    assert token == LicenceToken("licence-jwt", "2026-10-05T00:00:00Z")
+    assert fake_id.state.bearers[-1] == "Bearer access-1"
+
+
+def test_licence_token_refuses_an_unlicensed_product(fake_id):
+    fake_id.state.licensed = set()
+    with pytest.raises(NoLicence):
+        _signed_in(fake_id).licence_token("sushiengine")
+
+
+def test_resolve_release_returns_the_url_the_hash_and_the_size(fake_id):
+    fake_id.state.release_blob = b"a release"
+    info = _signed_in(fake_id).resolve_release("sushiengine", "windows-x64")
+    assert isinstance(info, ReleaseInfo)
+    assert info.version == "1.4.2" and info.platform == "windows-x64"
+    assert info.url.endswith("/download/sushiengine.zip")
+    assert info.sha256 == hashlib.sha256(b"a release").hexdigest()
+    assert info.size == len(b"a release")
+    assert fake_id.state.resolved == [{"product": "sushiengine",
+                                       "platform": "windows-x64"}]
+
+
+def test_resolve_release_carries_the_version_when_one_is_asked_for(fake_id):
+    _signed_in(fake_id).resolve_release("sushiengine", "linux-x64", version="1.0.0")
+    assert fake_id.state.resolved[-1]["version"] == "1.0.0"
+
+
+def test_resolve_release_reports_that_there_is_no_release(fake_id):
+    fake_id.state.release_version = None
+    with pytest.raises(NoRelease):
+        _signed_in(fake_id).resolve_release("sushiengine", "windows-x64")
+
+
+def test_resolve_release_reports_an_unknown_product(fake_id):
+    with pytest.raises(UnknownProduct):
+        _signed_in(fake_id).resolve_release("sushidsp", "windows-x64")
+
+
+def test_a_licence_token_without_a_session_is_refused_before_the_request(fake_id):
+    with pytest.raises(SushiIdError):
+        SushiId(fake_id.url, MemoryStore()).licence_token("sushiengine")
+    assert fake_id.state.bearers == []
 
 
 def _bind(monkeypatch, fake_id, store, **kwargs):
