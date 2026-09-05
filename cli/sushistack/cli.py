@@ -138,14 +138,16 @@ def install(
 ):
     """Provision the shared dependencies into the workspace's dependencies/ tree.
 
-    Installs everything by default — all three SYCL toolchains (intel/llvm,
-    AdaptiveCpp, oneAPI) plus CUDA. SYCL is a heavy ecosystem; a missing toolchain
-    only causes confusion later. Use [bold]--customize[/bold] to choose a subset.
+    Installs what the present modules declare. Use [bold]--customize[/bold] to add
+    or drop a toolchain.
     """
     selection = None
     if customize:
         from .services import customize as customize_svc
-        selection = customize_svc.choose_components()
+        from .setup.dependency_source import TomlDependencySource
+        from .setup.selection import selection_from_source
+        defaults = selection_from_source(TomlDependencySource()).as_dict()
+        selection = customize_svc.choose_components(defaults)
         if selection is None:
             raise typer.Exit(1)
     raise typer.Exit(setup_svc.run("provision", dry_run=dry_run, selection=selection,

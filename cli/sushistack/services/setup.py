@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from .. import console
 from ..setup import build_pipeline, build_uninstall_pipeline
+from ..setup.selection import ToolchainSelection
 
 
 def run(step: str = "all", dry_run: bool = False,
@@ -16,20 +17,15 @@ def run(step: str = "all", dry_run: bool = False,
         refresh_toolchains: bool = False) -> int:
     """Run one step (or the whole pipeline) and return a process exit code.
 
-    By default everything is provisioned; ``selection`` (from --customize) narrows
-    it per component. ``assume_yes`` pre-answers the LLVM-download consent prompt
-    so unattended runs (CI, scripted installs) don't need a TTY to proceed.
+    What the present modules declare is provisioned; ``selection`` (from
+    --customize) overrides that per component. ``assume_yes`` pre-answers the
+    LLVM-download consent prompt so unattended runs (CI, scripted installs) don't
+    need a TTY to proceed.
     """
     detect_only = step == "detect"
     console.header("SushiStack Doctor" if detect_only else "SushiStack Install")
     if dry_run:
         console.info("Dry-run: showing actions without changing the system.")
-    if not detect_only:
-        if selection is None:
-            console.info("Installing everything: intel/llvm + AdaptiveCpp + oneAPI + CUDA.")
-        else:
-            chosen = [k for k, v in selection.items() if v]
-            console.info(f"Custom selection: {', '.join(chosen) if chosen else '(nothing)'}.")
 
     try:
         pipeline, ctx = build_pipeline(only=step, selection=selection, dry_run=dry_run,
@@ -37,6 +33,10 @@ def run(step: str = "all", dry_run: bool = False,
     except (ValueError, FileNotFoundError) as exc:
         console.error(str(exc))
         return 1
+
+    if not detect_only:
+        names = ToolchainSelection.from_context(ctx).components()
+        console.info(f"Installing: {', '.join(names) or 'base tools only'}.")
 
     # Gather consent for the heavy Windows LLVM download up front — before the
     # progress spinner starts — so the prompt is actually answerable.

@@ -22,6 +22,7 @@ from .package_managers import (
     ZypperManager,
 )
 from .pipeline import InstallContext, InstallPipeline
+from .selection import selection_from_source
 from .steps import (
     ConfigureStep,
     DetectStep,
@@ -55,19 +56,18 @@ def build_pipeline(
     """Build the installer pipeline and its execution context.
 
     ``only`` selects a single step ('detect'|'install'|'configure'|'verify') or a
-    combo ('provision'|'all'). By default everything is provisioned — all three
-    SYCL toolchains plus CUDA. ``selection`` overrides that per component (keys:
-    ``install_intel_llvm``, ``install_acpp``, ``oneapi``, ``gpu``), as gathered by
-    ``ss install --customize``. ``source``/``managers`` can be injected for tests.
+    combo ('provision'|'all'). By default the toolchains the present modules
+    declare are provisioned, and nothing else. ``selection`` overrides that per
+    component (keys: ``install_intel_llvm``, ``install_acpp``, ``oneapi``,
+    ``gpu``), as gathered by ``ss install --customize``. ``source``/``managers``
+    can be injected for tests.
     """
-    # Default: install everything. --customize narrows it via ``selection``.
-    sel = {"install_intel_llvm": True, "install_acpp": True, "oneapi": True, "gpu": True}
-    if selection:
-        sel.update({k: bool(v) for k, v in selection.items() if k in sel})
-
     cfg = cfg or load_config()
     source = source or TomlDependencySource()
     managers = managers if managers is not None else _managers_for(cfg)
+
+    derived = selection_from_source(source)
+    sel = (derived.merged(selection) if selection else derived).as_dict()
 
     all_steps = {
         "detect":    DetectStep(source, managers),

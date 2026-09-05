@@ -1,14 +1,15 @@
 """Interactive component picker for `ss install --customize`.
 
-Everything installs by default; this is the escape hatch for users who want a
-subset. The picker lays the optional components out as a vertical checklist —
+What the present modules declare installs by default; this is the escape hatch
+for a user who wants to add or drop one of the heavy components. The picker
+opens on that derived selection and lays the components out as a checklist —
 one row per component, a pointer marking the focused row. Up/down move between
 rows, space toggles the focused one, enter continues, and a final confirmation
 guards against an accidental enter.
 
 It captures keys directly (msvcrt on Windows, termios on Unix) and renders with
 rich, so it needs no extra dependency. A non-interactive stdin (a pipe) falls
-back to installing everything.
+back to the selection it opened on.
 """
 
 from __future__ import annotations
@@ -97,17 +98,31 @@ def _confirm(items, checked) -> bool:
     return answer in ("y", "yes")
 
 
-def choose_components() -> dict[str, bool] | None:
-    """Run the picker. Return the selection, or None if the user cancelled."""
+def _initial_checks(items, defaults: dict[str, bool] | None) -> list[bool]:
+    """Return the box states the picker opens on, one per component.
+
+    @param defaults ``InstallContext`` field name -> on, or None for all on.
+    """
+    if defaults is None:
+        return [True] * len(items)
+    return [bool(defaults.get(field, False)) for _k, _l, field in items]
+
+
+def choose_components(defaults: dict[str, bool] | None = None) -> dict[str, bool] | None:
+    """Run the picker. Return the selection, or None if the user cancelled.
+
+    @param defaults The selection to open on (``InstallContext`` field name ->
+                    on), typically the one the present modules imply.
+    """
     from rich.live import Live
 
     items = list(CUSTOMIZABLE_COMPONENTS)
+    checked = _initial_checks(items, defaults)
     if not sys.stdin.isatty():
         console.warn("Not a TTY; --customize needs an interactive terminal. "
-                     "Proceeding with everything.")
-        return _selection_from_checked(items, [True] * len(items))
+                     "Proceeding with the selection it would have opened on.")
+        return _selection_from_checked(items, checked)
 
-    checked = [True] * len(items)
     focus = 0
     while True:  # selection -> confirm; loop back if not confirmed
         with Live(_render(items, checked, focus), console=console.console,
