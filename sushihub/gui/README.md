@@ -41,8 +41,12 @@ other configuration.
 
 ## Tests
 
-GoogleTest, one suite per layer, discovered by `gtest_discover_tests`. Each suite lands with the
-layer it covers. The `ui/` layer has no unit tests; it is checked by running the application.
+GoogleTest, one suite per layer, discovered by `gtest_discover_tests`. `bridge_test` spawns a
+Python one-liner and reads its output back. `event_test` and `catalogue_test` parse the fixtures
+in `tests/fixtures/`, which are hand-written until `ss --json` and `ss --describe` land; the
+README there says how to record the real thing. `model_test` feeds a scripted queue to a
+`CommandRun` and checks the fold. The `ui/` layer has no unit tests; it is checked by running the
+application.
 
 ## Talking to `ss`
 

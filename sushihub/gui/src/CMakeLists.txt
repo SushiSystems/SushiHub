@@ -20,6 +20,14 @@ target_link_libraries(sushihub_gui_contract
     PUBLIC nlohmann_json::nlohmann_json
     PRIVATE sushihub_gui_warnings)
 
+add_library(sushihub_gui_model STATIC
+    model/CommandRun.cpp
+    model/Workspace.cpp)
+target_include_directories(sushihub_gui_model PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
+target_link_libraries(sushihub_gui_model
+    PUBLIC sushihub_gui_bridge sushihub_gui_contract
+    PRIVATE sushihub_gui_warnings)
+
 add_library(sushihub_gui_ui STATIC
     ui/Shell.cpp
     ui/Theme.cpp)
