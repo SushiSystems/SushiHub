@@ -3,6 +3,8 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-05 — Added `ss --json` and `ss --describe`, and the schemas both sides validate against (`cli/sushistack/cli.py`, `cli/sushistack/describe.py`, `sushihub/contract/`).
+- 2026-09-05 — Let a module CLI find a binary install through `sushi-release.json` and report which kind of root it found (`sushicore/sushicore/profile.py`, `sushicore/sushicore/module_config.py`).
 - 2026-09-05 — Derived the toolchain selection from the present modules and made `ss add` provision what it brings (`cli/sushistack/setup/selection.py`, `cli/sushistack/setup/factory.py`, `cli/sushistack/services/modules.py`).
 - 2026-09-05 — Ordered `ss doctor` by owner and marked undeclared toolchains not needed (`cli/sushistack/setup/ordering.py`, `cli/sushistack/setup/steps.py`).
 - 2026-09-05 — Added the JSON renderer and the table, progress, result and prompt calls (`sushicore/sushicore/renderer.py`, `sushicore/sushicore/console.py`, `sushicore/sushicore/events.py`).
