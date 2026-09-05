@@ -41,3 +41,17 @@ def test_gui_build_is_described_with_its_type_choice_and_its_defines():
     assert by_name["build_type"]["choices"] == ["debug", "release", "relwithdebinfo"]
     assert by_name["clean"]["type"] == "boolean"
     assert by_name["define"]["multiple"] is True and by_name["define"]["flags"] == ["-D"]
+
+
+def test_type_names_are_read_from_the_type_not_its_class():
+    """Typer ships its own Click classes; the mapping must not depend on click's."""
+    from types import SimpleNamespace
+
+    from sushistack.describe import _type_name
+
+    assert _type_name(SimpleNamespace(name="boolean")) == "boolean"
+    assert _type_name(SimpleNamespace(name="integer")) == "integer"
+    assert _type_name(SimpleNamespace(name="float")) == "number"
+    assert _type_name(SimpleNamespace(name="path")) == "path"
+    assert _type_name(SimpleNamespace(name="choice", choices=("a",))) == "choice"
+    assert _type_name(SimpleNamespace(name="str")) == "string"
