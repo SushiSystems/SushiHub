@@ -3,6 +3,7 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-05 — Added `ss gui build|test|run|clean` over the shared cmake driver and the desktop application's dependency fragment (`sushihub/cli/sushistack/services/gui.py`, `sushihub/cli/manifests/gui.deps.toml`).
 - 2026-09-05 — Drew the five screens and the generated form of the desktop application (`sushihub/gui/src/ui/`).
 - 2026-09-05 — Moved `cli/` to `sushihub/cli/` and named the workspace's `ss` directory once (`sushicore/sushicore/workspace.py`, `sushihub/cli/`, `install.sh`, `install.ps1`).
 - 2026-09-05 — Added `ss login`, `ss logout`, `ss whoami` and `ss license` over the device grant (`cli/sushistack/services/identity.py`, `cli/sushistack/services/session.py`, `sushihub/contract/sushi-id.md`).
