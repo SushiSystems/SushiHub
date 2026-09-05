@@ -135,6 +135,7 @@ def test_status_under_json_emits_a_table_and_a_result(workspace):
 @pytest.mark.parametrize("args", [
     ["init"], ["home"], ["status"], ["add", "sushiruntime", "--dry-run", "--skip-install"],
     ["update", "--dry-run"], ["link", "sushiruntime", ".", "--dry-run"],
+    ["projects", "list"],
 ])
 def test_every_read_only_command_streams_valid_events(workspace, args):
     r = _run(["--json", *args], workspace)
@@ -154,6 +155,14 @@ def test_gui_clean_under_json_streams_valid_events(workspace):
     for ev in events:
         v.validate(ev)
     assert events[-1]["event"] == "result" and events[-1]["ok"] is True
+
+
+def test_projects_under_json_emits_a_table_and_the_registry(workspace):
+    _run(["projects", "add", str(workspace)], workspace)
+    events = _events(_run(["--json", "projects", "list"], workspace))
+    table = [e for e in events if e["event"] == "table"][0]
+    assert table["columns"] == ["Name", "Path", "Exists"]
+    assert events[-1]["payload"]["projects"][0]["exists"] is True
 
 
 @pytest.fixture
