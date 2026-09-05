@@ -77,8 +77,8 @@ _GITIGNORE_LINES = [
     "# Managed by `ss init`: shared dependencies and cloned modules are not tracked.",
     "/dependencies/",
     *(f"/{m.directory}/" for m in MODULES.values()),
-    "/cli/config.local.toml",
-    "/cli/modules.local.toml",
+    "/sushihub/cli/config.local.toml",
+    "/sushihub/cli/modules.local.toml",
 ]
 
 

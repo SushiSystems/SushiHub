@@ -17,7 +17,7 @@ happened. The hand-maintained manual is the rest of `docs/`, indexed from `docs/
 
 ## Two components, two owners
 
-`cli/` is the `ss` command. `sushicore/` is the engine under `ss` and the five module CLIs in the
+`sushihub/cli/` is the `ss` command, `sushihub/gui/` the desktop application over it. `sushicore/` is the engine under `ss` and the five module CLIs in the
 other repositories. A change to `sushicore` is a change to six programs at once, and this
 repository's CI runs each of the five consumers' own test suites against the `sushicore` under
 test. Nothing in `sushicore` may name a module or a cache variable; anything module-specific is a
@@ -44,8 +44,8 @@ the docstring cites by path.
 ## Verification before claiming something works
 
 `sushicore`'s suite runs with `python -m pytest sushicore/tests -q` from the repository root. The
-`ss` command has no suite of its own yet; a change to `cli/` is verified by running the affected
-command with `--dry-run` where one exists and pasting its output in the report. Never invoke
+`ss` command's suite runs with `python -m pytest sushihub/cli/tests -q`; the two suites cannot share
+one run, because both packages are named `tests`. Never invoke
 `cmake`, `ninja` or `ctest` directly, and never run a real build to prove a CLI change; the argv
 recorder in `tools/record_cli_argv.py` exists so the build code can be checked without compiling.
 Say plainly what was verified and what was not.

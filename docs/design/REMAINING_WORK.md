@@ -34,7 +34,7 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 - **A test suite for `ss`.** `sushicore` has 44 tests and a CI job; `cli/` has none. Wave 1a adds
   the contract tests; the existing commands deserve coverage of their own before that wave moves
   them.
-- **`ss unlink`.** Removing a link means editing `cli/modules.local.toml` by hand
+- **`ss unlink`.** Removing a link means editing `sushihub/cli/modules.local.toml` by hand
   (`../guides/LINKING_CHECKOUTS.md`).
 - **`sushicore`'s README placement.** The component's facts live in `sushicore/docs/README.md`
   rather than `sushicore/README.md`, the shape every other component follows. Moving it touches

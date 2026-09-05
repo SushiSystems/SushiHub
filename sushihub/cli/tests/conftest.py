@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-_REPO_ROOT = Path(__file__).resolve().parents[2]
+_REPO_ROOT = Path(__file__).resolve().parents[3]
 os.environ.setdefault("SUSHISTACK_HOME", str(_REPO_ROOT))
 sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != _REPO_ROOT]
 sys.modules.pop("sushicore", None)

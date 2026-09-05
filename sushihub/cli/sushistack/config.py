@@ -24,7 +24,7 @@ from pathlib import Path
 # tool schema (cmake/ninja/vcpkg paths) and the layered-load / [tool]-write
 # skeleton live in sushicore; this repo adds only the SYCL-specific fields below.
 from sushicore.config_base import ToolConfig, load_tool_config, write_tool_section
-from sushicore.workspace import has_marker, read_toml, resolve_env_path, walk_up
+from sushicore.workspace import WORKSPACE_CLI_DIR, has_marker, read_toml, resolve_env_path, walk_up
 
 # Marker file written at the workspace root by `ss init`. Its presence is how any
 # stack CLI invocation (`ss`, `sr`, `se`, `sa`, `sb`) locates the shared
@@ -38,13 +38,13 @@ def workspace_root(start: Path | None = None) -> Path:
     The CLI is installed (pip/pipx) outside the workspace, so the package location
     tells us nothing about where the workspace lives — the invocation directory
     does. Resolution order: ``SUSHISTACK_HOME`` env var, then a walk up from CWD
-    looking for the ``.sushistack`` marker (or a ``cli/manifests`` tree, which is
+    looking for the ``.sushistack`` marker (or a ``sushihub/cli/manifests`` tree, which is
     the repo's own signature). Run any `ss` command from anywhere inside the tree.
     """
     home = resolve_env_path("SUSHISTACK_HOME")
     if home:
         return home
-    root = walk_up(start or Path.cwd(), has_marker(WORKSPACE_MARKER, "cli/manifests"))
+    root = walk_up(start or Path.cwd(), has_marker(WORKSPACE_MARKER, str(WORKSPACE_CLI_DIR / "manifests")))
     if root is None:
         raise SystemExit(
             "Not inside a SushiStack workspace: no .sushistack marker found in the "
@@ -59,9 +59,9 @@ find_project_root = workspace_root
 
 
 def config_dir(root: Path | None = None) -> Path:
-    """Directory holding config.toml / config.local.toml (the workspace's cli/)."""
+    """Directory holding config.toml / config.local.toml (the workspace's sushihub/cli/)."""
     root = root or workspace_root()
-    return root / "cli"
+    return root / WORKSPACE_CLI_DIR
 
 
 # Registry of modules linked to existing checkouts outside the workspace tree.
@@ -76,13 +76,13 @@ def registered_modules() -> dict[str, str]:
     A developer's working checkouts often live outside the workspace tree (e.g.
     sibling repos). Linking one records its path here so ``ss`` aggregates its
     ``sushistack.deps.toml`` and tracks it, without cloning a second copy. Read
-    from ``<workspace>/cli/modules.local.toml`` ``[modules]``.
+    from ``<workspace>/sushihub/cli/modules.local.toml`` ``[modules]``.
     """
     try:
         home = workspace_root()
     except SystemExit:
         return {}
-    doc = read_toml(home / "cli" / MODULES_FILE)
+    doc = read_toml(home / WORKSPACE_CLI_DIR / MODULES_FILE)
     mods = doc.get("modules", {})
     return {k: str(v) for k, v in mods.items() if isinstance(v, str)}
 

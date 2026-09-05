@@ -11,12 +11,12 @@ sushiengine. Each has a CLI (`sr`, `sb`, `sa`, `sd`, `se`) and a dependency frag
 repository.
 
 **Presence** — the form in which a module exists in a workspace, read from disk: *cloned* (a checkout
-under the workspace root), *linked* (a checkout elsewhere, registered in `cli/modules.local.toml`),
+under the workspace root), *linked* (a checkout elsewhere, registered in `sushihub/cli/modules.local.toml`),
 *binary* (a downloaded release whose root holds `sushi-release.json`), or *absent*.
-`cli/sushistack/services/presence.py` answers it; `ss status` shows it.
+`sushihub/cli/sushistack/services/presence.py` answers it; `ss status` shows it.
 
 **Dependency fragment** — a `*.deps.toml` file naming packages per platform. This repository ships
-the base fragment under `cli/manifests/`; each module ships its own. `ss install` merges them.
+the base fragment under `sushihub/cli/manifests/`; each module ships its own. `ss install` merges them.
 
 **Toolchain** — a compiler bundle `ss install` downloads into `dependencies/` rather than
 installing through a package manager: intel/llvm, AdaptiveCpp, oneAPI. Each carries a stamp naming

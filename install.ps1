@@ -143,9 +143,9 @@ $python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $python) { Fail "python not on PATH after install. Open a new terminal and re-run." }
 
 # Locate or clone the workspace. The SushiStack repo is identified by its
-# cli\manifests tree (it ships no CMakeLists.txt).
+# sushihub\cli\manifests tree (it ships no CMakeLists.txt).
 $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $null }
-if ($ScriptDir -and (Test-Path (Join-Path $ScriptDir "cli\manifests"))) {
+if ($ScriptDir -and (Test-Path (Join-Path $ScriptDir "sushihub\cli\manifests"))) {
     $WorkspaceDir = $ScriptDir
 } else {
     $DefaultWorkspaceDir = Join-Path $HOME "sushistack"
@@ -160,7 +160,7 @@ Info "Workspace: $WorkspaceDir"
 
 # Install the ss CLI.
 Info "Installing the ss CLI..."
-python cli/install.py
+python sushihub/cli/install.py
 
 $PipxBinDir = python -m pipx environment --value PIPX_BIN_DIR
 $SsCmd = Join-Path $PipxBinDir "ss.exe"

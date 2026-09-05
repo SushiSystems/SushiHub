@@ -12,11 +12,12 @@ curl -fsSL https://sushisystems.io/install.sh | bash      # Linux / WSL
 irm https://sushisystems.io/install.ps1 | iex             # Windows (PowerShell)
 ```
 
-The repository carries two things of its own:
+The repository carries three things of its own:
 
 | Directory | What it is | Its README |
 |---|---|---|
-| `cli/` | The `ss` command: dependency provisioning and module lifecycle. | `cli/README.md` |
+| `sushihub/cli/` | The `ss` command: dependency provisioning and module lifecycle. | `sushihub/cli/README.md` |
+| `sushihub/gui/` | The desktop application: a screen for every `ss` command, over `ss --json`. | `sushihub/gui/README.md` |
 | `sushicore/` | The engine under every Sushi CLI (`ss`, `sr`, `se`, `sa`, `sb`, `sd`): console, config, workspace resolution, the cmake driver. | `sushicore/docs/README.md` |
 
 Everything else under the workspace root is a module checkout `ss add` produces, or the

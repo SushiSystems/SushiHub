@@ -27,7 +27,7 @@ The same result, one command at a time:
 ```bash
 git clone https://github.com/sushisystems/sushistack.git
 cd sushistack
-python cli/install.py                # install `ss` via pipx, inject sushicore
+python sushihub/cli/install.py       # install `ss` via pipx, inject sushicore
 
 ss init                              # write the .sushistack marker and .gitignore entries
 ss install                           # download what the present modules declare
