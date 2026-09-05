@@ -15,7 +15,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-test = ["pytest>=7.0"]
+test = ["pytest>=7.0", "jsonschema>=4.0"]
 
 # sushicore (the shared CLI presentation layer, in this repository at `sushicore/`)
 # is intentionally NOT listed above: it isn't published to any index, so a bare

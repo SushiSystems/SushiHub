@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sushisystems.io/contract/describe.schema.json",
+  "title": "The command catalogue",
+  "description": "What `ss --describe` prints: every command, its parameters and where it applies.",
+  "type": "object",
+  "properties": {
+    "program": {"type": "string"},
+    "version": {"type": "string"},
+    "contract": {"type": "string"},
+    "commands": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/command"}
+    }
+  },
+  "required": ["program", "version", "contract", "commands"],
+  "additionalProperties": false,
+  "$defs": {
+    "command": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "help": {"type": "string"},
+        "params": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/param"}
+        },
+        "applies_to": {
+          "type": "array",
+          "items": {"enum": ["cloned", "linked", "binary"]}
+        }
+      },
+      "required": ["name", "help", "params", "applies_to"],
+      "additionalProperties": false
+    },
+    "param": {
+      "type": "object",
+      "properties": {
+        "name": {"type": "string"},
+        "kind": {"enum": ["argument", "option"]},
+        "type": {"enum": ["string", "boolean", "integer", "number", "path", "choice"]},
+        "multiple": {"type": "boolean"},
+        "required": {"type": "boolean"},
+        "default": {},
+        "choices": {
+          "type": ["array", "null"],
+          "items": {"type": "string"}
+        },
+        "flags": {"type": "array", "items": {"type": "string"}},
+        "help": {"type": "string"}
+      },
+      "required": ["name", "kind", "type", "multiple", "required", "default", "choices", "flags", "help"],
+      "additionalProperties": false
+    }
+  }
+}
