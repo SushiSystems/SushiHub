@@ -9,6 +9,10 @@
 #include "ui/CatalogueSource.hpp"
 #include "ui/FormOpener.hpp"
 #include "ui/forms/GeneratedForm.hpp"
+#include "ui/screens/DependenciesScreen.hpp"
+#include "ui/screens/LicenceScreen.hpp"
+#include "ui/screens/ModulesScreen.hpp"
+#include "ui/screens/ProjectsScreen.hpp"
 #include "ui/screens/StatusScreen.hpp"
 
 #include <cstddef>
@@ -61,6 +65,18 @@ private:
 
     /** @brief Draws what the workspace reports about itself. */
     StatusScreen status_screen_;
+
+    /** @brief Draws the modules and the command each one can be given. */
+    ModulesScreen modules_screen_;
+
+    /** @brief Draws what the machine has and what it is missing. */
+    DependenciesScreen dependencies_screen_;
+
+    /** @brief Draws the account, its licences and the sign-in. */
+    LicenceScreen licence_screen_;
+
+    /** @brief Draws the empty state the projects screen stands in with. */
+    ProjectsScreen projects_screen_;
 
     /** @brief Holds one form per command that has been opened, keyed by command name. */
     std::map<std::string, std::unique_ptr<GeneratedForm>> forms_;
