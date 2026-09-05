@@ -12,3 +12,5 @@ function(sushihub_gui_add_test suite_name source_file)
         PRIVATE SUSHIHUB_GUI_FIXTURE_DIR="${SUSHIHUB_GUI_FIXTURE_DIR}")
     gtest_discover_tests(${suite_name})
 endfunction()
+
+sushihub_gui_add_test(sushihub_gui_bridge_test bridge_test.cpp sushihub_gui_bridge)
