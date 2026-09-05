@@ -21,6 +21,7 @@ import typer
 
 from . import console
 from .describe import catalogue
+from .services import gui as gui_svc
 from .services import modules as modules_svc
 from .services import setup as setup_svc
 
@@ -233,6 +234,67 @@ def remove(
 ):
     """Remove provisioned dependencies. Use [bold]--all[/bold] to reclaim the lot."""
     _finish(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
+
+
+# --------------------------------------------------------------------------- #
+# the desktop application
+# --------------------------------------------------------------------------- #
+gui_app = typer.Typer(
+    name="gui",
+    help="Build, test and run the desktop application under sushihub/gui.",
+    rich_markup_mode="rich",
+)
+app.add_typer(gui_app, name="gui")
+
+
+@gui_app.command("build")
+def gui_build(
+    build_type: gui_svc.BuildType = typer.Option(
+        gui_svc.BuildType.debug, "--type", help="The configuration to build."),
+    clean: bool = typer.Option(
+        False, "--clean", help="Remove the build tree before configuring."),
+    define: Optional[List[str]] = typer.Option(
+        None, "-D", metavar="VAR=VALUE", help="Extra cmake cache entry; repeatable."),
+):
+    """Configure and compile the desktop application.
+
+    Builds into [cyan]sushihub/gui/build/ss[/cyan] under the Visual Studio
+    environment on Windows, against the vcpkg tree `ss install` provisions.
+    """
+    _finish(gui_svc.build(build_type, clean=clean, defines=define))
+
+
+@gui_app.command("test")
+def gui_test(
+    filter: Optional[str] = typer.Option(
+        None, "--filter", help="Run only the tests whose name matches this pattern."),
+    repeat: int = typer.Option(
+        0, "--repeat", help="Re-run each test until it fails or this many runs pass."),
+):
+    """Run the desktop application's tests through CTest."""
+    _finish(gui_svc.test(filter=filter, repeat=repeat))
+
+
+@gui_app.command(
+    "run",
+    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+)
+def gui_run(
+    ctx: typer.Context,
+    target: Optional[str] = typer.Argument(
+        None, help="Executable to launch; the application itself when omitted."),
+):
+    """Launch a program the desktop application's build tree holds.
+
+    Arguments after [cyan]--[/cyan] go to that program.
+    """
+    _finish(gui_svc.run(target, ctx.args))
+
+
+@gui_app.command("clean")
+def gui_clean():
+    """Remove the desktop application's build tree."""
+    _finish(gui_svc.clean())
 
 
 @app.command("login")
