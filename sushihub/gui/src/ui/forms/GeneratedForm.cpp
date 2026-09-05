@@ -252,7 +252,16 @@ void GeneratedForm::draw_run()
 
 std::vector<std::string> GeneratedForm::build_argv() const
 {
-    std::vector<std::string> argv{ss_executable_, "--json", command_.name};
+    std::vector<std::string> argv{ss_executable_, "--json"};
+    // A nested command is catalogued as "group child"; each word is its own argument.
+    std::size_t start = 0;
+    while (start < command_.name.size())
+    {
+        const std::size_t space = command_.name.find(' ', start);
+        const std::size_t end = space == std::string::npos ? command_.name.size() : space;
+        if (end > start) argv.push_back(command_.name.substr(start, end - start));
+        start = end + 1;
+    }
     std::vector<std::string> positionals;
 
     for (std::size_t index = 0; index < command_.parameters.size(); ++index)
