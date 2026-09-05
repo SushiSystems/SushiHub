@@ -13,10 +13,10 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 | Wave | Work | Waits on |
 |---|---|---|
 | 0 | Documentation skeleton and the hub design document. Landed 2026-09-05. | nothing |
-| 1a-core | `JsonRenderer` and the `table`, `progress`, `result`, `prompt` calls in `sushicore`. Plan: `../agent/plans/2026-09-05-wave-1a-core.md`. | 0 |
+| 1a-core | `JsonRenderer` and the `table`, `progress`, `result`, `prompt` calls in `sushicore`. Plan: `../agent/plans/2026-09-05-wave-1a-core.md`. Landed 2026-09-05. | 0 |
 | 1a-cli | `ss --json` on every command, `ss --describe`, the schemas under `sushihub/contract/`. Plan: `../agent/plans/2026-09-05-wave-1a-cli.md`. | 1a-core, 1b |
 | 1c | Move `cli/` to `sushihub/cli/` and repoint the installer, the workspace marker search and the docs. | 1a-cli |
-| 1b | Dependencies follow the modules (plan: `../agent/plans/2026-09-05-wave-1b-dependencies.md`): `build_pipeline` derives the toolchain selection from the present modules' fragments; `ss add` provisions what the new module needs; `ss doctor` reports by owner in dependency order; the install scripts stop running `ss install` before any module exists. | 0 |
+| 1b | Dependencies follow the modules (plan: `../agent/plans/2026-09-05-wave-1b-dependencies.md`): `build_pipeline` derives the toolchain selection from the present modules' fragments; `ss add` provisions what the new module needs; `ss doctor` reports by owner in dependency order; the install scripts stop running `ss install` before any module exists. Landed 2026-09-05. | 0 |
 | 2 | Binary presence: the third form in `modules.local.toml` and `ss status`; the binary-root marker in `ModuleProfile`; `ss login`, `ss logout`, `ss whoami` against a fake Sushi ID. | 1a-cli |
 | 3 | Sushi ID, in the sushiweb repository: device authorization grant, a licence query for a product, a signed download URL per release, a runtime licence check. Its own design document there. | none here |
 | 4 | `sushihub/gui/`: the Dear ImGui application, the `ss` subprocess bridge over the JSON contract, hand-drawn screens for status, modules, dependencies, licence and projects, generated forms for the rest. | 1a-cli; 2 in parallel |
