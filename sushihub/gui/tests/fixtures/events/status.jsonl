@@ -1,0 +1,11 @@
+{"event":"command","command":"ss --json status"}
+{"event":"header","title":"SushiStack Status"}
+{"event":"line","level":"info","message":"Workspace: D:\\Projects\\sushistack"}
+{"event":"progress","label":"scan-modules","index":1,"count":2,"fraction":0.5}
+{"event":"progress","label":"read-dependencies","index":2,"count":2,"fraction":null}
+{"event":"table","title":"Modules","columns":["Module","Presence","Branch"],"rows":[["sushiruntime","cloned","main"],["sushiblas","linked","main"],["sushiengine","binary","-"]]}
+{"event":"panel","title":"sushiai is missing","body":"The module is declared but not present.\nRun ss add sushiai to clone it."}
+{"event":"line","level":"warn","message":"1 declared module is not present."}
+{"event":"prompt","id":"prompt-1","message":"Clone sushiai now?","default":"n"}
+{"event":"line","level":"success","message":"Status read in 0.4 s."}
+{"event":"result","ok":true,"payload":{"workspace":"D:\\Projects\\sushistack","modules":[{"name":"sushiruntime","presence":"cloned"},{"name":"sushiblas","presence":"linked"},{"name":"sushiengine","presence":"binary"}],"dependencies":"D:\\Projects\\sushistack\\dependencies"}}
