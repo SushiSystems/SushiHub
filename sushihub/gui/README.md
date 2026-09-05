@@ -35,7 +35,11 @@ button that open that module's form with the module already entered. `Dependenci
 table of `ss --json doctor`, dims the rows reading NOT NEEDED and offers Install on the rows
 reading MISSING. `Licence` draws `whoami` and `license`, and its Sign in button starts `login`,
 shows the user code at two and a half times the text size, and opens the verification link.
-`Projects` says that projects arrive with wave 5, because `ss projects` does not exist yet.
+`Projects` draws the rows of `ss --json projects list`, the one run whose arguments `Workspace`
+maps from the screen name instead of copying it. Each row ends with Open and Remove, a row whose
+directory is gone is dimmed, and the form under the table registers a directory under a name of
+its own when one is typed. Open spawns `se editor --project <path>` and reads nothing back from
+it; `se` is the only program other than `ss` this application starts.
 
 Four widgets do the drawing everywhere: `EventLog` renders a run's events in arrival order,
 `TableView` one table event, `ProgressBar` the latest progress event, and `PromptDialog` the
