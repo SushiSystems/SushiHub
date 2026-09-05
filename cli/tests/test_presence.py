@@ -1,11 +1,35 @@
-"""How a module is present on disk, read from the markers a workspace carries."""
+"""How a module is present on disk, and what every `ss` command does about it."""
 
 import json
 
 import sushicore.profile
 
-from sushistack.services import presence
+from sushistack.services import modules, presence
 from sushistack.services.presence import Presence
+from sushistack.setup import dependency_source, steps
+from sushistack.setup.pipeline import InstallContext
+from sushistack.setup.steps import DetectStep
+
+from .conftest import MemorySource, dep
+
+
+class Recorder:
+    """Stands in for the console and keeps every line a step printed."""
+
+    def __init__(self) -> None:
+        """Start with no lines, and answer ``console.console`` with itself."""
+        self.lines: list[str] = []
+        self.console = self
+
+    def __getattr__(self, name: str):
+        """Return a call that records its first argument as a printed line."""
+        def record(*args, **kwargs) -> None:
+            self.lines.extend(str(a) for a in args)
+        return record
+
+    def said(self, text: str) -> bool:
+        """Report whether any recorded line contains *text*."""
+        return any(text in line for line in self.lines)
 
 
 def binary_install(path, version: str = "1.4.2") -> None:
@@ -22,6 +46,12 @@ def binary_install(path, version: str = "1.4.2") -> None:
 def checkout(path) -> None:
     """Make *path* look like a git checkout."""
     (path / ".git").mkdir(parents=True)
+
+
+def workspace(tmp_path, monkeypatch):
+    """Point every `ss` lookup at *tmp_path* and return it as the workspace root."""
+    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
+    return tmp_path
 
 
 def test_the_manifest_name_is_the_one_sushicore_looks_for():
@@ -100,3 +130,54 @@ def test_describe_gives_the_path_for_a_link_and_says_when_it_is_gone(tmp_path):
     assert presence.describe(tmp_path, "sushiengine", linked) == (str(elsewhere), "linked")
     assert presence.describe(tmp_path, "sushiai", linked) == (
         str(tmp_path / "gone"), "linked (missing)")
+
+
+def test_status_rows_carry_the_presence_and_the_version(tmp_path, monkeypatch):
+    root = workspace(tmp_path, monkeypatch)
+    binary_install(root / "sushiengine")
+    checkout(root / "sushiruntime")
+    rows = {row["name"]: row for row in modules.status_payload()["modules"]}
+    assert rows["sushiengine"]["presence"] == "binary"
+    assert rows["sushiengine"]["version"] == "1.4.2"
+    assert rows["sushiengine"]["state"] == "binary 1.4.2"
+    assert rows["sushiruntime"]["presence"] == "cloned"
+    assert rows["sushiruntime"]["version"] is None
+    assert rows["sushiai"]["presence"] == "absent"
+
+
+def test_update_leaves_a_binary_module_to_ss_add(tmp_path, monkeypatch):
+    root = workspace(tmp_path, monkeypatch)
+    binary_install(root / "sushiengine")
+    pulled = []
+    monkeypatch.setattr(modules, "_run_git", lambda args, cwd: pulled.append(cwd) or 0)
+    recorder = Recorder()
+    monkeypatch.setattr(modules, "console", recorder)
+    assert modules.update(["sushiengine"]) == 0
+    assert pulled == []
+    assert recorder.said("sushiengine: binary 1.4.2; updates come through `ss add sushiengine`.")
+    assert not recorder.said("No modules present yet")
+
+
+def test_readiness_says_a_binary_module_has_nothing_to_build(tmp_path, monkeypatch, fake_cfg):
+    root = workspace(tmp_path, monkeypatch)
+    binary_install(root / "sushiengine")
+    source = MemorySource([dep("cmake"), dep("vulkan", "sushiengine")])
+    step = DetectStep(source, managers=[],
+                      toolchain_status=lambda cfg, gpu: [], gpu_vendor=lambda: "none")
+    recorder = Recorder()
+    monkeypatch.setattr(steps, "console", recorder)
+    step._report_readiness(InstallContext(cfg=fake_cfg), source.all())
+    assert recorder.said("sushiengine: binary 1.4.2, nothing to build")
+
+
+def test_a_binary_module_contributes_no_dependency_fragment(tmp_path, monkeypatch):
+    root = workspace(tmp_path, monkeypatch)
+    binary_install(root / "sushiengine")
+    checkout(root / "sushiruntime")
+    for module in ("sushiengine", "sushiruntime"):
+        fragment = root / module / dependency_source.MODULE_MANIFEST_REL
+        fragment.parent.mkdir(parents=True, exist_ok=True)
+        fragment.write_text("[vulkan]\ndescription = \"test\"\n", encoding="utf-8")
+    owners = [owner for _, owner in dependency_source.manifest_sources()]
+    assert "sushiruntime" in owners
+    assert "sushiengine" not in owners

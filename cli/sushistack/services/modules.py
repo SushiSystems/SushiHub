@@ -25,6 +25,7 @@ from ..config import (
     workspace_root,
 )
 from ..setup.dependency_source import MODULE_MANIFEST_REL
+from .presence import Presence, describe, presence_of, read_release
 
 
 @dataclass(frozen=True)
@@ -293,7 +294,12 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             continue
         mod = MODULES[name]
         dest = root / mod.directory
-        if (dest / ".git").is_dir():
+        state = presence_of(root, name, linked)
+        if state is Presence.BINARY:
+            _, text = describe(root, name, linked)
+            console.info(f"{name}: {text} at {dest}; nothing to clone.")
+            continue
+        if state is Presence.CLONED:
             console.info(f"{name}: already cloned at {dest}")
             if not dry_run:
                 _install_module_cli(name, dest, root)
@@ -387,11 +393,18 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     # stale until someone remembers to pull the umbrella by hand.
     _self_update(root, dry_run=dry_run)
 
+    linked = registered_modules()
     failed = False
     any_present = False
     for name in resolved:
         dest = module_dest(root, name)
-        if not (dest / ".git").is_dir():
+        state = presence_of(root, name, linked)
+        if state is Presence.BINARY:
+            _, text = describe(root, name, linked)
+            console.info(f"{name}: {text}; updates come through `ss add {name}`.")
+            any_present = True
+            continue
+        if state is Presence.ABSENT:
             if names and names != ["all"]:
                 console.warn(f"{name}: not present (run `ss add {name}` or `ss link {name} <path>`).")
             continue
@@ -408,25 +421,37 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     return 1 if failed else 0
 
 
-def _status_rows(root: Path, linked: dict[str, str]) -> list[tuple[str, str, str]]:
-    """Build (module, location, state) rows for both the table and JSON views."""
+def _status_rows(root: Path, linked: dict[str, str]) -> list[dict]:
+    """Build one row per module for both the table and the JSON payload.
+
+    Args:
+        root: Workspace root.
+        linked: Module name to path, as ``ss link`` recorded it.
+
+    Returns:
+        A row per module carrying its name, where it lives, the state the table
+        prints, its :class:`~sushistack.services.presence.Presence` value, and
+        the version a binary install reports (None for every other form).
+    """
     rows = []
-    for name, mod in MODULES.items():
-        dest = module_dest(root, name)
-        if name in linked:
-            state = "linked" if (dest / ".git").is_dir() else "linked (missing)"
-            location = str(dest)
-        else:
-            state = "cloned" if (dest / ".git").is_dir() else "absent"
-            location = mod.directory
-        rows.append((name, location, state))
+    for name in MODULES:
+        state = presence_of(root, name, linked)
+        location, text = describe(root, name, linked)
+        release = read_release(module_dest(root, name)) if state is Presence.BINARY else None
+        rows.append({"name": name, "location": location, "state": text,
+                     "presence": state.value,
+                     "version": release.version if release else None})
 
     # The shared CLI presentation layer. Not a build module, but shown so a
     # damaged checkout is visible: it ships in this repository, so the only two
-    # states are present and missing.
+    # states are present and missing -- and it arrived with the clone of the
+    # workspace, which is the presence it reports.
     cli_dir = sushicore_dir(root)
-    rows.append((SUSHICORE_NAME, SUSHICORE_NAME if cli_dir else "",
-                 "in-repo" if cli_dir else "missing"))
+    rows.append({"name": SUSHICORE_NAME,
+                 "location": SUSHICORE_NAME if cli_dir else "",
+                 "state": "in-repo" if cli_dir else "missing",
+                 "presence": (Presence.CLONED if cli_dir else Presence.ABSENT).value,
+                 "version": None})
     return rows
 
 
@@ -435,16 +460,14 @@ def status_payload() -> dict:
 
     Returns:
         The ``result`` payload of ``ss status``: the workspace path, one entry per
-        module with its location and state, and where the dependencies live.
+        module with its location, state, presence and version, and where the
+        dependencies live.
     """
     root = workspace_root()
     deps = deps_dir()
     return {
         "workspace": str(root),
-        "modules": [
-            {"name": name, "location": location, "state": state}
-            for name, location, state in _status_rows(root, registered_modules())
-        ],
+        "modules": _status_rows(root, registered_modules()),
         "dependencies": {
             "path": str(deps),
             "present": deps.is_dir() and any(deps.iterdir()),

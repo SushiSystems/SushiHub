@@ -325,12 +325,14 @@ class DetectStep(Step):
     def _report_readiness(self, ctx: InstallContext, all_deps: list[Dependency]) -> None:
         """Print a plain-English, per-module readiness summary under the table.
 
-        For every known stack module, in the order a build would need them:
-        whether it is cloned, and if so whether the dependencies it needs (its
-        own plus the modules it builds on) are present.
+        For every known stack module, in the order a build would need them: how
+        it is present, and for a module built from source whether the
+        dependencies it needs (its own plus the modules it builds on) are
+        present. A binary install builds nothing, so it needs nothing.
         """
         from ..config import registered_modules, workspace_root
         from ..services.modules import MODULES, module_dest
+        from ..services.presence import Presence, describe, presence_of
 
         try:
             root = workspace_root()
@@ -341,8 +343,13 @@ class DetectStep(Step):
         console.info("Module readiness:")
         for name in owner_order(self._source, MODULES):
             dest = module_dest(root, name)
-            present = (dest / ".git").is_dir()
-            if not present:
+            state = presence_of(root, name, linked)
+            if state is Presence.BINARY:
+                _, text = describe(root, name, linked)
+                console.console.print(
+                    f"  [green]{name}: {text}, nothing to build[/green]")
+                continue
+            if state is Presence.ABSENT:
                 verb = "linked but missing at" if name in linked else "not cloned yet"
                 hint = f" ({dest})" if name in linked else f" (ss add {name})"
                 console.console.print(f"  [dim]{name}: {verb}{hint}[/dim]")
