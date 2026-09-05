@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sushisystems.io/contract/events.schema.json",
+  "title": "One event line",
+  "description": "One JSON object on one line of a Sushi CLI's stdout under --json.",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "line"},
+        "level": {"enum": ["info", "success", "warn", "error"]},
+        "message": {"type": "string"}
+      },
+      "required": ["event", "level", "message"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "command"},
+        "command": {"type": "string"}
+      },
+      "required": ["event", "command"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "header"},
+        "title": {"type": "string"}
+      },
+      "required": ["event", "title"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "panel"},
+        "title": {"type": "string"},
+        "body": {"type": "string"}
+      },
+      "required": ["event", "title", "body"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "table"},
+        "title": {"type": "string"},
+        "columns": {"type": "array", "items": {"type": "string"}},
+        "rows": {
+          "type": "array",
+          "items": {"type": "array", "items": {"type": "string"}}
+        }
+      },
+      "required": ["event", "title", "columns", "rows"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "progress"},
+        "label": {"type": "string"},
+        "index": {"type": "integer"},
+        "count": {"type": "integer"},
+        "fraction": {"type": ["number", "null"]}
+      },
+      "required": ["event", "label", "index", "count", "fraction"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "result"},
+        "ok": {"type": "boolean"},
+        "payload": {"type": "object"}
+      },
+      "required": ["event", "ok", "payload"],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "event": {"const": "prompt"},
+        "id": {"type": "string"},
+        "message": {"type": "string"},
+        "default": {"type": ["string", "null"]}
+      },
+      "required": ["event", "id", "message", "default"],
+      "additionalProperties": false
+    }
+  ]
+}
