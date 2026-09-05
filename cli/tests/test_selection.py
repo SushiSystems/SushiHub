@@ -31,3 +31,18 @@ def test_merged_applies_known_keys_only():
     sel = ToolchainSelection(False, False, False, False).merged({"gpu": True, "bogus": True})
     assert sel.gpu and sel.as_dict() == {"install_intel_llvm": False, "install_acpp": False,
                                          "oneapi": False, "gpu": True}
+
+
+def test_build_pipeline_defaults_to_the_derived_selection(fake_cfg):
+    from sushistack.setup.factory import build_pipeline
+    src = MemorySource([dep("cmake"), dep("intel-llvm", "sushiruntime")])
+    _pipeline, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[])
+    assert ctx.install_intel_llvm and not ctx.install_acpp and not ctx.oneapi and not ctx.gpu
+
+
+def test_build_pipeline_merges_an_explicit_selection_over_the_derived_one(fake_cfg):
+    from sushistack.setup.factory import build_pipeline
+    src = MemorySource([dep("intel-llvm", "sushiruntime")])
+    _p, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[],
+                             selection={"install_intel_llvm": False, "oneapi": True})
+    assert not ctx.install_intel_llvm and ctx.oneapi

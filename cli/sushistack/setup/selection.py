@@ -9,9 +9,13 @@ in `docs/agent/specs/2026-09-05-hub-design.md` §3.
 from __future__ import annotations
 
 from dataclasses import dataclass, fields
+from typing import TYPE_CHECKING
 
 from ..config import CUSTOMIZABLE_COMPONENTS
 from .dependency_source import SHARED_OWNER, IDependencySource
+
+if TYPE_CHECKING:
+    from .pipeline import InstallContext
 
 
 @dataclass(frozen=True)
@@ -22,6 +26,11 @@ class ToolchainSelection:
     install_acpp: bool
     oneapi: bool
     gpu: bool
+
+    @classmethod
+    def from_context(cls, ctx: "InstallContext") -> "ToolchainSelection":
+        """Read the selection back off an install context."""
+        return cls(**{f.name: bool(getattr(ctx, f.name)) for f in fields(cls)})
 
     def as_dict(self) -> dict[str, bool]:
         """Return the selection as ``InstallContext`` field name -> value."""
