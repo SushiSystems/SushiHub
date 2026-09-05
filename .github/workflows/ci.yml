@@ -23,6 +23,25 @@ jobs:
       - name: Test
         run: python -m pytest sushicore/tests -q
 
+  ss:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.10", "3.11"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install sushicore, then the ss CLI
+        # sushicore is published to no index, so it must already be in the
+        # environment before the CLI is installed against it.
+        run: pip install -e ./sushicore -e "./cli[test]"
+      - name: Test
+        run: python -m pytest cli/tests -q
+
   # ---------------------------------------------------------------------------
   # Consumer CLI contract
   # ---------------------------------------------------------------------------
