@@ -7,24 +7,62 @@ that live inside the workspace. Each module keeps its own CLI — `sr`, `se`,
 and module lifecycle.
 
 Thin Typer layer: commands parse arguments and delegate to the service layer in
-``sushistack.services``.
+``sushistack.services``. Every command ends through :func:`_finish`, which emits
+the one ``result`` event the JSON contract in ``sushihub/contract/README.md``
+requires and then exits.
 """
 
 from __future__ import annotations
 
+import json
 from typing import List, Optional
 
 import typer
 
+from . import console
+from .describe import catalogue
 from .services import modules as modules_svc
 from .services import setup as setup_svc
 
 app = typer.Typer(
     name="ss",
     help="SushiStack CLI — one shared dependency tree and module manager for the stack.",
-    no_args_is_help=True,
     rich_markup_mode="rich",
 )
+
+
+@app.callback(invoke_without_command=True)
+def _root(
+    ctx: typer.Context,
+    json_output: bool = typer.Option(
+        False, "--json", is_eager=True,
+        help="One JSON event per line on stdout; nothing else there."),
+    describe: bool = typer.Option(
+        False, "--describe", is_eager=True,
+        help="Print the command catalogue as JSON and exit."),
+):
+    """Select the output mode before any command body runs."""
+    console.set_machine(json_output)
+    if describe:
+        typer.echo(json.dumps(catalogue(app), ensure_ascii=False))
+        raise typer.Exit(0)
+    if ctx.invoked_subcommand is None:
+        typer.echo(ctx.get_help())
+        raise typer.Exit(0)
+
+
+def _finish(rc: int, payload: dict | None = None) -> None:
+    """Emit the result event and exit with *rc*.
+
+    Args:
+        rc: The exit code; zero is the ``ok`` the result event reports.
+        payload: What the command computed, an empty object when it computed nothing.
+
+    Raises:
+        typer.Exit: Always; this is how a command body returns.
+    """
+    console.result(rc == 0, payload or {})
+    raise typer.Exit(rc)
 
 
 # --------------------------------------------------------------------------- #
@@ -38,16 +76,17 @@ def init():
     excludes the shared [cyan]dependencies/[/cyan] tree and module checkouts, and
     creates the dependency directory. Run this once after cloning sushistack.
     """
-    raise typer.Exit(modules_svc.init())
+    _finish(modules_svc.init())
 
 
 @app.command("home")
 def home():
     """Print the resolved workspace root and dependency directory."""
     from .config import deps_dir, workspace_root
-    typer.echo(str(workspace_root()))
-    typer.echo(f"dependencies: {deps_dir()}")
-    raise typer.Exit(0)
+    root, deps = workspace_root(), deps_dir()
+    console.info(str(root))
+    console.info(f"dependencies: {deps}")
+    _finish(0, {"workspace": str(root), "dependencies": str(deps)})
 
 
 @app.command("status")
@@ -56,7 +95,9 @@ def status(
         False, "--json", help="Print machine-readable JSON instead of a table."),
 ):
     """Show which modules are cloned and whether dependencies are present."""
-    raise typer.Exit(modules_svc.status(json_output=json_output))
+    if json_output:
+        console.set_machine(True)
+    _finish(modules_svc.status(json_output=json_output))
 
 
 # --------------------------------------------------------------------------- #
@@ -75,7 +116,7 @@ def add(
     Each module that arrives brings its own dependencies; they are provisioned
     once at the end unless [bold]--skip-install[/bold] is given.
     """
-    raise typer.Exit(modules_svc.add(modules, dry_run=dry_run, skip_install=skip_install))
+    _finish(modules_svc.add(modules, dry_run=dry_run, skip_install=skip_install))
 
 
 @app.command("link")
@@ -94,8 +135,7 @@ def link(
     CLI resolves the shared deps via SUSHISTACK_HOME. What the linked module
     declares is provisioned afterwards unless [bold]--skip-install[/bold] is given.
     """
-    raise typer.Exit(modules_svc.link(module, path, dry_run=dry_run,
-                                      skip_install=skip_install))
+    _finish(modules_svc.link(module, path, dry_run=dry_run, skip_install=skip_install))
 
 
 @app.command("install-cli")
@@ -116,7 +156,7 @@ def install_cli(
     install time, so `git pull`s on the checkout would silently stop reaching it.
     """
     from .services import cli_install as cli_install_svc
-    raise typer.Exit(cli_install_svc.install_cli(modules, dry_run=dry_run))
+    _finish(cli_install_svc.install_cli(modules, dry_run=dry_run))
 
 
 @app.command("update")
@@ -126,7 +166,7 @@ def update(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't pull."),
 ):
     """Fast-forward (`git pull`) the workspace and the present modules (cloned or linked)."""
-    raise typer.Exit(modules_svc.update(modules, dry_run=dry_run))
+    _finish(modules_svc.update(modules, dry_run=dry_run))
 
 
 # --------------------------------------------------------------------------- #
@@ -137,7 +177,7 @@ def install(
     customize: bool = typer.Option(
         False, "--customize",
         help="Pick which components to install in an interactive TUI instead of "
-             "installing everything."),
+             "what the present modules declare."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't change."),
     yes: bool = typer.Option(
         False, "--yes", "-y",
@@ -159,9 +199,9 @@ def install(
         defaults = selection_from_source(TomlDependencySource()).as_dict()
         selection = customize_svc.choose_components(defaults)
         if selection is None:
-            raise typer.Exit(1)
-    raise typer.Exit(setup_svc.run("provision", dry_run=dry_run, selection=selection,
-                                   assume_yes=yes, refresh_toolchains=refresh_toolchains))
+            _finish(1)
+    _finish(setup_svc.run("provision", dry_run=dry_run, selection=selection,
+                          assume_yes=yes, refresh_toolchains=refresh_toolchains))
 
 
 @app.command("sync")
@@ -169,13 +209,13 @@ def sync(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't change."),
 ):
     """Bring the workspace up to date: install missing deps, then update modules."""
-    raise typer.Exit(modules_svc.sync(dry_run=dry_run))
+    _finish(modules_svc.sync(dry_run=dry_run))
 
 
 @app.command("doctor")
 def doctor():
     """Inventory tools, compilers, and dependencies; report what is missing."""
-    raise typer.Exit(setup_svc.run("detect", dry_run=False))
+    _finish(setup_svc.run("detect", dry_run=False))
 
 
 @app.command("remove")
@@ -191,7 +231,7 @@ def remove(
         False, "--yes", "-y", help="Skip the confirmation prompt for --all."),
 ):
     """Remove provisioned dependencies. Use [bold]--all[/bold] to reclaim the lot."""
-    raise typer.Exit(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
+    _finish(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
 
 
 if __name__ == "__main__":
