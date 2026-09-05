@@ -29,6 +29,7 @@ except ModuleNotFoundError:  # Python 3.10 fallback
 
 from .. import console
 from ..config import config_dir, registered_modules, workspace_root
+from ..services.presence import is_binary
 
 #: Path, relative to a module's repo root, of the fragment it contributes.
 MODULE_MANIFEST_REL = Path("cli") / "sushistack.deps.toml"
@@ -111,6 +112,10 @@ def manifest_sources() -> list[tuple[Path, str]]:
     infrastructure); a module's ``cli/sushistack.deps.toml`` is owned by the
     module's directory name. Shared fragments come first (sorted, stable order),
     then modules in the workspace, then linked external checkouts.
+
+    A binary install is skipped: the release carries the libraries it was built
+    against, so a fragment left in its tree declares nothing this workspace has
+    to provision.
     """
     sources: list[tuple[Path, str]] = []
     manifests_dir = config_dir() / "manifests"
@@ -122,6 +127,8 @@ def manifest_sources() -> list[tuple[Path, str]]:
         root = None
     if root is not None:
         for module in sorted(p for p in root.iterdir() if p.is_dir()):
+            if is_binary(module):
+                continue
             fragment = module / MODULE_MANIFEST_REL
             if fragment.is_file():
                 sources.append((fragment, module.name))

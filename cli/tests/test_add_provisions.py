@@ -31,3 +31,18 @@ def test_add_honours_skip_install(monkeypatch, tmp_path):
     monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
     modules.add(["sushiruntime"], skip_install=True, provision=lambda dry_run: calls.append(dry_run) or 0)
     assert calls == []
+
+
+def test_add_leaves_a_binary_module_alone(monkeypatch, tmp_path):
+    (tmp_path / "sushiengine").mkdir()
+    (tmp_path / "sushiengine" / "sushi-release.json").write_text(
+        '{"product": "sushiengine", "version": "1.4.2", "platform": "windows-x64"}',
+        encoding="utf-8")
+    calls = []
+    cloned = []
+    monkeypatch.setattr(modules, "workspace_root", lambda: tmp_path)
+    monkeypatch.setattr(modules, "registered_modules", lambda: {})
+    monkeypatch.setattr(modules, "_run_git", lambda args, cwd: cloned.append(args) or 0)
+    monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
+    rc = modules.add(["sushiengine"], provision=lambda dry_run: calls.append(dry_run) or 0)
+    assert rc == 0 and cloned == [] and calls == []
