@@ -113,17 +113,24 @@ def status(
 @app.command("add")
 def add(
     modules: List[str] = typer.Argument(
-        ..., help="Modules to clone: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp | all."),
+        ..., help="Modules to bring in: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp | all."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't clone or install."),
     skip_install: bool = typer.Option(
         False, "--skip-install", help="Do not run the dependency install afterwards."),
+    binary: bool = typer.Option(
+        False, "--binary",
+        help="Install sushiengine from its release even when its source is in reach."),
 ):
-    """Clone one or more stack modules into the workspace, with what they need.
+    """Bring one or more stack modules into the workspace, with what they need.
 
-    Each module that arrives brings its own dependencies; they are provisioned
-    once at the end unless [bold]--skip-install[/bold] is given.
+    Four of the five are cloned. sushiengine is cloned when this machine's Git
+    identity reaches its repository, and downloaded as a compiled release, with
+    its licence file, when it does not or when [bold]--binary[/bold] is given.
+    Each module that arrives by clone brings its own dependencies; they are
+    provisioned once at the end unless [bold]--skip-install[/bold] is given.
     """
-    _finish(modules_svc.add(modules, dry_run=dry_run, skip_install=skip_install))
+    _finish(modules_svc.add(modules, dry_run=dry_run, skip_install=skip_install,
+                            binary=binary))
 
 
 @app.command("link")
@@ -172,7 +179,12 @@ def update(
         None, help="Modules to update (omit for all present modules)."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't pull."),
 ):
-    """Fast-forward (`git pull`) the workspace and the present modules (cloned or linked)."""
+    """Bring the workspace and every present module up to date.
+
+    A checkout, cloned or linked, is fast-forwarded with [cyan]git pull[/cyan]. A
+    binary install asks Sushi ID for the latest release and downloads it when the
+    version differs from the installed one.
+    """
     _finish(modules_svc.update(modules, dry_run=dry_run))
 
 

@@ -162,7 +162,7 @@ def signed_in(fake_id, monkeypatch):
     store = MemoryStore(Tokens("access-1", "refresh-1", 1e12))
     client = SushiId(fake_id.url, store,
                      sleep=lambda seconds: setattr(fake_id.state, "approved", True))
-    monkeypatch.setattr(session, "_client", lambda: client)
+    monkeypatch.setattr(session, "client", lambda: client)
     monkeypatch.setattr(webbrowser, "open", lambda uri: True)
     return SimpleNamespace(state=fake_id.state, store=store)
 

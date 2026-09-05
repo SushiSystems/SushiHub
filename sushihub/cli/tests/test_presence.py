@@ -145,16 +145,19 @@ def test_status_rows_carry_the_presence_and_the_version(tmp_path, monkeypatch):
     assert rows["sushiai"]["presence"] == "absent"
 
 
-def test_update_leaves_a_binary_module_to_ss_add(tmp_path, monkeypatch):
+def test_update_refreshes_a_binary_module_through_sushi_id(tmp_path, monkeypatch):
     root = workspace(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     pulled = []
+    refreshed = []
     monkeypatch.setattr(modules, "_run_git", lambda args, cwd: pulled.append(cwd) or 0)
+    monkeypatch.setattr(modules, "_update_binary",
+                        lambda name, dest: refreshed.append((name, dest)) or True)
     recorder = Recorder()
     monkeypatch.setattr(modules, "console", recorder)
     assert modules.update(["sushiengine"]) == 0
     assert pulled == []
-    assert recorder.said("sushiengine: binary 1.4.2; updates come through `ss add sushiengine`.")
+    assert refreshed == [("sushiengine", root / "sushiengine")]
     assert not recorder.said("No modules present yet")
 
 
