@@ -1,17 +1,52 @@
 """The schemas are the contract; a stream that violates them is a defect."""
 
+import inspect
 import json
+import os
 from pathlib import Path
 
 import jsonschema
 import pytest
+from typer.testing import CliRunner
+
+from sushistack.cli import app
 
 CONTRACT = Path(__file__).resolve().parents[2] / "sushihub" / "contract"
+MANIFESTS = Path(__file__).resolve().parents[1] / "manifests"
 
 
 def _schema(name):
     """Load the named schema from ``sushihub/contract/``."""
     return json.loads((CONTRACT / name).read_text(encoding="utf-8"))
+
+
+def _runner() -> CliRunner:
+    """Build a runner that keeps stderr out of stdout on either Click generation."""
+    if "mix_stderr" in inspect.signature(CliRunner.__init__).parameters:
+        return CliRunner(mix_stderr=False)
+    return CliRunner()
+
+
+def _run(args, cwd):
+    """Invoke ``ss`` in-process with *cwd* as the workspace."""
+    return _runner().invoke(app, args, env={**os.environ, "SUSHISTACK_HOME": str(cwd)})
+
+
+def _events(result):
+    """Parse the event lines a run wrote to stdout."""
+    return [json.loads(line) for line in result.stdout.splitlines() if line.strip()]
+
+
+@pytest.fixture
+def workspace(tmp_path):
+    """Build a throwaway workspace with the marker, the base manifest and a config."""
+    (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
+    (tmp_path / "cli" / "manifests").mkdir(parents=True)
+    (tmp_path / "cli" / "manifests" / "base.deps.toml").write_text(
+        (MANIFESTS / "base.deps.toml").read_text(encoding="utf-8"), encoding="utf-8")
+    (tmp_path / "cli" / "config.toml").write_text(
+        '[cli]\ntheme = "default"\n', encoding="utf-8")
+    return tmp_path
 
 
 def test_events_schema_accepts_each_kind():
@@ -54,3 +89,16 @@ def test_set_machine_before_first_print_switches_to_json(capsys):
     c.set_machine(True)
     c.info("hello")
     assert json.loads(capsys.readouterr().out.strip())["event"] == "line"
+
+
+def test_describe_prints_a_valid_catalogue(workspace):
+    r = _run(["--describe"], workspace)
+    assert r.exit_code == 0
+    jsonschema.Draft202012Validator(_schema("describe.schema.json")).validate(json.loads(r.stdout))
+
+
+def test_home_under_json_ends_with_a_result_carrying_the_paths(workspace):
+    r = _run(["--json", "home"], workspace)
+    events = _events(r)
+    assert events[-1]["event"] == "result" and events[-1]["ok"] is True
+    assert events[-1]["payload"]["workspace"] == str(workspace)
