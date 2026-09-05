@@ -14,7 +14,7 @@ cli/
     services/            module lifecycle, CLI installation, the interactive picker
     setup/               the dependency engine: manifests, package managers, toolchains, the pipeline
   manifests/             dependency fragments this repository ships (*.deps.toml)
-  config.toml            defaults for the [tool] and [cli] tables
+  config.toml            defaults for the [tool], [cli] and [identity] tables
   config.local.toml      machine-local overrides written by `ss install`; git-ignored
   modules.local.toml     checkouts registered with `ss link`; git-ignored
   install.py             installs `ss` into a pipx venv and injects sushicore
@@ -39,6 +39,10 @@ them. See "Machine-readable output".
 | `ss doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `ss remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
 | `ss home` | Print the workspace root and the `dependencies/` path. |
+| `ss login` | Sign in to Sushi ID: print a code, open the browser at the device page, wait for the grant, and store the session in this machine's credential store. |
+| `ss logout` | Forget the stored Sushi ID session. Sushi ID is not told. |
+| `ss whoami` | Print the signed-in account: its id, its email and how many licences it holds. |
+| `ss license` | Print one row per licence on the account: product, holder (`account` or `org`), expiry. |
 
 Tab completion: run `ss --install-completion` once.
 
@@ -57,6 +61,23 @@ second declaration, so a new `ss` command shows up in the catalogue the moment i
 
 Both halves are JSON Schema in `../sushihub/contract/`, and `../sushihub/contract/README.md`
 writes out the event shapes, the stdout rule and the prompt rule for whoever is on the other end.
+
+## Signing in
+
+sushiengine is sold; the other four modules are not. `ss login` is how a machine proves a licence,
+and nothing else in `ss` needs it: cloning an open-source module asks only for a Git identity.
+
+`ss login` asks Sushi ID for a device code, prints it with the page to type it into, opens that page
+in the browser, and polls until you approve it there. What comes back — an access token, a refresh
+token and an expiry — goes into the operating system's credential store through `keyring`, under
+service `sushistack` and username `sushi-id`. A later command that needs the account refreshes the
+access token when it is within 30 seconds of expiry; when the refresh is refused, the stored session
+is dropped and the command says nobody is signed in.
+
+Sushi ID lives at `https://id.sushisystems.io`, from `[identity] url` in `config.toml`.
+`SUSHI_ID_URL` overrides it, which is how the tests point the four commands at a fake server on
+`127.0.0.1`. The four endpoints are written out in `../sushihub/contract/sushi-id.md`; sushiweb
+has not built them yet.
 
 ## How dependencies are chosen
 
@@ -79,6 +100,7 @@ fragment declares a dependency of that name, so an empty workspace gets the base
 | `cli/config.local.toml` | `ss install` | Resolved toolchain paths for this machine, read by every module CLI through `sushicore`. |
 | `cli/modules.local.toml` | `ss link` | Modules that live outside the workspace tree, by name and path. |
 | `<workspace>/dependencies/` | `ss install`, `ss remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |
+| OS credential store, `sushistack` / `sushi-id` | `ss login`, `ss logout` | The Sushi ID session as one JSON document: both tokens and the access token's expiry. |
 
 ## Where sushicore comes from
 

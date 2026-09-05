@@ -235,5 +235,37 @@ def remove(
     _finish(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
 
 
+@app.command("login")
+def login():
+    """Sign in to Sushi ID and keep the session in the credential store.
+
+    Prints a code, opens Sushi ID's device page in the browser, and waits there
+    until you approve it.
+    """
+    from .services import session as session_svc
+    _finish(*session_svc.login())
+
+
+@app.command("logout")
+def logout():
+    """Forget the stored Sushi ID session on this machine."""
+    from .services import session as session_svc
+    _finish(*session_svc.logout())
+
+
+@app.command("whoami")
+def whoami():
+    """Print the Sushi ID account this machine is signed in as."""
+    from .services import session as session_svc
+    _finish(*session_svc.whoami())
+
+
+@app.command("license")
+def license():
+    """Print the licences the signed-in Sushi ID account holds."""
+    from .services import session as session_svc
+    _finish(*session_svc.license())
+
+
 if __name__ == "__main__":
     app()

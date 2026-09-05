@@ -13,6 +13,7 @@ import keyring.errors
 import pytest
 
 from sushistack.config import DEFAULT_IDENTITY_URL, identity_url
+from sushistack.services import session
 from sushistack.services.identity import (
     Account,
     Licence,
@@ -138,6 +139,9 @@ class FakeIdState:
         self.refreshes = 0
         self.refresh_ok = True
         self.bearers: list[str] = []
+        self.licenses = [{"product": "sushiengine", "holder": "account",
+                          "expires_at": "2027-03-01"},
+                         {"product": "sushiai", "holder": "org", "expires_at": None}]
 
 
 def _handler_for(state: FakeIdState):
@@ -200,10 +204,7 @@ def _handler_for(state: FakeIdState):
                 self._reply(401, {})
                 return
             self._reply(200, {"account_id": "acc-1", "email": "dev@sushisystems.io",
-                              "licenses": [{"product": "sushiengine", "holder": "account",
-                                            "expires_at": "2027-03-01"},
-                                           {"product": "sushiai", "holder": "org",
-                                            "expires_at": None}]})
+                              "licenses": state.licenses})
 
     return Handler
 
@@ -325,3 +326,61 @@ def test_logout_forgets_the_session(fake_id):
     store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
     SushiId(fake_id.url, store).logout()
     assert store.load() is None
+
+
+def _bind(monkeypatch, fake_id, store, **kwargs):
+    """Point the four commands at *fake_id* with *store* as their credential store."""
+    client = SushiId(fake_id.url, store, **kwargs)
+    monkeypatch.setattr(session, "_client", lambda: client)
+    return client
+
+
+def test_login_stores_the_session_and_returns_the_email(fake_id, monkeypatch):
+    store = MemoryStore()
+    _bind(monkeypatch, fake_id, store,
+          sleep=lambda seconds: setattr(fake_id.state, "approved", True))
+    opened: list[str] = []
+    outcome = session.login(open_browser=opened.append)
+    assert outcome == session.Outcome(0, {"email": "dev@sushisystems.io"})
+    assert opened == ["http://127.0.0.1/activate"]
+    assert store.load().access_token == "access-1"
+
+
+def test_login_reports_a_refused_grant(fake_id, monkeypatch):
+    fake_id.state.denied = True
+    _bind(monkeypatch, fake_id, MemoryStore(), sleep=lambda seconds: None)
+    assert session.login(open_browser=lambda uri: True) == session.Outcome(1, {})
+
+
+def test_logout_command_clears_the_store(fake_id, monkeypatch):
+    store = MemoryStore(Tokens("access-1", "refresh-1", 1e12))
+    _bind(monkeypatch, fake_id, store)
+    assert session.logout() == session.Outcome(0, {})
+    assert store.load() is None
+
+
+def test_whoami_reports_that_nobody_is_signed_in(fake_id, monkeypatch):
+    _bind(monkeypatch, fake_id, MemoryStore())
+    assert session.whoami() == session.Outcome(1, {})
+
+
+def test_whoami_carries_the_account_as_its_payload(fake_id, monkeypatch):
+    _bind(monkeypatch, fake_id, MemoryStore(Tokens("access-1", "refresh-1", 1e12)))
+    code, payload = session.whoami()
+    assert code == 0
+    assert payload["account_id"] == "acc-1" and payload["email"] == "dev@sushisystems.io"
+    assert payload["licenses"][0] == {"product": "sushiengine", "holder": "account",
+                                      "expires_at": "2027-03-01"}
+
+
+def test_license_carries_the_licences_alone(fake_id, monkeypatch):
+    _bind(monkeypatch, fake_id, MemoryStore(Tokens("access-1", "refresh-1", 1e12)))
+    code, payload = session.license()
+    assert code == 0 and list(payload) == ["licenses"]
+    assert [item["product"] for item in payload["licenses"]] == ["sushiengine", "sushiai"]
+
+
+def test_license_says_so_when_the_account_holds_none(fake_id, monkeypatch):
+    fake_id.state.licenses = []
+    _bind(monkeypatch, fake_id, MemoryStore(Tokens("access-1", "refresh-1", 1e12)))
+    assert session.license() == session.Outcome(0, {"licenses": []})
