@@ -23,6 +23,9 @@ cli/
 
 ## Commands
 
+`--json` and `--describe` are global: they go before the subcommand, and no row below repeats
+them. See "Machine-readable output".
+
 | Command | What it does |
 |---|---|
 | `ss init` | Write the `.sushistack` workspace marker and add `dependencies/` to `.gitignore`. |
@@ -32,12 +35,28 @@ cli/
 | `ss install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `ss add`. |
 | `ss update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. No arguments means all. |
 | `ss sync [--dry-run]` | Install missing dependencies, then update every module. |
-| `ss status [--json]` | Which modules are present, in which form, and whether dependencies are installed. `--json` prints the same for scripts. |
+| `ss status [--json]` | Which modules are present, in which form, and whether dependencies are installed. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `ss doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `ss remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
 | `ss home` | Print the workspace root and the `dependencies/` path. |
 
 Tab completion: run `ss --install-completion` once.
+
+## Machine-readable output
+
+`ss --json <command>` writes one JSON event per line to stdout and nothing else there. Everything
+a human would read instead — the setup progress bar, a config file rendered before it is written —
+goes to stderr, so a caller parses stdout line by line and never has to strip a table out of it.
+Every command ends with one `result` event carrying its exit status and whatever it computed:
+`ss --json status` puts the module list there, `ss --json home` the workspace and dependency paths.
+A question becomes a `prompt` event answered by one line on stdin.
+
+`ss --describe` prints the command catalogue instead: every subcommand, its arguments and options
+with their types, defaults and choices. It is a serialisation of the Typer application, not a
+second declaration, so a new `ss` command shows up in the catalogue the moment it exists.
+
+Both halves are JSON Schema in `../sushihub/contract/`, and `../sushihub/contract/README.md`
+writes out the event shapes, the stdout rule and the prompt rule for whoever is on the other end.
 
 ## How dependencies are chosen
 
