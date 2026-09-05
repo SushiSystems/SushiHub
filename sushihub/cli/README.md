@@ -14,12 +14,13 @@ sushihub/cli/
     config.py            workspace root, config dir, the registered-modules file
     gui_config.py        the desktop application's profile, config and root
     gui_env.py           its build environment, vcvars snapshot included
-    services/            module lifecycle, CLI installation, the picker, the gui build policy
+    services/            module lifecycle, Sushi ID, releases, the licence file, projects, the gui build policy
     setup/               the dependency engine: manifests, package managers, toolchains, the pipeline
   manifests/             dependency fragments this repository ships (*.deps.toml)
   config.toml            defaults for the [tool], [cli] and [identity] tables
   config.local.toml      machine-local overrides written by `ss install`; git-ignored
   modules.local.toml     checkouts registered with `ss link`; git-ignored
+  projects.local.toml    projects registered with `ss projects`; git-ignored
   install.py             installs `ss` into a pipx venv and injects sushicore
   pyproject.toml
 ```
@@ -33,10 +34,10 @@ them. See "Machine-readable output".
 |---|---|
 | `ss init` | Write the `.sushistack` workspace marker and add `dependencies/` to `.gitignore`. |
 | `ss install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker over the toolchains. `--yes` answers the LLVM-download prompt for unattended runs. `--refresh-toolchains` re-downloads an installed SYCL toolchain, which is otherwise reused forever; reused installs report the release they came from and say when they carry no sanitizer runtime. |
-| `ss add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|sushidsp\|all> [--dry-run] [--skip-install]` | Clone one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `ss install`. Aliases: `sr`, `se`, `sa`, `sb`, `sd`. |
+| `ss add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|sushidsp\|all> [--dry-run] [--skip-install] [--binary]` | Bring one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `ss install`. `--binary` installs sushiengine from its release rather than its source; see "Binary installs". Aliases: `sr`, `se`, `sa`, `sb`, `sd`. |
 | `ss link <module> <path> [--dry-run] [--skip-install]` | Register an existing checkout outside the workspace as a module, without cloning, then provision what it declares. `--skip-install` leaves that to a later `ss install`. Same names and aliases as `ss add`. |
 | `ss install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `ss add`. |
-| `ss update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install is skipped; `ss add <module>` fetches its next release. No arguments means all. |
+| `ss update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi ID for the latest release and downloads it when the version differs. No arguments means all. |
 | `ss sync [--dry-run]` | Install missing dependencies, then update every module. |
 | `ss status [--json]` | Which modules are present, in which form, and whether dependencies are installed. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `ss doctor` | Check tools, compilers and dependencies; report what is missing. |
@@ -50,6 +51,9 @@ them. See "Machine-readable output".
 | `ss logout` | Forget the stored Sushi ID session. Sushi ID is not told. |
 | `ss whoami` | Print the signed-in account: its id, its email and how many licences it holds. |
 | `ss license` | Print one row per licence on the account: product, holder (`account` or `org`), expiry. |
+| `ss projects list` | Print the registered projects: name, path, and whether the directory is still there. |
+| `ss projects add <path> [--name <name>]` | Register a project directory. The name is the directory's own unless `--name` says otherwise. |
+| `ss projects remove <name>` | Drop a project from the registry. Its directory is untouched. |
 
 Tab completion: run `ss --install-completion` once.
 
@@ -66,8 +70,8 @@ A question becomes a `prompt` event answered by one line on stdin.
 with their types, defaults and choices. It is a serialisation of the Typer application, not a
 second declaration, so a new `ss` command shows up in the catalogue the moment it exists.
 
-Both halves are JSON Schema in `../sushihub/contract/`, and `../sushihub/contract/README.md`
-writes out the event shapes, the stdout rule and the prompt rule for whoever is on the other end.
+Both halves are JSON Schema in `../contract/`, and `../contract/README.md` writes out the event
+shapes, the stdout rule and the prompt rule for whoever is on the other end.
 
 ## Signing in
 
@@ -82,9 +86,34 @@ access token when it is within 30 seconds of expiry; when the refresh is refused
 is dropped and the command says nobody is signed in.
 
 Sushi ID lives at `https://id.sushisystems.io`, from `[identity] url` in `config.toml`.
-`SUSHI_ID_URL` overrides it, which is how the tests point the four commands at a fake server on
-`127.0.0.1`. The four endpoints are written out in `../sushihub/contract/sushi-id.md`; sushiweb
-has not built them yet.
+`SUSHI_ID_URL` overrides it, which is how the tests point every Sushi ID call at a fake server on
+`127.0.0.1`. The six endpoints are written out in `../contract/sushi-id.md`; sushiweb has not built
+them yet.
+
+## Binary installs
+
+`ss add sushiengine` decides between the two forms rather than being told. It asks the private
+repository whether this machine's Git identity reaches it, with `git ls-remote --exit-code` under a
+15-second timeout. If it does, the module is cloned like any other. If it does not, `ss` needs a
+Sushi ID session: with one it downloads the release, without one it names both ways in and stops.
+`--binary` skips the question and goes straight to the release. The other four modules are open
+source and have one path; `--binary` on any of them is refused.
+
+The download is what `sushiweb` signed a URL for. `ss` streams it, refuses to unpack it when either
+the size or the sha256 differs from what Sushi ID declared, unpacks it into a directory beside
+`<workspace>/sushiengine`, and renames that over the module last, so a download that fails leaves
+the install that was there untouched. The release carries `sushi-release.json` at its top level:
+that file is what makes the directory a binary install, and `ss status` reads the version out of it
+("binary 1.4.2"). Beside it `ss` writes `sushi-licence.jwt`, the licence token Sushi ID issued,
+which the engine reads at start-up and verifies offline against Sushi ID's JWKS.
+
+A release brings its own sushiruntime and sushiblas, so it declares no dependency fragment and
+nothing provisions after it: a licensed user never downloads a SYCL toolchain. It also installs no
+module CLI; `se` arrives inside the package.
+
+`ss update sushiengine` asks for the latest release, says the install is already the latest when
+the versions match, and downloads the new one and writes the licence file again when they do not.
+`ss add sushiengine` on a directory that is already a binary install leaves it alone.
 
 ## How dependencies are chosen
 
@@ -111,6 +140,9 @@ fragment declares a dependency of that name, so an empty workspace gets the base
 | `<workspace>/.sushistack` | `ss init` | Marks the workspace root; every `ss` and module CLI walks up to it. |
 | `sushihub/cli/config.local.toml` | `ss install` | Resolved toolchain paths for this machine, read by every module CLI through `sushicore`. |
 | `sushihub/cli/modules.local.toml` | `ss link` | Modules that live outside the workspace tree, by name and path. |
+| `sushihub/cli/projects.local.toml` | `ss projects` | The projects the desktop application lists and opens, by name and path. |
+| `<workspace>/sushiengine/sushi-release.json` | the release | Product, version, platform and what the package bundles. Its presence is what makes the directory a binary install. |
+| `<workspace>/sushiengine/sushi-licence.jwt` | `ss add`, `ss update` | The licence token the engine reads at start-up. Nothing but the token. |
 | `<workspace>/dependencies/` | `ss install`, `ss remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |
 | OS credential store, `sushistack` / `sushi-id` | `ss login`, `ss logout` | The Sushi ID session as one JSON document: both tokens and the access token's expiry. |
 
