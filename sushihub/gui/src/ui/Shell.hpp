@@ -75,7 +75,7 @@ private:
     /** @brief Draws the account, its licences and the sign-in. */
     LicenceScreen licence_screen_;
 
-    /** @brief Draws the empty state the projects screen stands in with. */
+    /** @brief Draws the registered projects and the buttons that change the registry. */
     ProjectsScreen projects_screen_;
 
     /** @brief Holds one form per command that has been opened, keyed by command name. */
