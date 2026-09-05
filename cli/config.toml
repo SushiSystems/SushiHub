@@ -51,3 +51,9 @@ target_bin = "sr_functional_tests.exe"
 theme = "default"
 icons = "text"
 color = "auto"
+
+[identity]
+# Sushi ID: where `ss login`, `ss logout`, `ss whoami` and `ss license` send
+# their four requests. Override with SUSHI_ID_URL to point at a staging server
+# or at a fake one. The endpoints are in ../sushihub/contract/sushi-id.md.
+url = "https://id.sushisystems.io"

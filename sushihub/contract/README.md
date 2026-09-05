@@ -8,6 +8,10 @@ the `ss` side, not a case for the reader to tolerate.
 
 The design behind them is `docs/agent/specs/2026-09-05-hub-design.md`, section 7.
 
+A third page in this directory, `sushi-id.md`, is the other half of the contract: the four Sushi ID
+endpoints `ss login`, `ss logout`, `ss whoami` and `ss license` call. It faces sushiweb rather than
+the desktop application, and it has no schema because the shapes are small enough to read.
+
 ## What `ss` prints under `--json`
 
 One JSON object per line, UTF-8, in the order the command produced them. Keys are stable.

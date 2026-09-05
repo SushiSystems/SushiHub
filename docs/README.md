@@ -27,6 +27,8 @@ Each component's own facts live beside its code:
   cmake driver, and how a Sushi CLI consumes it.
 - `../sushihub/contract/README.md` — the JSON contract between `ss` and the desktop application:
   event shapes and the command catalogue.
+- `../sushihub/contract/sushi-id.md` — the four Sushi ID endpoints `ss` signs in and reads licences
+  through, and the device grant that walks between them.
 
 ## Guides
 
