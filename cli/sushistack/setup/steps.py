@@ -20,7 +20,8 @@ from .. import console
 from ..config import config_dir
 from . import probe
 from .probe import binary_works
-from .dependency_source import Dependency, IDependencySource
+from .dependency_source import SHARED_OWNER, Dependency, IDependencySource
+from .ordering import owner_order
 from .package_managers import (
     IPackageManager,
     LinuxPackageManager,
@@ -66,15 +67,44 @@ def _first_available(managers: list[IPackageManager]) -> IPackageManager | None:
     return None
 
 
+#: The three statuses an inventory row can carry, and how each is styled.
+_OK = "OK"
+_MISSING = "MISSING"
+_NOT_NEEDED = "NOT NEEDED"
+_STATUS_STYLE = {_OK: "green", _MISSING: "red", _NOT_NEEDED: "dim"}
+
+#: What each discrete-GPU vendor implies for the compute SDK that gets installed.
+_VENDOR_SDK = {
+    "nvidia": "NVIDIA — installs CUDA toolkit",
+    "amd":    "AMD — installs ROCm (HIP)",
+    "intel":  "Intel — installs Level Zero + Intel OpenCL",
+    "none":   "no discrete GPU — CPU (SPIR/OpenCL) path",
+}
+
+
+def _status(present: bool) -> str:
+    """Return the status a probed component reports."""
+    return _OK if present else _MISSING
+
+
 class DetectStep(Step):
     """Inventory tools and dependencies; fill ``ctx.detected``."""
 
     name = "detect"
 
     def __init__(self, source: IDependencySource,
-                 managers: list[IPackageManager] | None = None) -> None:
+                 managers: list[IPackageManager] | None = None, *,
+                 toolchain_status=probe.toolchain_status,
+                 gpu_vendor=probe.detect_gpu_vendor) -> None:
+        """Wire the dependency source, the package managers and the machine probes.
+
+        @param toolchain_status Reads the SYCL toolchains off the machine.
+        @param gpu_vendor       Reads the discrete-GPU vendor off the machine.
+        """
         self._source = source
         self._managers = managers or []
+        self._toolchain_status = toolchain_status
+        self._gpu_vendor = gpu_vendor
 
     def _dep_manager(self, plat: str) -> IPackageManager | None:
         """The manager that knows whether a manifest dep is installed."""
@@ -88,38 +118,14 @@ class DetectStep(Step):
         """The vcpkg manager, if wired in — the Linux fallback for apt-less ports."""
         return next((m for m in self._managers if m.name == "vcpkg"), None)
 
-    def _add_toolchain_rows(self, ctx: InstallContext, table: Table,
-                            owner_of) -> None:
-        """Add an installed/missing row per SYCL toolchain (and CUDA)."""
-        for name, present, detail in probe.toolchain_status(ctx.cfg, ctx.gpu):
-            ctx.detected[name] = present
-            table.add_row(name, _mark(present), owner_of(name), detail)
+    def _base_tool_rows(self, ctx: InstallContext,
+                        owner_of) -> list[tuple[str, str, str, str]]:
+        """Probe the tools a build invokes directly and return their rows.
 
-    def run(self, ctx: InstallContext) -> StepResult:
-        plat = ctx.cfg.platform
-        refresh_windows_path()  # reflect tools the bootstrap installer just added
-
-        # Which module contributed each dependency, so every row can name its
-        # owner ('shared' for the base build/toolchain infrastructure). Building
-        # the list here also populates the source's depends_on map for the
-        # readiness report below.
-        all_deps = self._source.all()
-        owner_by_name = {dep.name: dep.owner for dep in all_deps}
-        from .dependency_source import SHARED_OWNER
-
-        def owner_of(name: str) -> str:
-            return owner_by_name.get(name, SHARED_OWNER)
-
-        table = Table(show_header=True, header_style=console.accent,
-                      title="Environment inventory")
-        table.add_column("Component")
-        table.add_column("Status")
-        table.add_column("Owner", style="cyan")
-        table.add_column("Detail", style="dim")
-
-        # Some tools the build uses live off PATH (the deps folder, or a vcpkg
-        # port like pkgconf). Fall back to the configured path so the row shows
-        # what the build actually uses instead of a misleading MISSING.
+        Some of them live off PATH (in the deps folder, or as a vcpkg port like
+        pkgconf), so the configured path is consulted before one is reported
+        missing.
+        """
         cfg = ctx.cfg
         configured = {
             "cmake":     cfg.expand(cfg.cmake_exe)    if cfg.cmake_exe    else "",
@@ -127,66 +133,142 @@ class DetectStep(Step):
             "pkg-config": cfg.expand(cfg.pkgconf_exe) if cfg.pkgconf_exe  else "",
             "doxygen":   cfg.expand(cfg.doxygen_exe)  if cfg.doxygen_exe  else "",
         }
-        for tool in ("python3" if plat != "windows" else "python",
+        rows: list[tuple[str, str, str, str]] = []
+        for tool in ("python3" if cfg.platform != "windows" else "python",
                      "git", "cmake", "ninja", "pkg-config", "doxygen"):
             path = shutil.which(tool) or ""
             if not path and configured.get(tool) and Path(configured[tool]).is_file():
                 path = configured[tool]
             ctx.detected[tool] = bool(path)
-            table.add_row(tool, _mark(bool(path)), owner_of(tool), path)
+            rows.append((tool, _status(bool(path)), owner_of(tool), path))
+        return rows
 
+    def _sycl_compiler_row(self, ctx: InstallContext) -> tuple[str, str, str, str]:
+        """Probe the SYCL compiler a build would use and return its row.
+
+        The intel/llvm bundle and acpp live off PATH, so the paths ``ss install``
+        recorded are consulted when PATH holds nothing.
+        """
         compiler, where = probe.find_sycl_compiler(ctx.cfg)
         if compiler is None:
-            # The intel/llvm bundle and acpp live off PATH; consult the paths
-            # `ss install` records so a post-install re-run reports them correctly.
             compiler, where = probe.find_configured_toolchain(ctx.cfg)
         ctx.detected["sycl_compiler"] = compiler is not None
-        table.add_row("SYCL compiler (active)", _mark(compiler is not None),
-                      "sushiruntime",
-                      f"{compiler or '-'} {where or ''}".strip())
+        return ("SYCL compiler (active)", _status(compiler is not None), "sushiruntime",
+                f"{compiler or '-'} {where or ''}".strip())
 
-        # Per-toolchain status. These are SushiRuntime's SYCL toolchains, installed
-        # by the toolchain installer (not apt/vcpkg), so they are reported here
-        # rather than in the manifest-dependency loop below — which only covers
-        # apt/vcpkg packages. This is the "what is installed" view for the heavy
-        # components `ss install --customize` lets you pick.
-        self._add_toolchain_rows(ctx, table, owner_of)
+    def _toolchain_rows(self, ctx: InstallContext, declared: set[str],
+                        owner_of) -> list[tuple[str, str, str, str]]:
+        """Return a row per SYCL toolchain (and CUDA), recording what is present.
 
-        # Use the same check `install-deps` uses (check_cmd, then the package
-        # manager) so detect and install agree — a lib installed via vcpkg/apt
-        # is reported present even when its check_cmd tool (e.g. pkg-config) is
-        # not on PATH.
+        These are installed by the toolchain installer rather than apt or vcpkg,
+        so they are probed here instead of in the manifest loop. One that no
+        present module declares reads NOT NEEDED, while ``ctx.detected`` still
+        records whether it happens to be on the machine.
+        """
+        rows: list[tuple[str, str, str, str]] = []
+        for name, present, detail in self._toolchain_status(ctx.cfg, ctx.gpu):
+            ctx.detected[name] = present
+            if name in declared:
+                rows.append((name, _status(present), owner_of(name), detail))
+            else:
+                rows.append((name, _NOT_NEEDED, owner_of(name),
+                             detail or "no present module declares it"))
+        return rows
+
+    def _dependency_rows(self, ctx: InstallContext,
+                         all_deps: list[Dependency]) -> list[tuple[str, str, str, str]]:
+        """Return a row per declared dependency, recording the installable ones.
+
+        A dependency that names no package for this platform is nothing to
+        install here, so it reads NOT NEEDED and stays out of ``ctx.detected``,
+        where the readiness report would otherwise count it as unmet. The rest
+        are checked exactly as ``install-deps`` checks them, so detect and
+        install agree.
+        """
+        plat = ctx.cfg.platform
         dep_mgr = self._dep_manager(plat)
         vcpkg_mgr = self._vcpkg_manager()
-        for dep in self._source.selected(plat, ctx.gpu):
+        installable = {d.name for d in self._source.selected(plat, ctx.gpu)}
+
+        rows: list[tuple[str, str, str, str]] = []
+        for dep in all_deps:
+            if dep.name not in installable:
+                rows.append((dep.name, _NOT_NEEDED, dep.owner,
+                             f"{dep.description} (nothing to install on {plat})"))
+                continue
             if dep_mgr is not None or vcpkg_mgr is not None:
                 present = _dep_installed(dep, dep_mgr, plat, vcpkg_mgr)
             else:
                 present = bool(dep.check_cmd) and _check_cmd_ok(dep.check_cmd)
             ctx.detected[dep.name] = present
             pkgs = ", ".join(dep.packages_for(plat) or dep.vcpkg_fallback_ports(plat))
-            table.add_row(dep.name, _mark(present), dep.owner,
-                          f"{dep.description} ({pkgs})")
+            rows.append((dep.name, _status(present), dep.owner,
+                         f"{dep.description} ({pkgs})"))
+        return rows
 
-        vendor = probe.detect_gpu_vendor()
+    def _gpu_vendor_row(self, ctx: InstallContext) -> tuple[str, str, str, str]:
+        """Probe the discrete-GPU vendor and return its row."""
+        vendor = self._gpu_vendor()
         ctx.gpu_vendor = vendor
         ctx.detected["nvidia_gpu"] = vendor == "nvidia"
-        _VENDOR_SDK = {
-            "nvidia": "NVIDIA — installs CUDA toolkit",
-            "amd":    "AMD — installs ROCm (HIP)",
-            "intel":  "Intel — installs Level Zero + Intel OpenCL",
-            "none":   "no discrete GPU — CPU (SPIR/OpenCL) path",
-        }
-        table.add_row("GPU vendor", _mark(vendor != "none"), "sushiruntime",
-                      _VENDOR_SDK.get(vendor, vendor))
+        return ("GPU vendor", _status(vendor != "none"), SHARED_OWNER,
+                _VENDOR_SDK.get(vendor, vendor))
 
+    def inventory_rows(self, ctx: InstallContext,
+                       all_deps: list[Dependency]) -> list[tuple[str, str, str, str]]:
+        """Probe the machine and return ``(component, status, owner, detail)`` rows.
+
+        Rows are grouped by owner in :func:`ordering.owner_order`, and a
+        component is reported once: the first row to claim a name keeps it.
+        Everything that was actually probed lands in ``ctx.detected``, so the
+        readiness report stays truthful.
+        """
+        owner_by_name = {dep.name: dep.owner for dep in all_deps}
+        declared = {dep.name for dep in all_deps if dep.owner != SHARED_OWNER}
+
+        def owner_of(name: str) -> str:
+            return owner_by_name.get(name, SHARED_OWNER)
+
+        collected = list(self._base_tool_rows(ctx, owner_of))
+        if "sushiruntime" in {dep.owner for dep in all_deps}:
+            collected.append(self._sycl_compiler_row(ctx))
+        collected.extend(self._toolchain_rows(ctx, declared, owner_of))
+        collected.extend(self._dependency_rows(ctx, all_deps))
+        collected.append(self._gpu_vendor_row(ctx))
+
+        unique: dict[str, tuple[str, str, str, str]] = {}
+        for row in collected:
+            unique.setdefault(row[0], row)
+
+        by_owner: dict[str, list[tuple[str, str, str, str]]] = {}
+        for row in unique.values():
+            by_owner.setdefault(row[2], []).append(row)
+        return [row for owner in owner_order(self._source, by_owner)
+                for row in by_owner[owner]]
+
+    def run(self, ctx: InstallContext) -> StepResult:
+        refresh_windows_path()  # reflect tools the bootstrap installer just added
+
+        # Building the list here also populates the source's depends_on map, which
+        # the row ordering and the readiness report below both read.
+        all_deps = self._source.all()
+
+        table = Table(show_header=True, header_style=console.accent,
+                      title="Environment inventory")
+        table.add_column("Component")
+        table.add_column("Status")
+        table.add_column("Owner", style="cyan")
+        table.add_column("Detail", style="dim")
+        for name, status, owner, detail in self.inventory_rows(ctx, all_deps):
+            style = _STATUS_STYLE[status]
+            table.add_row(name, f"[{style}]{status}[/{style}]", owner, detail)
         console.console.print(table)
 
         from ..config import deps_dir
         console.info(f"Vendored dependencies go in one folder: {deps_dir()}")
         console.info("Remove the whole install by deleting that folder "
                      "(`ss remove --all` does it for you).")
-        if plat == "windows":
+        if ctx.cfg.platform == "windows":
             console.info("System prerequisites kept outside that folder: the C++ "
                          "host compiler (Visual Studio Build Tools + Windows SDK), "
                          "git, and — with --gpu — the CUDA toolkit.")
@@ -205,8 +287,6 @@ class DetectStep(Step):
         required dependencies, and — transitively — the required dependencies of
         every module it declares it builds on (``[module] depends_on``).
         """
-        from .dependency_source import SHARED_OWNER
-
         want: dict[str, Dependency] = {}
         seen: set[str] = set()
 
@@ -253,8 +333,9 @@ class DetectStep(Step):
     def _report_readiness(self, ctx: InstallContext, all_deps: list[Dependency]) -> None:
         """Print a plain-English, per-module readiness summary under the table.
 
-        For every known stack module: whether it is cloned, and if so whether the
-        dependencies it needs (its own plus the modules it builds on) are present.
+        For every known stack module, in the order a build would need them:
+        whether it is cloned, and if so whether the dependencies it needs (its
+        own plus the modules it builds on) are present.
         """
         from ..config import registered_modules, workspace_root
         from ..services.modules import MODULES, module_dest
@@ -266,7 +347,7 @@ class DetectStep(Step):
 
         linked = registered_modules()
         console.info("Module readiness:")
-        for name in MODULES:
+        for name in owner_order(self._source, MODULES):
             dest = module_dest(root, name)
             present = (dest / ".git").is_dir()
             if not present:
@@ -827,10 +908,6 @@ class UninstallStep(Step):
 # --------------------------------------------------------------------------- #
 # Helpers
 # --------------------------------------------------------------------------- #
-
-def _mark(ok: bool) -> str:
-    return "[green]OK[/green]" if ok else "[red]MISSING[/red]"
-
 
 def _dedup(items: list[str]) -> list[str]:
     seen: set[str] = set()
