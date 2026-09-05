@@ -257,8 +257,22 @@ def init() -> int:
     return 0
 
 
-def add(names: list[str] | None, dry_run: bool = False) -> int:
-    """Clone one or more modules into the workspace. Return exit code."""
+def _provision(dry_run: bool) -> int:
+    """Provision the dependencies the present modules declare. Return exit code."""
+    from . import setup as setup_svc
+
+    return setup_svc.run("provision", dry_run=dry_run)
+
+
+def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = False,
+        provision=None) -> int:
+    """Clone one or more modules into the workspace. Return exit code.
+
+    A module that arrives brings dependencies with it, so the provision pipeline
+    runs once afterwards — unless nothing new arrived or *skip_install* is set.
+
+    @param provision Runs the provision pipeline; injected by tests.
+    """
     console.header("SushiStack Add")
     resolved = _resolve_names(names)
     if resolved is None:
@@ -267,7 +281,9 @@ def add(names: list[str] | None, dry_run: bool = False) -> int:
     if dry_run:
         console.info("Dry-run: showing actions without cloning or installing.")
 
+    provision = provision or _provision
     linked = registered_modules()
+    brought_in = False
     failed = False
     for name in resolved:
         if name in linked:
@@ -284,30 +300,45 @@ def add(names: list[str] | None, dry_run: bool = False) -> int:
             continue
         if dry_run:
             console.info(f"{name}: (dry-run) would clone {mod.repo} -> {dest}")
+            brought_in = True
             continue
         console.info(f"{name}: cloning {mod.repo} -> {dest}")
         if _run_git(["clone", mod.repo, str(dest)], cwd=root) != 0:
             console.error(f"{name}: clone failed.")
             failed = True
             continue
+        brought_in = True
         # Install the module's own CLI (sr/se/…) so it's usable right after add.
         _install_module_cli(name, dest, root)
     if failed:
         return 1
+    if brought_in and skip_install:
+        console.info("Skipped the dependency install; run `ss install` to pick up "
+                     "what the new modules need.")
+    elif brought_in:
+        rc = provision(dry_run)
+        if rc != 0:
+            return rc
     if not dry_run:
         console.success("Modules ready. Build them with their own CLI "
                         "(`sr`, `se`, `sa`, `sb`).")
     return 0
 
 
-def link(name: str, path: str, dry_run: bool = False) -> int:
+def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False,
+         provision=None) -> int:
     """Register an existing checkout as a module, in place (no clone). Return code.
 
     For developers whose working repos live outside the workspace tree: links the
     module to that path so `ss` aggregates its dependency fragment and tracks it.
-    The module's own CLI still resolves the shared deps via SUSHISTACK_HOME.
+    The module's own CLI still resolves the shared deps via SUSHISTACK_HOME. The
+    linked module's dependencies are provisioned afterwards, unless the link was
+    already there or *skip_install* is set.
+
+    @param provision Runs the provision pipeline; injected by tests.
     """
     console.header("SushiStack Link")
+    provision = provision or _provision
     name = _ALIASES.get(name, name)
     if name == SUSHICORE_NAME:
         console.error(f"{SUSHICORE_NAME} ships inside this repository and cannot be "
@@ -323,16 +354,21 @@ def link(name: str, path: str, dry_run: bool = False) -> int:
         return 1
     if not (target / ".git").is_dir():
         console.warn(f"{target} is not a git checkout; linking anyway.")
+    already_linked = registered_modules().get(name) == str(target)
     if dry_run:
         console.info(f"(dry-run) would link {name} -> {target}")
-        return 0
+        if already_linked or skip_install:
+            return 0
+        return provision(True)
     _write_link(name, target)
     console.success(f"Linked {name} -> {target}")
     fragment = target / MODULE_MANIFEST_REL
     if not fragment.is_file():
         console.info(f"Note: cli/{fragment.name} not found there; this module adds no deps.")
-    console.info("Run `ss install` to pick up its dependencies.")
-    return 0
+    if already_linked or skip_install:
+        console.info("Run `ss install` to pick up its dependencies.")
+        return 0
+    return provision(False)
 
 
 def update(names: list[str] | None, dry_run: bool = False) -> int:

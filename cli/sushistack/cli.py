@@ -67,9 +67,15 @@ def add(
     modules: List[str] = typer.Argument(
         ..., help="Modules to clone: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp | all."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't clone or install."),
+    skip_install: bool = typer.Option(
+        False, "--skip-install", help="Do not run the dependency install afterwards."),
 ):
-    """Clone one or more stack modules into the workspace."""
-    raise typer.Exit(modules_svc.add(modules, dry_run=dry_run))
+    """Clone one or more stack modules into the workspace, with what they need.
+
+    Each module that arrives brings its own dependencies; they are provisioned
+    once at the end unless [bold]--skip-install[/bold] is given.
+    """
+    raise typer.Exit(modules_svc.add(modules, dry_run=dry_run, skip_install=skip_install))
 
 
 @app.command("link")
@@ -78,14 +84,18 @@ def link(
         ..., help="Module name: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp."),
     path: str = typer.Argument(..., help="Path to an existing checkout of that module."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't write the link."),
+    skip_install: bool = typer.Option(
+        False, "--skip-install", help="Do not run the dependency install afterwards."),
 ):
     """Register an existing checkout (outside the workspace) as a module.
 
     For developers whose working repos live elsewhere: `ss` then aggregates that
     checkout's dependencies and tracks it, with no second clone. The module's own
-    CLI resolves the shared deps via SUSHISTACK_HOME.
+    CLI resolves the shared deps via SUSHISTACK_HOME. What the linked module
+    declares is provisioned afterwards unless [bold]--skip-install[/bold] is given.
     """
-    raise typer.Exit(modules_svc.link(module, path, dry_run=dry_run))
+    raise typer.Exit(modules_svc.link(module, path, dry_run=dry_run,
+                                      skip_install=skip_install))
 
 
 @app.command("install-cli")
