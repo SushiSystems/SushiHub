@@ -29,11 +29,18 @@ target_link_libraries(sushihub_gui_model
     PRIVATE sushihub_gui_warnings)
 
 add_library(sushihub_gui_ui STATIC
+    ui/CatalogueSource.cpp
     ui/Shell.cpp
-    ui/Theme.cpp)
+    ui/Theme.cpp
+    ui/forms/GeneratedForm.cpp
+    ui/screens/StatusScreen.cpp
+    ui/widgets/EventLog.cpp
+    ui/widgets/ProgressBar.cpp
+    ui/widgets/PromptDialog.cpp
+    ui/widgets/TableView.cpp)
 target_include_directories(sushihub_gui_ui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(sushihub_gui_ui
-    PUBLIC imgui::imgui
+    PUBLIC imgui::imgui sushihub_gui_model
     PRIVATE sushihub_gui_warnings)
 
 add_executable(sushihub_gui main.cpp)
