@@ -3,13 +3,20 @@
 import inspect
 import json
 import os
+import webbrowser
 from pathlib import Path
+from types import SimpleNamespace
 
 import jsonschema
 import pytest
 from typer.testing import CliRunner
 
 from sushistack.cli import app
+from sushistack.services import session
+from sushistack.services.identity import SushiId
+from sushistack.services.token_store import MemoryStore, Tokens
+
+from .test_identity import fake_id  # noqa: F401  the fake Sushi ID server fixture
 
 CONTRACT = Path(__file__).resolve().parents[2] / "sushihub" / "contract"
 MANIFESTS = Path(__file__).resolve().parents[1] / "manifests"
@@ -133,3 +140,57 @@ def test_every_read_only_command_streams_valid_events(workspace, args):
     for ev in events:
         v.validate(ev)
     assert events[-1]["event"] == "result"
+
+
+@pytest.fixture
+def signed_in(fake_id, monkeypatch):
+    """Point the four Sushi ID commands at the fake server with a live session."""
+    store = MemoryStore(Tokens("access-1", "refresh-1", 1e12))
+    client = SushiId(fake_id.url, store,
+                     sleep=lambda seconds: setattr(fake_id.state, "approved", True))
+    monkeypatch.setattr(session, "_client", lambda: client)
+    monkeypatch.setattr(webbrowser, "open", lambda uri: True)
+    return SimpleNamespace(state=fake_id.state, store=store)
+
+
+@pytest.mark.parametrize("args", [["login"], ["logout"], ["whoami"], ["license"]])
+def test_every_sushi_id_command_streams_valid_events(workspace, signed_in, args):
+    r = _run(["--json", *args], workspace)
+    v = jsonschema.Draft202012Validator(_schema("events.schema.json"))
+    events = _events(r)
+    assert events, r.stderr
+    for ev in events:
+        v.validate(ev)
+    assert events[-1]["event"] == "result" and events[-1]["ok"] is True
+
+
+def test_login_under_json_reports_each_poll_and_ends_with_the_email(workspace, signed_in):
+    signed_in.store.clear()
+    events = _events(_run(["--json", "login"], workspace))
+    polls = [e for e in events if e["event"] == "progress"]
+    assert [e["index"] for e in polls] == [1, 2]
+    assert all(e["label"] == "login" and e["count"] == 0 for e in polls)
+    assert events[-1]["payload"] == {"email": "dev@sushisystems.io"}
+
+
+def test_whoami_under_json_emits_a_table_and_the_account(workspace, signed_in):
+    events = _events(_run(["--json", "whoami"], workspace))
+    table = [e for e in events if e["event"] == "table"][0]
+    assert table["columns"] == ["Field", "Value"]
+    assert events[-1]["payload"]["email"] == "dev@sushisystems.io"
+
+
+def test_license_under_json_emits_a_table_and_the_licences(workspace, signed_in):
+    events = _events(_run(["--json", "license"], workspace))
+    table = [e for e in events if e["event"] == "table"][0]
+    assert table["columns"] == ["Product", "Holder", "Expires"]
+    assert table["rows"] == [["sushiengine", "account", "2027-03-01"],
+                             ["sushiai", "org", "never"]]
+    assert [item["product"] for item in events[-1]["payload"]["licenses"]] == [
+        "sushiengine", "sushiai"]
+
+
+def test_logout_under_json_clears_the_store(workspace, signed_in):
+    events = _events(_run(["--json", "logout"], workspace))
+    assert events[-1] == {"event": "result", "ok": True, "payload": {}}
+    assert signed_in.store.load() is None
