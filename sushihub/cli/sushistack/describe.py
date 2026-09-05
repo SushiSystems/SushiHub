@@ -43,25 +43,31 @@ def _first_paragraph(help_text: str | None) -> str:
 
 
 def _type_name(param_type: click.ParamType) -> str:
-    """Name *param_type* as one of the six type names the contract allows."""
-    if isinstance(param_type, click.Choice):
+    """Name *param_type* as one of the six type names the contract allows.
+
+    Matches on the type's own ``name`` rather than its class: Typer ships its own
+    Click classes from 0.21 on, so an ``isinstance`` against ``click`` fails there.
+    """
+    name = str(getattr(param_type, "name", "")).lower()
+    if name == "choice":
         return "choice"
-    if isinstance(param_type, click.Path):
+    if name == "path":
         return "path"
-    if isinstance(param_type, click.types.BoolParamType):
+    if name == "boolean":
         return "boolean"
-    if isinstance(param_type, click.types.IntParamType):
+    if name == "integer":
         return "integer"
-    if isinstance(param_type, click.types.FloatParamType):
+    if name == "float":
         return "number"
     return "string"
 
 
 def _choices(param_type: click.ParamType) -> list[str] | None:
     """Return a choice type's values as strings, or None for every other type."""
-    if isinstance(param_type, click.Choice):
-        return [str(choice) for choice in param_type.choices]
-    return None
+    choices = getattr(param_type, "choices", None)
+    if choices is None:
+        return None
+    return [str(choice) for choice in choices]
 
 
 def _default(param: click.Parameter):
@@ -78,7 +84,7 @@ def _default(param: click.Parameter):
 
 def _param(param: click.Parameter) -> dict:
     """Describe one argument or option."""
-    argument = isinstance(param, click.Argument)
+    argument = getattr(param, "param_type_name", "") == "argument"
     return {
         "name": param.name,
         "kind": "argument" if argument else "option",
@@ -126,7 +132,7 @@ def _flatten(group: click.Group, prefix: str = "") -> list[dict]:
     for name in sorted(getattr(group, "commands", {})):
         command = group.commands[name]
         full = prefix + name
-        if isinstance(command, click.Group):
+        if hasattr(command, "commands"):
             described.extend(_flatten(command, full + " "))
         else:
             described.append(_command(full, command))
