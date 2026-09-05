@@ -1,8 +1,7 @@
 # Fixtures
 
-Both files here are hand-written from the contract, not recorded from a run. `ss --json` and
-`ss --describe` land in wave 1a-cli, which had not reached this tree when the parsers were
-written. Replace them with real output as soon as it exists:
+Both files here are recorded from a real run on 2026-09-05 with the two commands below; re-record them
+whenever the contract or the command set changes.
 
 ```
 ss --json status > events/status.jsonl

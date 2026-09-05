@@ -15,6 +15,7 @@ requires and then exits.
 from __future__ import annotations
 
 import json
+import sys
 from typing import List, Optional
 
 import typer
@@ -45,7 +46,11 @@ def _root(
     """Select the output mode before any command body runs."""
     console.set_machine(json_output)
     if describe:
-        typer.echo(json.dumps(catalogue(app), ensure_ascii=False))
+        # The catalogue is UTF-8 whatever the console's code page, like every JSON event.
+        text = json.dumps(catalogue(app), ensure_ascii=False)
+        sys.stdout.buffer.write(text.encode("utf-8"))
+        sys.stdout.buffer.write(b"\n")
+        sys.stdout.buffer.flush()
         raise typer.Exit(0)
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
