@@ -220,7 +220,7 @@ def run(target: str | None = None, args: Sequence[str] = (), *, runner=None,
         return 1
 
     env = env_loader(cfg, build_dir)
-    exe = _EXECUTABLES.resolve(build_dir, console, target=target, default=cfg.target_bin)
+    exe = _EXECUTABLES.resolve(build_dir, console, target=target, default=GUI_PROFILE.default_target)
     if exe is None:
         return 1
 
