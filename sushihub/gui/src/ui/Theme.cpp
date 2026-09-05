@@ -85,6 +85,33 @@ float corner_radius()
     return CORNER_RADIUS;
 }
 
+ImVec4 level_colour(std::string_view level)
+{
+    if (level == "success")
+    {
+        return opaque(0.400F, 0.780F, 0.494F);
+    }
+    if (level == "warn")
+    {
+        return opaque(0.902F, 0.706F, 0.361F);
+    }
+    if (level == "error")
+    {
+        return opaque(0.914F, 0.427F, 0.427F);
+    }
+    return opaque(0.878F, 0.886F, 0.910F);
+}
+
+ImVec4 dimmed_colour()
+{
+    return opaque(0.451F, 0.463F, 0.502F);
+}
+
+ImVec4 accent_colour()
+{
+    return opaque(0.478F, 0.647F, 0.906F);
+}
+
 }
 }
 }
