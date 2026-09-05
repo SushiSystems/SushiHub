@@ -3,6 +3,9 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-05 — Derived the toolchain selection from the present modules and made `ss add` provision what it brings (`cli/sushistack/setup/selection.py`, `cli/sushistack/setup/factory.py`, `cli/sushistack/services/modules.py`).
+- 2026-09-05 — Ordered `ss doctor` by owner and marked undeclared toolchains not needed (`cli/sushistack/setup/ordering.py`, `cli/sushistack/setup/steps.py`).
+- 2026-09-05 — Added the JSON renderer and the table, progress, result and prompt calls (`sushicore/sushicore/renderer.py`, `sushicore/sushicore/console.py`, `sushicore/sushicore/events.py`).
 - 2026-09-05 — Designed the hub: binary module presence, Sushi ID sign-in, the JSON contract and the desktop application (`docs/agent/specs/2026-09-05-hub-design.md`).
 - 2026-09-05 — Built the documentation skeleton: front door, manual index, style guide, changelog, glossary, backlog (`README.md`, `docs/`).
 - 2026-08-28 — Added a known-issues page for the toolchains `ss` provisions (`docs/reference/KNOWN_ISSUES.md`).
