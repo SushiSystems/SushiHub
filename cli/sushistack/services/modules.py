@@ -430,45 +430,44 @@ def _status_rows(root: Path, linked: dict[str, str]) -> list[tuple[str, str, str
     return rows
 
 
-def status(json_output: bool = False) -> int:
-    """Report which modules are present and where dependencies live."""
+def status_payload() -> dict:
+    """Collect the workspace, its modules and the dependency tree as one structure.
+
+    Returns:
+        The ``result`` payload of ``ss status``: the workspace path, one entry per
+        module with its location and state, and where the dependencies live.
+    """
     root = workspace_root()
-    linked = registered_modules()
-    rows = _status_rows(root, linked)
     deps = deps_dir()
-    deps_present = deps.is_dir() and any(deps.iterdir())
+    return {
+        "workspace": str(root),
+        "modules": [
+            {"name": name, "location": location, "state": state}
+            for name, location, state in _status_rows(root, registered_modules())
+        ],
+        "dependencies": {
+            "path": str(deps),
+            "present": deps.is_dir() and any(deps.iterdir()),
+        },
+    }
 
-    if json_output:
-        import json
 
-        payload = {
-            "workspace": str(root),
-            "modules": [
-                {"name": name, "location": location, "state": state}
-                for name, location, state in rows
-            ],
-            "dependencies": {"path": str(deps), "present": deps_present},
-        }
-        console.console.print(json.dumps(payload, indent=2))
-        return 0
-
-    from rich.table import Table
-
+def status(payload: dict) -> int:
+    """Print the status *payload* built by :func:`status_payload`. Return exit code."""
     console.header("SushiStack Status")
-    console.info(f"Workspace: {root}")
-
-    table = Table(show_header=True, header_style=console.accent)
-    table.add_column("Module")
-    table.add_column("Location")
-    table.add_column("State")
-    for name, location, state in rows:
-        table.add_row(name, location or "—", state if state != "absent" else "—")
-    console.console.print(table)
-
-    if deps_present:
-        console.info(f"Dependencies: {deps} (present). Verify with `ss doctor`.")
+    console.info(f"Workspace: {payload['workspace']}")
+    console.table(
+        ["Module", "Location", "State"],
+        [[module["name"], module["location"] or "—",
+          "—" if module["state"] == "absent" else module["state"]]
+         for module in payload["modules"]],
+        title="SushiStack Status",
+    )
+    deps = payload["dependencies"]
+    if deps["present"]:
+        console.info(f"Dependencies: {deps['path']} (present). Verify with `ss doctor`.")
     else:
-        console.info(f"Dependencies: {deps} (empty). Provision with `ss install`.")
+        console.info(f"Dependencies: {deps['path']} (empty). Provision with `ss install`.")
     return 0
 
 

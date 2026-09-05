@@ -97,7 +97,8 @@ def status(
     """Show which modules are cloned and whether dependencies are present."""
     if json_output:
         console.set_machine(True)
-    _finish(modules_svc.status(json_output=json_output))
+    payload = modules_svc.status_payload()
+    _finish(modules_svc.status(payload), payload)
 
 
 # --------------------------------------------------------------------------- #

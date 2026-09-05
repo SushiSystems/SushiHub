@@ -117,8 +117,10 @@ class InstallPipeline:
         `detect`, i.e. `ss doctor`) pass False: a "Setup Complete!" bar there is
         misleading — nothing is being installed.
         """
+        total = len(self._steps)
         if not show_progress:
-            for step in self._steps:
+            for index, step in enumerate(self._steps, start=1):
+                console.progress(step.name, index, total, index / total)
                 result = step.run(ctx)
                 if result is StepResult.FAILED:
                     console.error(f"Step '{step.name}' failed; stopping.")
@@ -137,11 +139,12 @@ class InstallPipeline:
             console=console.console,
             transient=False,
         ) as progress:
-            task = progress.add_task("[header]Starting Setup...", total=len(self._steps))
+            task = progress.add_task("[header]Starting Setup...", total=total)
 
-            for step in self._steps:
+            for index, step in enumerate(self._steps, start=1):
                 progress.update(task, description=f"[header]Running Setup...[/header] [warn]({step.name})[/warn]")
                 console.header(f"setup: {step.name}")
+                console.progress(step.name, index, total, index / total)
                 result = step.run(ctx)
                 if result is StepResult.FAILED:
                     progress.update(task, description=f"[error]Setup failed at '{step.name}'[/error]")

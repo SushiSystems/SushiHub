@@ -64,6 +64,8 @@ ACPP_LLVM = "17"
 LLVM_WINDOWS_VERSION = "17.0.6"
 # Seconds to wait for consent before downloading the heavy LLVM (default: no).
 _LLVM_CONSENT_TIMEOUT = 30
+#: The answers that mean yes, in English and Turkish.
+_YES = ("y", "yes", "e", "evet")
 
 
 def _confirm_timeout(message: str, timeout: int = _LLVM_CONSENT_TIMEOUT,
@@ -76,9 +78,17 @@ def _confirm_timeout(message: str, timeout: int = _LLVM_CONSENT_TIMEOUT,
     yields *default* immediately, so an unattended run never blocks.
 
     Must be called *outside* any Rich progress/live context — a prompt rendered
-    under a spinner is not answerable.
+    under a spinner is not answerable. A machine-mode run has no terminal to time
+    out on, so it asks once through the console and waits for the answer line.
     """
     import threading
+
+    from rich.text import Text
+
+    if console.is_machine():
+        answer = console.prompt(Text.from_markup(message).plain,
+                                "y" if default else "n")
+        return answer.strip().lower() in _YES
 
     console.console.print(message)
     hint = r"\[y/n]" if default is False else r"\[Y/n]"
@@ -89,8 +99,7 @@ def _confirm_timeout(message: str, timeout: int = _LLVM_CONSENT_TIMEOUT,
 
     def _read() -> None:
         try:
-            answer = input().strip().lower()
-            result[0] = answer in ("y", "yes", "e", "evet")
+            result[0] = input().strip().lower() in _YES
         except (EOFError, OSError):
             pass  # non-interactive: keep the default
 
