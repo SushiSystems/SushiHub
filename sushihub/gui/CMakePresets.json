@@ -1,0 +1,68 @@
+{
+    "version": 3,
+    "cmakeMinimumRequired": {"major": 3, "minor": 25, "patch": 0},
+    "configurePresets": [
+        {
+            "name": "base",
+            "hidden": true,
+            "generator": "Ninja Multi-Config",
+            "binaryDir": "${sourceDir}/build/${presetName}",
+            "cacheVariables": {
+                "CMAKE_CONFIGURATION_TYPES": "Debug;Release",
+                "SUSHIHUB_GUI_BUILD_TESTS": "ON"
+            }
+        },
+        {
+            "name": "windows-x64",
+            "displayName": "Windows x64",
+            "description": "Ninja Multi-Config over the x64-windows vcpkg triplet.",
+            "inherits": "base",
+            "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"},
+            "cacheVariables": {"VCPKG_TARGET_TRIPLET": "x64-windows"}
+        },
+        {
+            "name": "linux-x64",
+            "displayName": "Linux x64",
+            "description": "Ninja Multi-Config over the x64-linux vcpkg triplet.",
+            "inherits": "base",
+            "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Linux"},
+            "cacheVariables": {"VCPKG_TARGET_TRIPLET": "x64-linux"}
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "windows-x64",
+            "configurePreset": "windows-x64",
+            "configuration": "Debug"
+        },
+        {
+            "name": "windows-x64-release",
+            "configurePreset": "windows-x64",
+            "configuration": "Release"
+        },
+        {
+            "name": "linux-x64",
+            "configurePreset": "linux-x64",
+            "configuration": "Debug"
+        },
+        {
+            "name": "linux-x64-release",
+            "configurePreset": "linux-x64",
+            "configuration": "Release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "windows-x64",
+            "configurePreset": "windows-x64",
+            "configuration": "Debug",
+            "output": {"outputOnFailure": true}
+        },
+        {
+            "name": "linux-x64",
+            "configurePreset": "linux-x64",
+            "configuration": "Debug",
+            "output": {"outputOnFailure": true}
+        }
+    ]
+}
