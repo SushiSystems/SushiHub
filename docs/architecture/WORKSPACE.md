@@ -38,9 +38,16 @@ It does not build. Building, testing and running belong to each module's CLI, wh
 machinery through `sushicore` and keeps its own build policy. The line between the two is drawn in
 `../agent/specs/2026-08-25-cmake-driver-design.md`.
 
+## Three forms of presence
+
+A module under the root is *cloned* when it holds `.git`, *binary* when it holds `sushi-release.json`,
+and *linked* when `cli/modules.local.toml` points at a checkout elsewhere. Every `ss` command asks
+one place, `cli/sushistack/services/presence.py`. A binary install contributes no dependency
+fragment and is never pulled; `ss add` fetches its next release. A module CLI finds either kind of
+root through `sushicore`'s `ModuleProfile.markers()`.
+
 ## What is coming
 
 The workspace is to gain a second face: a desktop application with a screen for every `ss`
-command, and a third form of module presence, a downloaded binary, beside the cloned and linked
-ones. The design is `../agent/specs/2026-09-05-hub-design.md`; the order of work is
-`../design/REMAINING_WORK.md`.
+command, under `../../sushihub/gui/`. The design is `../agent/specs/2026-09-05-hub-design.md`; the
+order of work is `../design/REMAINING_WORK.md`.
