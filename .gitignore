@@ -8,6 +8,7 @@
 # Local machine config written by `ss install` / `ss link`.
 /sushihub/cli/config.local.toml
 /sushihub/cli/modules.local.toml
+/sushihub/cli/projects.local.toml
 
 # Python / tooling cruft.
 __pycache__/
