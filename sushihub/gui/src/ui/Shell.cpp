@@ -55,6 +55,9 @@ Shell::Shell(std::string ss_executable)
     : workspace_(ss_executable),
       catalogue_(ss_executable),
       status_screen_(workspace_),
+      modules_screen_(workspace_, *this),
+      dependencies_screen_(workspace_, *this),
+      licence_screen_(workspace_),
       screen_names_{"Status", "Modules", "Dependencies", "Licence", "Projects"},
       active_index_(0)
 {
@@ -165,10 +168,21 @@ void Shell::draw_pane()
     {
         status_screen_.draw();
     }
+    else if (active_index_ == 1)
+    {
+        modules_screen_.draw();
+    }
+    else if (active_index_ == 2)
+    {
+        dependencies_screen_.draw();
+    }
+    else if (active_index_ == 3)
+    {
+        licence_screen_.draw();
+    }
     else
     {
-        ImGui::TextUnformatted(active_screen().c_str());
-        ImGui::Separator();
+        projects_screen_.draw();
     }
 
     ImGui::EndChild();
