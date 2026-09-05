@@ -2,12 +2,24 @@
 
 from __future__ import annotations
 
+import json
+import threading
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from types import SimpleNamespace
+
 import keyring
 import keyring.backend
 import keyring.errors
 import pytest
 
 from sushistack.config import DEFAULT_IDENTITY_URL, identity_url
+from sushistack.services.identity import (
+    Account,
+    Licence,
+    LoginDenied,
+    LoginExpired,
+    SushiId,
+)
 from sushistack.services.token_store import (
     KEYRING_SERVICE,
     KEYRING_USERNAME,
@@ -111,3 +123,205 @@ def test_keyring_store_reads_a_corrupt_entry_as_absent(backend):
 def test_keyring_store_clear_is_quiet_when_nothing_is_stored(backend):
     KeyringStore().clear()
     assert backend.passwords == {}
+
+
+class FakeIdState:
+    """What the fake Sushi ID remembers between two requests."""
+
+    def __init__(self) -> None:
+        """Start with a grant nobody has approved yet."""
+        self.approved = False
+        self.denied = False
+        self.expired = False
+        self.slow_down_once = False
+        self.polls = 0
+        self.refreshes = 0
+        self.refresh_ok = True
+        self.bearers: list[str] = []
+
+
+def _handler_for(state: FakeIdState):
+    """Build a request handler answering the four endpoints out of *state*."""
+
+    class Handler(BaseHTTPRequestHandler):
+        """The four routes of sushihub/contract/sushi-id.md, served from memory."""
+
+        def log_message(self, fmt, *args):
+            """Say nothing; the assertions are the test's output, not an access log."""
+
+        def _reply(self, status: int, body: dict) -> None:
+            """Write *body* as JSON under the given status."""
+            blob = json.dumps(body).encode("utf-8")
+            self.send_response(status)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(blob)))
+            self.end_headers()
+            self.wfile.write(blob)
+
+        def _body(self) -> dict:
+            """Read and parse the request body."""
+            length = int(self.headers.get("Content-Length", "0"))
+            return json.loads(self.rfile.read(length) or b"{}")
+
+        def do_POST(self):
+            """Answer the device-code, device-token and refresh endpoints."""
+            body = self._body()
+            if self.path == "/api/device/code":
+                self._reply(200, {"device_code": "dev-1", "user_code": "WXYZ-1234",
+                                  "verification_uri": "http://127.0.0.1/activate",
+                                  "expires_in": 600, "interval": 1})
+            elif self.path == "/api/device/token":
+                state.polls += 1
+                if state.denied:
+                    self._reply(400, {"error": "access_denied"})
+                elif state.expired:
+                    self._reply(400, {"error": "expired_token"})
+                elif state.slow_down_once and state.polls == 1:
+                    self._reply(400, {"error": "slow_down"})
+                elif state.approved:
+                    self._reply(200, {"access_token": "access-1",
+                                      "refresh_token": "refresh-1", "expires_in": 3600})
+                else:
+                    self._reply(400, {"error": "authorization_pending"})
+            elif self.path == "/api/token/refresh":
+                state.refreshes += 1
+                if state.refresh_ok and body.get("refresh_token"):
+                    self._reply(200, {"access_token": "access-2", "expires_in": 3600})
+                else:
+                    self._reply(401, {"error": "invalid_grant"})
+            else:
+                self._reply(404, {})
+
+        def do_GET(self):
+            """Answer the account endpoint for a request carrying a bearer token."""
+            bearer = self.headers.get("Authorization", "")
+            state.bearers.append(bearer)
+            if self.path != "/api/me" or not bearer.startswith("Bearer "):
+                self._reply(401, {})
+                return
+            self._reply(200, {"account_id": "acc-1", "email": "dev@sushisystems.io",
+                              "licenses": [{"product": "sushiengine", "holder": "account",
+                                            "expires_at": "2027-03-01"},
+                                           {"product": "sushiai", "holder": "org",
+                                            "expires_at": None}]})
+
+    return Handler
+
+
+@pytest.fixture
+def fake_id():
+    """Serve the four endpoints from a thread on 127.0.0.1, and stop it afterwards."""
+    state = FakeIdState()
+    server = ThreadingHTTPServer(("127.0.0.1", 0), _handler_for(state))
+    server.daemon_threads = True
+    thread = threading.Thread(target=server.serve_forever, kwargs={"poll_interval": 0.01},
+                              daemon=True)
+    thread.start()
+    try:
+        yield SimpleNamespace(url=f"http://127.0.0.1:{server.server_address[1]}", state=state)
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
+
+
+def test_start_device_login_returns_the_code_and_the_uri(fake_id):
+    code = SushiId(fake_id.url, MemoryStore()).start_device_login()
+    assert code.user_code == "WXYZ-1234"
+    assert code.verification_uri == "http://127.0.0.1/activate"
+    assert code.interval == 1
+
+
+def test_wait_for_token_polls_until_the_grant_is_approved(fake_id):
+    store = MemoryStore()
+    sleeps: list[float] = []
+
+    def sleep(seconds):
+        sleeps.append(seconds)
+        fake_id.state.approved = True
+
+    client = SushiId(fake_id.url, store, sleep=sleep, now=lambda: 100.0)
+    tokens = client.wait_for_token(client.start_device_login())
+    assert tokens.access_token == "access-1" and tokens.refresh_token == "refresh-1"
+    assert tokens.expires_at == 100.0 + 3600
+    assert store.load() == tokens
+    assert sleeps == [1]
+
+
+def test_slow_down_doubles_the_interval_once(fake_id):
+    fake_id.state.slow_down_once = True
+    sleeps: list[float] = []
+
+    def sleep(seconds):
+        sleeps.append(seconds)
+        if len(sleeps) == 2:
+            fake_id.state.approved = True
+
+    client = SushiId(fake_id.url, MemoryStore(), sleep=sleep)
+    client.wait_for_token(client.start_device_login())
+    assert sleeps == [2, 2]
+
+
+def test_wait_for_token_reports_each_poll(fake_id):
+    polls: list[int] = []
+    client = SushiId(fake_id.url, MemoryStore(),
+                     sleep=lambda seconds: setattr(fake_id.state, "approved", True))
+    client.wait_for_token(client.start_device_login(), on_poll=polls.append)
+    assert polls == [1, 2]
+
+
+def test_access_denied_ends_the_login(fake_id):
+    fake_id.state.denied = True
+    client = SushiId(fake_id.url, MemoryStore(), sleep=lambda seconds: None)
+    with pytest.raises(LoginDenied):
+        client.wait_for_token(client.start_device_login())
+
+
+def test_expired_token_ends_the_login(fake_id):
+    fake_id.state.expired = True
+    client = SushiId(fake_id.url, MemoryStore(), sleep=lambda seconds: None)
+    with pytest.raises(LoginExpired):
+        client.wait_for_token(client.start_device_login())
+
+
+def test_access_token_is_returned_untouched_while_it_lives(fake_id):
+    store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
+    client = SushiId(fake_id.url, store, now=lambda: 900.0)
+    assert client.access_token() == "access-1"
+    assert fake_id.state.refreshes == 0
+
+
+def test_access_token_refreshes_inside_the_thirty_second_margin(fake_id):
+    store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
+    client = SushiId(fake_id.url, store, now=lambda: 980.0)
+    assert client.access_token() == "access-2"
+    assert fake_id.state.refreshes == 1
+    assert store.load() == Tokens("access-2", "refresh-1", 980.0 + 3600)
+
+
+def test_a_refused_refresh_clears_the_store(fake_id):
+    fake_id.state.refresh_ok = False
+    store = MemoryStore(Tokens("access-1", "", 1000.0))
+    client = SushiId(fake_id.url, store, now=lambda: 980.0)
+    assert client.access_token() is None
+    assert store.load() is None
+
+
+def test_me_is_none_with_an_empty_store(fake_id):
+    assert SushiId(fake_id.url, MemoryStore()).me() is None
+    assert fake_id.state.bearers == []
+
+
+def test_me_reads_the_account_and_its_licences(fake_id):
+    store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
+    account = SushiId(fake_id.url, store, now=lambda: 900.0).me()
+    assert account == Account("acc-1", "dev@sushisystems.io", (
+        Licence("sushiengine", "account", "2027-03-01"),
+        Licence("sushiai", "org", None)))
+    assert fake_id.state.bearers == ["Bearer access-1"]
+
+
+def test_logout_forgets_the_session(fake_id):
+    store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
+    SushiId(fake_id.url, store).logout()
+    assert store.load() is None
