@@ -33,7 +33,7 @@ them. See "Machine-readable output".
 | `ss add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|sushidsp\|all> [--dry-run] [--skip-install]` | Clone one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `ss install`. Aliases: `sr`, `se`, `sa`, `sb`, `sd`. |
 | `ss link <module> <path> [--dry-run] [--skip-install]` | Register an existing checkout outside the workspace as a module, without cloning, then provision what it declares. `--skip-install` leaves that to a later `ss install`. Same names and aliases as `ss add`. |
 | `ss install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `ss add`. |
-| `ss update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. No arguments means all. |
+| `ss update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install is skipped; `ss add <module>` fetches its next release. No arguments means all. |
 | `ss sync [--dry-run]` | Install missing dependencies, then update every module. |
 | `ss status [--json]` | Which modules are present, in which form, and whether dependencies are installed. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `ss doctor` | Check tools, compilers and dependencies; report what is missing. |
