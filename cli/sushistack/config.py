@@ -86,6 +86,32 @@ def registered_modules() -> dict[str, str]:
     mods = doc.get("modules", {})
     return {k: str(v) for k, v in mods.items() if isinstance(v, str)}
 
+# Sushi ID's base URL when neither the environment nor the config names one. The
+# four endpoints under it are written down in sushihub/contract/sushi-id.md.
+DEFAULT_IDENTITY_URL = "https://id.sushisystems.io"
+
+
+def identity_url() -> str:
+    """Return the Sushi ID base URL, without its trailing slash.
+
+    Reads ``SUSHI_ID_URL`` first, then ``[identity] url`` from config.local.toml
+    and config.toml, then :data:`DEFAULT_IDENTITY_URL`. Outside a workspace only
+    the environment and the default are available.
+    """
+    override = os.environ.get("SUSHI_ID_URL")
+    if override:
+        return override.rstrip("/")
+    try:
+        cfg_dir = config_dir()
+    except SystemExit:
+        return DEFAULT_IDENTITY_URL
+    for name in ("config.local.toml", "config.toml"):
+        url = read_toml(cfg_dir / name).get("identity", {}).get("url")
+        if isinstance(url, str) and url:
+            return url.rstrip("/")
+    return DEFAULT_IDENTITY_URL
+
+
 def deps_dir() -> Path:
     """The single self-contained directory for everything ``ss install`` downloads.
 
