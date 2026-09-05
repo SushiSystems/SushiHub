@@ -314,6 +314,48 @@ def gui_clean():
     _finish(gui_svc.clean())
 
 
+# --------------------------------------------------------------------------- #
+# projects
+# --------------------------------------------------------------------------- #
+projects_app = typer.Typer(
+    name="projects",
+    help="Keep the list of projects the desktop application opens.",
+    rich_markup_mode="rich",
+)
+app.add_typer(projects_app, name="projects")
+
+
+@projects_app.command("list")
+def projects_list():
+    """Print every registered project, and whether its directory is still there."""
+    from .services import projects as projects_svc
+    _finish(*projects_svc.show())
+
+
+@projects_app.command("add")
+def projects_add(
+    path: str = typer.Argument(..., help="The project directory to register."),
+    name: Optional[str] = typer.Option(
+        None, "--name", help="List it under this name instead of the directory's."),
+):
+    """Register a project directory.
+
+    The desktop application lists what is registered here and opens one with
+    [cyan]se editor --project <path>[/cyan].
+    """
+    from .services import projects as projects_svc
+    _finish(*projects_svc.add(path, name))
+
+
+@projects_app.command("remove")
+def projects_remove(
+    name: str = typer.Argument(..., help="The name the project is listed under."),
+):
+    """Drop a project from the registry. Its directory is untouched."""
+    from .services import projects as projects_svc
+    _finish(*projects_svc.remove(name))
+
+
 @app.command("login")
 def login():
     """Sign in to Sushi ID and keep the session in the credential store.
