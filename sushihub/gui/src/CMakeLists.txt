@@ -22,6 +22,7 @@ target_link_libraries(sushihub_gui_contract
 
 add_library(sushihub_gui_model STATIC
     model/CommandRun.cpp
+    model/RunLog.cpp
     model/Workspace.cpp)
 target_include_directories(sushihub_gui_model PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
 target_link_libraries(sushihub_gui_model
@@ -33,12 +34,15 @@ add_library(sushihub_gui_ui STATIC
     ui/CatalogueSource.cpp
     ui/Shell.cpp
     ui/Theme.cpp
+    ui/chrome/NavRail.cpp
+    ui/chrome/TitleBar.cpp
     ui/forms/GeneratedForm.cpp
-    ui/screens/DependenciesScreen.cpp
+    ui/screens/CommandsScreen.cpp
     ui/screens/DeviceGrant.cpp
-    ui/screens/LicenceScreen.cpp
+    ui/screens/InstallsScreen.cpp
     ui/screens/ModulesScreen.cpp
-    ui/screens/StatusScreen.cpp
+    ui/screens/SettingsScreen.cpp
+    ui/widgets/ActivityStrip.cpp
     ui/widgets/EventLog.cpp
     ui/widgets/ProgressBar.cpp
     ui/widgets/PromptDialog.cpp

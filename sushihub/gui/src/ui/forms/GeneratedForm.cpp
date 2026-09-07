@@ -6,8 +6,6 @@
 #include "ui/forms/GeneratedForm.hpp"
 
 #include "ui/Theme.hpp"
-#include "ui/widgets/EventLog.hpp"
-#include "ui/widgets/ProgressBar.hpp"
 
 #include <imgui.h>
 
@@ -67,6 +65,25 @@ const std::string& option_flag(const Parameter& parameter)
     return parameter.flags.empty() ? none : parameter.flags.front();
 }
 
+/** @brief Returns @p argv as the one line the activity strip labels the run with. */
+std::string spoken_line(const std::vector<std::string>& argv)
+{
+    std::string line;
+    for (const std::string& word : argv)
+    {
+        if (word == "--json")
+        {
+            continue;
+        }
+        if (!line.empty())
+        {
+            line += ' ';
+        }
+        line += word;
+    }
+    return line;
+}
+
 /** @brief Returns the flags an input of @p type accepts characters under. */
 ImGuiInputTextFlags input_flags(ParameterType type)
 {
@@ -83,10 +100,11 @@ ImGuiInputTextFlags input_flags(ParameterType type)
 
 }
 
-GeneratedForm::GeneratedForm(Command command, std::string hub_executable)
+GeneratedForm::GeneratedForm(Command command, std::string hub_executable, RunLog& run_log)
     : command_(std::move(command)),
       hub_executable_(std::move(hub_executable)),
-      fields_(command_.parameters.size())
+      fields_(command_.parameters.size()),
+      run_log_(run_log)
 {
     adopt_defaults();
 }
@@ -209,8 +227,10 @@ void GeneratedForm::draw_controls()
     ImGui::BeginDisabled(!runnable);
     if (ImGui::Button(run_ == nullptr ? "Run" : "Run again"))
     {
-        run_ = std::unique_ptr<CommandRun>(new CommandRun(build_argv()));
+        const std::vector<std::string> argv = build_argv();
+        run_ = std::unique_ptr<CommandRun>(new CommandRun(argv));
         run_->start();
+        run_log_.adopt(*run_, spoken_line(argv));
     }
     ImGui::EndDisabled();
 
@@ -233,11 +253,6 @@ void GeneratedForm::draw_run()
     run_->poll();
     const RunState& state = run_->state();
 
-    if (state.progress.has_value() && !state.finished)
-    {
-        Widgets::draw_progress(*state.progress);
-    }
-
     if (state.pending_prompt.has_value())
     {
         std::string answer;
@@ -246,8 +261,6 @@ void GeneratedForm::draw_run()
             run_->answer_prompt(answer);
         }
     }
-
-    Widgets::draw_event_log("##sushihub_gui_form_log", state, 0.0F);
 }
 
 std::vector<std::string> GeneratedForm::build_argv() const

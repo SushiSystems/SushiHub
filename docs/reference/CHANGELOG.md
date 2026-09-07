@@ -3,6 +3,7 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-07 — Rebuilt the desktop application around a title bar, a four-entry rail and one activity strip (`sushihub/gui/src/ui/Shell.cpp`, `sushihub/gui/src/ui/chrome/`, `sushihub/gui/src/ui/screens/`).
 - 2026-09-07 — Removed the project registry from the hub, which the engine owns (`sushihub/cli/sushistack/cli.py`, `sushihub/gui/src/ui/Shell.cpp`).
 - 2026-09-07 — Renamed the hub's command from `ss` to `hub` and offered `sh` as an installer alias (`sushihub/cli/pyproject.toml`, `install.sh`, `install.ps1`).
 - 2026-09-05 — Drew the projects registry on the desktop application's Projects screen and fixed nested commands from generated forms (`sushihub/gui/src/ui/screens/ProjectsScreen.cpp`, `sushihub/gui/src/ui/forms/GeneratedForm.cpp`).

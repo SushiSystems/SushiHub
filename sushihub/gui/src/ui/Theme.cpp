@@ -1,5 +1,5 @@
 /** @file Theme.cpp
- *  @brief Defines the dark palette, the corner rounding and the spacing.
+ *  @brief Defines the palette every widget reads and the style it is applied to.
  *  @author Mustafa Garip
  */
 
@@ -21,12 +21,21 @@ namespace
 constexpr float SIDEBAR_WIDTH = 220.0F;
 
 /** @brief Holds the radius in pixels every rounded corner shares. */
-constexpr float CORNER_RADIUS = 6.0F;
+constexpr float CORNER_RADIUS = 4.0F;
 
-/** @brief Builds an opaque colour from three channel values in the zero-to-one range. */
-ImVec4 opaque(float red, float green, float blue)
+/** @brief Holds how much of the font size the horizontal padding inside a frame takes. */
+constexpr float FRAME_PADDING_X = 0.8F;
+
+/** @brief Holds how much of the font size the vertical padding inside a frame takes. */
+constexpr float FRAME_PADDING_Y = 0.5F;
+
+/** @brief Builds an opaque colour from a hexadecimal 0xRRGGBB literal. */
+ImVec4 from_hex(unsigned int rgb)
 {
-    return ImVec4(red, green, blue, 1.0F);
+    return ImVec4(static_cast<float>((rgb >> 16) & 0xFFU) / 255.0F,
+                  static_cast<float>((rgb >> 8) & 0xFFU) / 255.0F,
+                  static_cast<float>(rgb & 0xFFU) / 255.0F,
+                  1.0F);
 }
 
 }
@@ -35,7 +44,7 @@ void apply()
 {
     ImGuiStyle& style = ImGui::GetStyle();
 
-    style.WindowRounding = CORNER_RADIUS;
+    style.WindowRounding = 0.0F;
     style.ChildRounding = CORNER_RADIUS;
     style.FrameRounding = CORNER_RADIUS;
     style.PopupRounding = CORNER_RADIUS;
@@ -43,36 +52,38 @@ void apply()
     style.GrabRounding = CORNER_RADIUS;
     style.TabRounding = CORNER_RADIUS;
 
+    const float font_size = ImGui::GetFontSize();
+
     style.WindowPadding = ImVec2(14.0F, 14.0F);
-    style.FramePadding = ImVec2(10.0F, 6.0F);
+    style.FramePadding = ImVec2(font_size * FRAME_PADDING_X, font_size * FRAME_PADDING_Y);
     style.ItemSpacing = ImVec2(10.0F, 8.0F);
     style.WindowBorderSize = 0.0F;
     style.ChildBorderSize = 1.0F;
 
     ImVec4* colours = style.Colors;
-    colours[ImGuiCol_WindowBg] = opaque(0.086F, 0.090F, 0.106F);
-    colours[ImGuiCol_ChildBg] = opaque(0.110F, 0.114F, 0.133F);
-    colours[ImGuiCol_PopupBg] = opaque(0.110F, 0.114F, 0.133F);
-    colours[ImGuiCol_Border] = opaque(0.180F, 0.188F, 0.216F);
-    colours[ImGuiCol_Text] = opaque(0.878F, 0.886F, 0.910F);
-    colours[ImGuiCol_TextDisabled] = opaque(0.451F, 0.463F, 0.502F);
-    colours[ImGuiCol_FrameBg] = opaque(0.149F, 0.157F, 0.184F);
-    colours[ImGuiCol_FrameBgHovered] = opaque(0.196F, 0.204F, 0.243F);
-    colours[ImGuiCol_FrameBgActive] = opaque(0.235F, 0.247F, 0.294F);
-    colours[ImGuiCol_Header] = opaque(0.184F, 0.318F, 0.518F);
-    colours[ImGuiCol_HeaderHovered] = opaque(0.220F, 0.376F, 0.604F);
-    colours[ImGuiCol_HeaderActive] = opaque(0.259F, 0.435F, 0.690F);
-    colours[ImGuiCol_Button] = opaque(0.176F, 0.184F, 0.220F);
-    colours[ImGuiCol_ButtonHovered] = opaque(0.220F, 0.376F, 0.604F);
-    colours[ImGuiCol_ButtonActive] = opaque(0.259F, 0.435F, 0.690F);
-    colours[ImGuiCol_Separator] = opaque(0.180F, 0.188F, 0.216F);
-    colours[ImGuiCol_TitleBg] = opaque(0.086F, 0.090F, 0.106F);
-    colours[ImGuiCol_TitleBgActive] = opaque(0.110F, 0.114F, 0.133F);
-    colours[ImGuiCol_ScrollbarBg] = opaque(0.086F, 0.090F, 0.106F);
-    colours[ImGuiCol_ScrollbarGrab] = opaque(0.196F, 0.204F, 0.243F);
-    colours[ImGuiCol_TableHeaderBg] = opaque(0.149F, 0.157F, 0.184F);
-    colours[ImGuiCol_TableBorderLight] = opaque(0.180F, 0.188F, 0.216F);
-    colours[ImGuiCol_TableBorderStrong] = opaque(0.220F, 0.231F, 0.267F);
+    colours[ImGuiCol_WindowBg] = ground();
+    colours[ImGuiCol_ChildBg] = ground();
+    colours[ImGuiCol_PopupBg] = panel();
+    colours[ImGuiCol_Border] = line();
+    colours[ImGuiCol_Text] = ink();
+    colours[ImGuiCol_TextDisabled] = ink_faint();
+    colours[ImGuiCol_FrameBg] = panel();
+    colours[ImGuiCol_FrameBgHovered] = panel_raised();
+    colours[ImGuiCol_FrameBgActive] = panel_raised();
+    colours[ImGuiCol_Header] = panel_raised();
+    colours[ImGuiCol_HeaderHovered] = panel_raised();
+    colours[ImGuiCol_HeaderActive] = accent_soft();
+    colours[ImGuiCol_Button] = panel();
+    colours[ImGuiCol_ButtonHovered] = panel_raised();
+    colours[ImGuiCol_ButtonActive] = accent_soft();
+    colours[ImGuiCol_Separator] = line();
+    colours[ImGuiCol_TitleBg] = rail();
+    colours[ImGuiCol_TitleBgActive] = rail();
+    colours[ImGuiCol_ScrollbarBg] = ground();
+    colours[ImGuiCol_ScrollbarGrab] = line();
+    colours[ImGuiCol_TableHeaderBg] = panel();
+    colours[ImGuiCol_TableBorderLight] = line_soft();
+    colours[ImGuiCol_TableBorderStrong] = line();
 }
 
 float sidebar_width()
@@ -85,31 +96,111 @@ float corner_radius()
     return CORNER_RADIUS;
 }
 
+ImVec4 ground()
+{
+    return from_hex(0x101317U);
+}
+
+ImVec4 rail()
+{
+    return from_hex(0x0B0D10U);
+}
+
+ImVec4 panel()
+{
+    return from_hex(0x171B21U);
+}
+
+ImVec4 panel_raised()
+{
+    return from_hex(0x1D222AU);
+}
+
+ImVec4 line()
+{
+    return from_hex(0x272D36U);
+}
+
+ImVec4 line_soft()
+{
+    return from_hex(0x1F242CU);
+}
+
+ImVec4 ink()
+{
+    return from_hex(0xDFE4EAU);
+}
+
+ImVec4 ink_dim()
+{
+    return from_hex(0x8A95A3U);
+}
+
+ImVec4 ink_faint()
+{
+    return from_hex(0x626D7BU);
+}
+
+ImVec4 accent()
+{
+    return from_hex(0xEF7A55U);
+}
+
+ImVec4 accent_ink()
+{
+    return from_hex(0x1A0F0AU);
+}
+
+ImVec4 accent_soft()
+{
+    return from_hex(0x3A2018U);
+}
+
+ImVec4 ok()
+{
+    return from_hex(0x5FAE86U);
+}
+
+ImVec4 warn()
+{
+    return from_hex(0xD3A244U);
+}
+
+ImVec4 critical()
+{
+    return from_hex(0xCF5F61U);
+}
+
+ImVec4 info()
+{
+    return from_hex(0x6F9FD0U);
+}
+
 ImVec4 level_colour(std::string_view level)
 {
     if (level == "success")
     {
-        return opaque(0.400F, 0.780F, 0.494F);
+        return ok();
     }
     if (level == "warn")
     {
-        return opaque(0.902F, 0.706F, 0.361F);
+        return warn();
     }
     if (level == "error")
     {
-        return opaque(0.914F, 0.427F, 0.427F);
+        return critical();
     }
-    return opaque(0.878F, 0.886F, 0.910F);
+    return ink();
 }
 
 ImVec4 dimmed_colour()
 {
-    return opaque(0.451F, 0.463F, 0.502F);
+    return ink_dim();
 }
 
 ImVec4 accent_colour()
 {
-    return opaque(0.478F, 0.647F, 0.906F);
+    return accent();
 }
 
 }

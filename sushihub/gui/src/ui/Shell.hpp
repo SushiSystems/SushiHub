@@ -1,21 +1,21 @@
 /** @file Shell.hpp
- *  @brief Declares the window's frame: a sidebar of screens and commands, and the pane beside it.
+ *  @brief Declares the window's frame: the title bar, the rail, the screen region and the strip.
  *  @author Mustafa Garip
  */
 
 #pragma once
 
+#include "model/RunLog.hpp"
 #include "model/Workspace.hpp"
 #include "ui/CatalogueSource.hpp"
 #include "ui/FormOpener.hpp"
-#include "ui/forms/GeneratedForm.hpp"
-#include "ui/screens/DependenciesScreen.hpp"
-#include "ui/screens/LicenceScreen.hpp"
-#include "ui/screens/ModulesScreen.hpp"
-#include "ui/screens/StatusScreen.hpp"
+#include "ui/Screen.hpp"
+#include "ui/chrome/NavRail.hpp"
+#include "ui/chrome/TitleBar.hpp"
+#include "ui/screens/CommandsScreen.hpp"
+#include "ui/widgets/ActivityStrip.hpp"
 
 #include <cstddef>
-#include <map>
 #include <memory>
 #include <string>
 #include <vector>
@@ -25,7 +25,10 @@ namespace SushiHub
 namespace Gui
 {
 
-/** @brief Draws the application frame and routes to the screen or form the sidebar selects. */
+/** @brief Returns the commands a hand-drawn screen already covers, so no form repeats them. */
+const std::vector<std::string>& covered_commands();
+
+/** @brief Draws the frame and gives the region between the rail and the strip to one screen. */
 class Shell : public FormOpener
 {
 public:
@@ -35,56 +38,47 @@ public:
     /** @brief Builds the shell over @p hub_executable, which every run is spawned from. */
     explicit Shell(std::string hub_executable);
 
-    /** @brief Draws one frame of the sidebar and of whatever the sidebar has selected. */
+    /** @brief Draws one frame of the title bar, the rail, the active screen and the strip. */
     void draw();
 
-    /** @brief Returns the name of the screen or command the sidebar currently selects. */
-    const std::string& active_screen() const;
+    /** @brief Returns the name of the screen the rail currently selects. */
+    const char* active_screen() const;
 
     void open_form(const std::string& command, const std::vector<std::string>& arguments) override;
 
 private:
-    /** @brief Draws the sidebar and records what the user selects in it. */
-    void draw_sidebar();
-
-    /** @brief Draws the generated commands under the five screens, once they are known. */
-    void draw_command_list();
-
-    /** @brief Draws the pane the selected screen or form owns. */
-    void draw_pane();
-
-    /** @brief Returns the form of @p command, building it the first time it is asked for. */
-    GeneratedForm* form_for(const std::string& command);
+    /** @brief Draws the rail beside the region the active screen owns. */
+    void draw_body();
 
     /** @brief Holds the workspace every run is spawned from. */
     Workspace workspace_;
 
-    /** @brief Holds the catalogue read the sidebar's command list comes from. */
+    /** @brief Holds the catalogue read the commands screen lists. */
     CatalogueSource catalogue_;
 
-    /** @brief Draws what the workspace reports about itself. */
-    StatusScreen status_screen_;
+    /** @brief Holds the run the strip reports, whichever screen started it. */
+    RunLog run_log_;
 
-    /** @brief Draws the modules and the command each one can be given. */
-    ModulesScreen modules_screen_;
+    /** @brief Draws the top row and nothing else. */
+    TitleBar title_bar_;
 
-    /** @brief Draws what the machine has and what it is missing. */
-    DependenciesScreen dependencies_screen_;
+    /** @brief Draws the destinations and records which one is chosen. */
+    NavRail rail_;
 
-    /** @brief Draws the account, its licences and the sign-in. */
-    LicenceScreen licence_screen_;
+    /** @brief Draws the run the strip follows and owns whether it is expanded. */
+    Widgets::ActivityStrip strip_;
 
-    /** @brief Holds one form per command that has been opened, keyed by command name. */
-    std::map<std::string, std::unique_ptr<GeneratedForm>> forms_;
+    /** @brief Holds the four destinations in the order the rail lists them. */
+    std::vector<std::unique_ptr<Screen>> screens_;
 
-    /** @brief Holds the screen names in the order the sidebar lists them. */
-    std::vector<std::string> screen_names_;
+    /** @brief Holds each destination's name, as the rail reads them each frame. */
+    std::vector<const char*> screen_names_;
 
-    /** @brief Holds the index into screen_names_ of the screen being drawn. */
+    /** @brief Points at the commands screen a form request is forwarded to. */
+    CommandsScreen* commands_;
+
+    /** @brief Holds the index into screens_ of the screen being drawn. */
     std::size_t active_index_;
-
-    /** @brief Holds the selected command's name, empty while a screen is selected. */
-    std::string active_command_;
 };
 
 }

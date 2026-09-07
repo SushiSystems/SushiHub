@@ -18,27 +18,40 @@ has never heard of processes or pixels. `model/` runs a command through the brid
 events into a `RunState` the UI reads each frame; it has never heard of ImGui. `ui/` draws.
 `main.cpp` wires them together.
 
-`ui/` holds `Shell`, the four widgets under `widgets/`, the five screens under `screens/`, the
-form under `forms/`, and two bricks the screens lean on: `CatalogueSource`, which reads
-`hub --describe` once, and `open_in_browser`, which hands a link to `ShellExecuteW` on Windows and
-to `xdg-open` elsewhere. `Theme` is the only place a colour, a rounding or a spacing is chosen.
+`ui/` holds `Shell`, the window's chrome under `chrome/`, the widgets under `widgets/`, the four
+screens under `screens/`, the form under `forms/`, and two bricks the screens lean on:
+`CatalogueSource`, which reads `hub --describe` once, and `open_in_browser`, which hands a link to
+`ShellExecuteW` on Windows and to `xdg-open` elsewhere. `Theme` is the only place a colour, a
+rounding or a spacing is chosen, and every size is a multiple of the font size.
 
-## What the screens draw
+## The window
 
-The sidebar lists the five hand-drawn screens, then every catalogue command none of them covers.
-`Shell` reads the catalogue at start-up and builds a form the first time a command is selected,
-so a form keeps what was typed into it while the user is elsewhere.
+`TitleBar` draws the top row: the name, the version, the workspace path and the account.
+`NavRail` draws the left rail of four destinations. Between them the active `Screen` draws, and
+`ActivityStrip` closes the window along the bottom.
 
-`Status` draws the tables of `hub --json status` and the dependency directory its result payload
-names. `Modules` draws the rows of the same run and ends each one with an Add and an Update
-button that open that module's form with the module already entered. `Dependencies` draws the
-table of `hub --json doctor`, dims the rows reading NOT NEEDED and offers Install on the rows
-reading MISSING. `Licence` draws `whoami` and `license`, and its Sign in button starts `login`,
-shows the user code at two and a half times the text size, and opens the verification link.
+Every destination implements `Screen`, which is a name and a `draw()` and nothing else. A screen
+that needs the workspace or the run log takes it in its own constructor, so `Shell` holds the four
+as `std::unique_ptr<Screen>` and knows none of their types.
 
-Four widgets do the drawing everywhere: `EventLog` renders a run's events in arrival order,
-`TableView` one table event, `ProgressBar` the latest progress event, and `PromptDialog` the
-question a run stopped on.
+`Installs` draws one card per install, sushiengine and Sushi Hub itself, each with a presence chip
+and its own actions; `Open editor` starts `se editor`, the one program other than `hub` this
+application spawns. `Modules` draws one row per module with its presence chip, a line of detail
+and a single action. `Settings` draws four setting rows and the table of `hub --json doctor`, and
+its Sign in button starts `login`, shows the user code at two and a half times the text size, and
+opens the verification link. `Commands` searches the catalogue and draws a generated form beside
+the list, so every `hub` command stays reachable even when no screen draws it by hand.
+
+## The activity strip
+
+A run is reported in one place. Whoever starts a run hands it to `RunLog`, which points at the
+run and remembers the command line; `ActivityStrip` reads the log and draws a caret, that line, a
+progress bar and the exit status on one row. Clicking the row expands the run's events in arrival
+order. No screen and no form draws an event log of its own.
+
+`EventLog` renders those events, `TableView` one table event, `ProgressBar` the latest progress
+event, and `PromptDialog` the question a run stopped on, which is the one thing the strip cannot
+answer and the form still draws.
 
 ## The generated form
 
@@ -61,7 +74,10 @@ hyphens, holding at least one capital and one digit, is the code, and the first 
 `verification_uri` outranks both.
 
 `hub status`'s result payload reports its dependency directory either as a path or as an object
-with `path` and `present`; the status screen draws whichever arrives.
+with `path` and `present`; the installs screen draws whichever arrives. That payload carries a
+module's name, location, state, presence and version and nothing more. The fields the installs
+card wants beyond those, a branch, how far ahead it is, a licence expiry, whether a newer release
+exists, draw as a dash until `hub status` reports them.
 
 ## Building
 
@@ -109,8 +125,8 @@ GoogleTest, one suite per layer, discovered by `gtest_discover_tests`. `bridge_t
 Python one-liner and reads its output back. `event_test` and `catalogue_test` parse the fixtures
 in `tests/fixtures/`, which are hand-written until `hub --json` and `hub --describe` land; the
 README there says how to record the real thing. `model_test` feeds a scripted queue to a
-`CommandRun` and checks the fold. The `ui/` layer has no unit tests; it is checked by running the
-application.
+`CommandRun` and checks the fold, and pins `RunLog` to the run it was handed last. The `ui/`
+layer has no unit tests; it is checked by running the application.
 
 ## Talking to `hub`
 
@@ -119,7 +135,7 @@ diagnostics for a human. Every run ends with exactly one `result` event carrying
 and a payload. A `prompt` event stops the run until the reader writes one line to the child's
 stdin, which is what `CommandRun::answer_prompt` does.
 
-Four screens are drawn by hand: status, modules, dependencies and licence. Every other
-`hub` command gets a form generated from its catalogue entry, so a new subcommand reaches the
-desktop without any code here. `hub` itself is looked up on the search path; `Workspace` holds the
-name every run is spawned from and is the one place to change it.
+Four screens are drawn by hand: installs, modules, settings and commands. Every `hub` command a
+screen does not cover gets a form generated from its catalogue entry on the commands screen, so a
+new subcommand reaches the desktop without any code here. `hub` itself is looked up on the search
+path; `Workspace` holds the name every run is spawned from and is the one place to change it.
