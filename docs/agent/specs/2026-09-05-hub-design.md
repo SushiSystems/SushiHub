@@ -129,8 +129,8 @@ the release signature, unpacks, and writes the licence file the engine reads at 
 contents and the engine's offline rule are the engine's design; `hub` only writes what Sushi ID
 hands it.
 
-`hub projects` lists the projects a binary engine knows about, so the desktop application can show
-them and open one with `se editor --project <name>`.
+A project is the engine's concept, so the engine owns the list of them and its start screen shows
+it. `hub` keeps no registry; it launches the editor and nothing more.
 
 Every one of these needs a Sushi ID endpoint that does not exist yet (§10). Wave 2 builds the
 `hub` side against a fake server that speaks the agreed shapes, so the two repositories can move in
@@ -150,7 +150,7 @@ appears on the desktop without desktop code.
 there. The event kinds are the semantic calls `Console` already exposes (`info`, `success`, `warn`,
 `error`, `command`, `header`, `fail_panel`) plus three the desktop needs: `progress` (a step, its
 index and count, and a fraction when known), `table` (columns and rows, for `status`, `doctor`,
-`license`, `projects`) and `result` (the command's exit status and a structured payload). Prompts
+`license`) and `result` (the command's exit status and a structured payload). Prompts
 become a `prompt` event and a line read from stdin; `--yes` answers them as today.
 
 `JsonRenderer` produces the events. It is the third `Renderer`, chosen when `--json` is on the
@@ -167,8 +167,8 @@ Dear ImGui on GLFW, C++17, one static binary, no runtime beyond the graphics dri
 the engineer's taste and the stack's toolchain; it starts in under a second and draws at the
 display's rate. It is not a web view and never will be.
 
-Five screens are drawn by hand because they are opened every day: status, modules, dependencies,
-licence, projects. Every other `hub` command is a generated form from the catalogue, so the rule
+Four screens are drawn by hand because they are opened every day: status, modules, dependencies,
+licence. Every other `hub` command is a generated form from the catalogue, so the rule
 "every terminal command has a desktop equivalent" is kept by construction. As a generated form
 proves worth polishing, it gains a hand-drawn screen; the form stays as the fallback.
 
@@ -194,7 +194,7 @@ status is kept.
 | 2 | The `binary` form; the marker in `ModuleProfile`; `hub login`, `hub logout`, `hub whoami` against a fake Sushi ID | 1a |
 | 3 | Sushi ID endpoints, in sushiweb | none here |
 | 4 | `sushihub/gui`: skeleton, bridge, five screens, generated forms | 1a; 2 alongside |
-| 5 | `hub add sushiengine` source-or-binary; download, verify, unpack; licence file; `hub projects` | 2, 3 |
+| 5 | `hub add sushiengine` source-or-binary; download, verify, unpack; licence file | 2, 3 |
 | 6 | sushiengine: binary command set; `se editor --project`; runtime licence client | 5 |
 | 7 | Install scripts fetch the desktop application; both journeys walked end to end | 4, 6 |
 
@@ -214,7 +214,8 @@ to change.
 
 **sushiengine.** The binary release: a package per platform carrying the engine, its bundled
 sushiruntime and sushiblas, the root marker and manifest, signed. `se`'s command set from the
-marker. `se editor --project <name>`. A runtime licence client with an offline rule. The build
+marker. The project registry and the start screen that lists it. `se editor --project <name>`. A
+runtime licence client with an offline rule. The build
 that produces releases. All of it designed in that repository; this document only names the
 marker and the manifest fields `hub` reads.
 

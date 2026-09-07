@@ -38,7 +38,6 @@ add_library(sushihub_gui_ui STATIC
     ui/screens/DeviceGrant.cpp
     ui/screens/LicenceScreen.cpp
     ui/screens/ModulesScreen.cpp
-    ui/screens/ProjectsScreen.cpp
     ui/screens/StatusScreen.cpp
     ui/widgets/EventLog.cpp
     ui/widgets/ProgressBar.cpp

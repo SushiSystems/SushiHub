@@ -8,7 +8,6 @@
 # Local machine config written by `hub install` / `hub link`.
 /sushihub/cli/config.local.toml
 /sushihub/cli/modules.local.toml
-/sushihub/cli/projects.local.toml
 
 # Python / tooling cruft.
 __pycache__/

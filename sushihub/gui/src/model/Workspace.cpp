@@ -12,28 +12,6 @@ namespace SushiHub
 namespace Gui
 {
 
-namespace
-{
-
-/** @brief Pairs a screen with the arguments its run follows `--json` with. */
-struct ScreenCommand
-{
-    /** @brief Holds the screen name the run is kept under. */
-    const char* screen;
-
-    /** @brief Holds the subcommand and whatever follows it, in command-line order. */
-    std::vector<std::string> arguments;
-};
-
-/** @brief Returns the screens whose run is not the subcommand of the same name. */
-const std::vector<ScreenCommand>& screen_commands()
-{
-    static const std::vector<ScreenCommand> table{{"projects", {"projects", "list"}}};
-    return table;
-}
-
-}
-
 Workspace::Workspace(std::string hub_executable)
     : hub_executable_(std::move(hub_executable))
 {
@@ -66,19 +44,7 @@ const std::string& Workspace::executable() const
 
 std::vector<std::string> Workspace::argv_for(std::string_view screen) const
 {
-    std::vector<std::string> argv{hub_executable_, "--json"};
-
-    for (const ScreenCommand& entry : screen_commands())
-    {
-        if (screen == entry.screen)
-        {
-            argv.insert(argv.end(), entry.arguments.begin(), entry.arguments.end());
-            return argv;
-        }
-    }
-
-    argv.push_back(std::string(screen));
-    return argv;
+    return {hub_executable_, "--json", std::string(screen)};
 }
 
 CommandRun& Workspace::open(std::string_view screen)

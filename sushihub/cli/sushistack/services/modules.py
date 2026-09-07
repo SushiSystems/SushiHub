@@ -92,7 +92,6 @@ _GITIGNORE_LINES = [
     *(f"/{m.directory}/" for m in MODULES.values()),
     "/sushihub/cli/config.local.toml",
     "/sushihub/cli/modules.local.toml",
-    "/sushihub/cli/projects.local.toml",
 ]
 
 

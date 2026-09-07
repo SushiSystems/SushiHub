@@ -33,8 +33,7 @@ constexpr const char* DEFAULT_EXECUTABLE = "hub";
 const std::vector<std::string>& covered_commands()
 {
     static const std::vector<std::string> covered{
-        "doctor", "license", "login", "projects add", "projects list", "projects remove",
-        "status", "whoami"};
+        "doctor", "license", "login", "status", "whoami"};
     return covered;
 }
 
@@ -59,8 +58,7 @@ Shell::Shell(std::string hub_executable)
       modules_screen_(workspace_, *this),
       dependencies_screen_(workspace_, *this),
       licence_screen_(workspace_),
-      projects_screen_(workspace_),
-      screen_names_{"Status", "Modules", "Dependencies", "Licence", "Projects"},
+      screen_names_{"Status", "Modules", "Dependencies", "Licence"},
       active_index_(0)
 {
     catalogue_.start();
@@ -178,13 +176,9 @@ void Shell::draw_pane()
     {
         dependencies_screen_.draw();
     }
-    else if (active_index_ == 3)
-    {
-        licence_screen_.draw();
-    }
     else
     {
-        projects_screen_.draw();
+        licence_screen_.draw();
     }
 
     ImGui::EndChild();
