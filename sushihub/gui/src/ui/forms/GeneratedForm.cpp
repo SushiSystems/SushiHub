@@ -83,9 +83,9 @@ ImGuiInputTextFlags input_flags(ParameterType type)
 
 }
 
-GeneratedForm::GeneratedForm(Command command, std::string ss_executable)
+GeneratedForm::GeneratedForm(Command command, std::string hub_executable)
     : command_(std::move(command)),
-      ss_executable_(std::move(ss_executable)),
+      hub_executable_(std::move(hub_executable)),
       fields_(command_.parameters.size())
 {
     adopt_defaults();
@@ -252,7 +252,7 @@ void GeneratedForm::draw_run()
 
 std::vector<std::string> GeneratedForm::build_argv() const
 {
-    std::vector<std::string> argv{ss_executable_, "--json"};
+    std::vector<std::string> argv{hub_executable_, "--json"};
     // A nested command is catalogued as "group child"; each word is its own argument.
     std::size_t start = 0;
     while (start < command_.name.size())

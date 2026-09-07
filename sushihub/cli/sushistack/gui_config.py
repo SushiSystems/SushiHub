@@ -1,11 +1,11 @@
 """What the desktop application is, said once for the shared build machinery.
 
-`ss gui` builds `sushihub/gui` the way a module CLI builds its own repository:
+`hub gui` builds `sushihub/gui` the way a module CLI builds its own repository:
 through :class:`sushicore.cmake_driver.CMakeDriver` under a snapshotted
-environment, against the vcpkg tree `ss install` provisions. That machinery asks
+environment, against the vcpkg tree `hub install` provisions. That machinery asks
 for a profile and a config, and this module is where the application answers.
 
-The application is not a module checkout. It lives inside the workspace `ss`
+The application is not a module checkout. It lives inside the workspace `hub`
 already owns, so its root is a fixed path under the workspace root and its
 configuration is the workspace's own — there is no second config directory to
 find.
@@ -28,8 +28,8 @@ from .config import config_dir, deps_dir, workspace_root
 #: two cannot disagree about what is being built.
 GUI_PROFILE = ModuleProfile(
     name="SushiHub GUI",
-    program="ss gui",
-    env_prefix="SS_GUI",
+    program="hub gui",
+    env_prefix="HUB_GUI",
     root_marker="CMakeLists.txt",
     default_target="sushihub_gui",
 )
@@ -57,7 +57,7 @@ def gui_root(workspace: Path | None = None) -> Path:
         raise SystemExit(
             f"No {GUI_PROFILE.name} sources at {root}: the workspace carries no "
             f"{GUI_PROFILE.root_marker} there. Update the workspace checkout "
-            "(`ss update`) and try again.")
+            "(`hub update`) and try again.")
     return root
 
 
@@ -93,7 +93,7 @@ class GuiConfig(StackConfig):
         """Return the dependency tree to use when no workspace marker is found.
 
         The application ships inside the workspace, so this is reached only when
-        the marker is gone; ``ss``'s own fallback is then the single answer both
+        the marker is gone; ``hub``'s own fallback is then the single answer both
         halves of the CLI give.
 
         Args:
@@ -106,7 +106,7 @@ def load_gui_config() -> GuiConfig:
     """Load the layered configuration the application builds under.
 
     Precedence, low to high: the workspace's config.toml, its config.local.toml
-    (what `ss install` writes), then the ``SS_GUI_*`` environment overrides.
+    (what `hub install` writes), then the ``HUB_GUI_*`` environment overrides.
     """
     cfg_dir = config_dir()
     return load_tool_config(

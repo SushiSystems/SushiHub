@@ -90,7 +90,7 @@ def prime_sudo() -> None:
         except OSError:
             console.warn(
                 "No terminal available for a sudo password prompt. If dependency "
-                "installation fails, run `ss install` directly in a terminal, or "
+                "installation fails, run `hub install` directly in a terminal, or "
                 "pre-authorize with `sudo -v`."
             )
             return
@@ -114,7 +114,7 @@ def _tools_dir() -> Path:
 
 
 # Where the Intel oneAPI apt repo keyring and source list are written. Mirrors
-# the sushiruntime Dockerfile so `ss install` and the container agree.
+# the sushiruntime Dockerfile so `hub install` and the container agree.
 _ONEAPI_KEYRING = Path("/usr/share/keyrings/oneapi-archive-keyring.gpg")
 _ONEAPI_LIST = Path("/etc/apt/sources.list.d/oneAPI.list")
 _ONEAPI_KEY_URL = (
@@ -292,7 +292,7 @@ def install_gpu_stack(vendor: str, dry_run: bool) -> bool:
 
     nvidia -> CUDA toolkit, amd -> ROCm, intel -> Level Zero + Intel OpenCL,
     none -> nothing (the CPU SPIR/OpenCL path from the manifest already covers it).
-    Always best-effort: a failure here never fails `ss install`.
+    Always best-effort: a failure here never fails `hub install`.
     """
     if vendor == "nvidia":
         return ensure_cuda_toolkit(dry_run)
@@ -310,7 +310,7 @@ def ensure_intel_oneapi_repo(dry_run: bool) -> bool:
     ``intel-oneapi-compiler-dpcpp-cpp`` lives only in Intel's own apt repo, not in
     the stock Ubuntu archive, so a plain ``apt-get install`` cannot find it. This
     adds the keyring + source list exactly as the sushiruntime Dockerfile does,
-    making the default `ss install` provision oneAPI on Linux without any manual
+    making the default `hub install` provision oneAPI on Linux without any manual
     steps. Idempotent: skips when both files already exist.
     """
     if _ONEAPI_KEYRING.is_file() and _ONEAPI_LIST.is_file():

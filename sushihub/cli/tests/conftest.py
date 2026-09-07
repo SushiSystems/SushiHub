@@ -1,4 +1,4 @@
-"""Shared fakes for the `ss` test suite.
+"""Shared fakes for the `hub` test suite.
 
 ``MemorySource`` stands in for the TOML dependency source so no test reads a
 manifest, touches the network, or writes into ``dependencies/``. ``fake_cfg``

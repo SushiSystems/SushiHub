@@ -1,4 +1,4 @@
-"""`ss gui` drives the desktop application through the shared cmake machinery.
+"""`hub gui` drives the desktop application through the shared cmake machinery.
 
 No test here runs cmake, ninja or ctest. The driver is a recorder that keeps the
 argument lists it was handed, so what is proved is the command line the CLI would
@@ -102,7 +102,7 @@ def _env(cfg, build_dir):
 
 @pytest.fixture
 def provisioned(workspace):
-    """Add the vcpkg tree `ss install` provisions to the throwaway workspace."""
+    """Add the vcpkg tree `hub install` provisions to the throwaway workspace."""
     (workspace / "dependencies" / "vcpkg").mkdir(parents=True)
     return workspace
 
@@ -141,7 +141,7 @@ def test_the_configure_names_the_build_type_and_the_build_directory(provisioned)
     gui.build(gui.BuildType.release, driver=driver, env_loader=_env)
     argv = _configure_of(driver)
     root = provisioned / "sushihub" / "gui"
-    assert argv[:6] == ["cmake", "-S", str(root), "-B", str(root / "build" / "ss"), "-G"]
+    assert argv[:6] == ["cmake", "-S", str(root), "-B", str(root / "build" / "hub"), "-G"]
     assert "-DCMAKE_BUILD_TYPE=Release" in argv
     assert driver.compiles == ["Release"]
 
@@ -176,14 +176,14 @@ def test_clean_removes_the_tree_before_configuring(provisioned):
 
     driver = RecordingDriver()
     gui.build(clean=True, driver=driver, env_loader=_env)
-    assert driver.cleaned == [provisioned / "sushihub" / "gui" / "build" / "ss"]
+    assert driver.cleaned == [provisioned / "sushihub" / "gui" / "build" / "hub"]
     assert len(driver.configures) == 1
 
 
 def test_test_passes_the_filter_and_the_repeat_through_with_no_label(provisioned):
     from sushistack.services import gui
 
-    (provisioned / "sushihub" / "gui" / "build" / "ss").mkdir(parents=True)
+    (provisioned / "sushihub" / "gui" / "build" / "hub").mkdir(parents=True)
     driver = RecordingDriver()
     assert gui.test(filter="Catalogue.*", repeat=3, driver=driver, env_loader=_env) == 0
     assert driver.ctests == [(None, "Catalogue.*", 3)]
@@ -196,7 +196,7 @@ def test_test_refuses_before_the_first_build(provisioned, capsys):
     assert gui.test(driver=driver, env_loader=_env) == 1
     assert driver.ctests == []
     captured = capsys.readouterr()
-    assert "ss gui build" in captured.out + captured.err
+    assert "hub gui build" in captured.out + captured.err
 
 
 def test_run_refuses_before_the_first_build(provisioned, capsys):
@@ -204,7 +204,7 @@ def test_run_refuses_before_the_first_build(provisioned, capsys):
 
     assert gui.run(env_loader=_env) == 1
     captured = capsys.readouterr()
-    assert "ss gui build" in captured.out + captured.err
+    assert "hub gui build" in captured.out + captured.err
 
 
 def test_clean_removes_the_build_directory(provisioned):
@@ -212,4 +212,4 @@ def test_clean_removes_the_build_directory(provisioned):
 
     driver = RecordingDriver()
     assert gui.clean(driver=driver) == 0
-    assert driver.cleaned == [provisioned / "sushihub" / "gui" / "build" / "ss"]
+    assert driver.cleaned == [provisioned / "sushihub" / "gui" / "build" / "hub"]

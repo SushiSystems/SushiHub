@@ -5,16 +5,16 @@ its root and one shared dependency tree beside them.
 
 ```
 sushistack/
-  .sushistack              workspace marker, written by `ss init`
-  sushihub/cli/            the `ss` command and its dependency manifests
+  .sushistack              workspace marker, written by `hub init`
+  sushihub/cli/            the `hub` command and its dependency manifests
   sushihub/gui/            the desktop application
   sushicore/               the shared CLI engine, tracked in this repository
-  dependencies/            toolchains, vcpkg, cmake and ninja; git-ignored, filled by `ss install`
-  sushiruntime/            added by `ss add sushiruntime`
-  sushiblas/               added by `ss add sushiblas`
-  sushiai/                 added by `ss add sushiai`
-  sushidsp/                added by `ss add sushidsp`
-  sushiengine/             added by `ss add sushiengine`
+  dependencies/            toolchains, vcpkg, cmake and ninja; git-ignored, filled by `hub install`
+  sushiruntime/            added by `hub add sushiruntime`
+  sushiblas/               added by `hub add sushiblas`
+  sushiai/                 added by `hub add sushiai`
+  sushidsp/                added by `hub add sushidsp`
+  sushiengine/             added by `hub add sushiengine`
 ```
 
 ## Why the layout is flat
@@ -29,12 +29,12 @@ the workspace root is what makes that fallback land. The layout is load-bearing,
 Every module CLI walks up from the current directory to the `.sushistack` marker, through
 `sushicore`'s `ModuleConfig`. From the marker it derives `dependencies/`, and from there the bundled
 compiler and vcpkg root (`StackConfig`). A module checked out on its own, with no marker above it,
-falls back to a dependency tree of its own; `ss link` lets a workspace adopt such a checkout without
+falls back to a dependency tree of its own; `hub link` lets a workspace adopt such a checkout without
 moving it.
 
-## What `ss` owns and what it does not
+## What `hub` owns and what it does not
 
-`ss` owns the marker, the dependency tree, the module checkouts and the module CLIs' installation.
+`hub` owns the marker, the dependency tree, the module checkouts and the module CLIs' installation.
 It does not build. Building, testing and running belong to each module's CLI, which shares its
 machinery through `sushicore` and keeps its own build policy. The line between the two is drawn in
 `../agent/specs/2026-08-25-cmake-driver-design.md`.
@@ -42,13 +42,13 @@ machinery through `sushicore` and keeps its own build policy. The line between t
 ## Three forms of presence
 
 A module under the root is *cloned* when it holds `.git`, *binary* when it holds `sushi-release.json`,
-and *linked* when `sushihub/cli/modules.local.toml` points at a checkout elsewhere. Every `ss` command asks
+and *linked* when `sushihub/cli/modules.local.toml` points at a checkout elsewhere. Every `hub` command asks
 one place, `sushihub/cli/sushistack/services/presence.py`. A binary install contributes no dependency
-fragment and is never pulled; `ss add` fetches its next release. A module CLI finds either kind of
+fragment and is never pulled; `hub add` fetches its next release. A module CLI finds either kind of
 root through `sushicore`'s `ModuleProfile.markers()`.
 
 ## What is coming
 
-The workspace is to gain a second face: a desktop application with a screen for every `ss`
+The workspace is to gain a second face: a desktop application with a screen for every `hub`
 command, under `../../sushihub/gui/`. The design is `../agent/specs/2026-09-05-hub-design.md`; the
 order of work is `../design/REMAINING_WORK.md`.

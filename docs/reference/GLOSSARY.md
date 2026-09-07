@@ -13,21 +13,25 @@ repository.
 **Presence** — the form in which a module exists in a workspace, read from disk: *cloned* (a checkout
 under the workspace root), *linked* (a checkout elsewhere, registered in `sushihub/cli/modules.local.toml`),
 *binary* (a downloaded release whose root holds `sushi-release.json`), or *absent*.
-`sushihub/cli/sushistack/services/presence.py` answers it; `ss status` shows it.
+`sushihub/cli/sushistack/services/presence.py` answers it; `hub status` shows it.
 
 **Dependency fragment** — a `*.deps.toml` file naming packages per platform. This repository ships
-the base fragment under `sushihub/cli/manifests/`; each module ships its own. `ss install` merges them.
+the base fragment under `sushihub/cli/manifests/`; each module ships its own. `hub install` merges them.
 
-**Toolchain** — a compiler bundle `ss install` downloads into `dependencies/` rather than
+**Toolchain** — a compiler bundle `hub install` downloads into `dependencies/` rather than
 installing through a package manager: intel/llvm, AdaptiveCpp, oneAPI. Each carries a stamp naming
 the release it came from.
 
 **Sushi ID** — the identity service at `id.sushisystems.io`, built in the sushiweb repository. It
 issues the access tokens and holds the licences the hub design relies on.
 
-**Hub** — the name for `ss` as the workspace's one experience: the terminal command and the
+**Hub** — the name for `hub` as the workspace's one experience: the terminal command and the
 desktop application that gives every one of its commands a screen. Not a separate program.
 
-**JSON contract** — the shape of what `ss` prints under `--json`, one event per line, and of what
-`ss --describe` says about its own commands. The desktop application consumes it; a schema under
+**`hub`** — the terminal command: dependency provisioning and module lifecycle, installed by
+`install.sh` or `install.ps1`. The installer offers `sh` as an optional interactive alias, for
+typing two letters instead of four; it changes typing only; `/bin/sh` is untouched.
+
+**JSON contract** — the shape of what `hub` prints under `--json`, one event per line, and of what
+`hub --describe` says about its own commands. The desktop application consumes it; a schema under
 `sushihub/contract/` will bind both sides.

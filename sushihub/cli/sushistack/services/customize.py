@@ -1,4 +1,4 @@
-"""Interactive component picker for `ss install --customize`.
+"""Interactive component picker for `hub install --customize`.
 
 What the present modules declare installs by default; this is the escape hatch
 for a user who wants to add or drop one of the heavy components. The picker
@@ -74,7 +74,7 @@ def _render(items, checked, focus):
     head = Text("Select the components to install", style=f"bold {console.accent}")
     foot = Text("↑/↓ move    space toggle    enter continue    esc cancel", style="dim")
     body = Group(head, Text(""), rows, Text(""), foot)
-    panel = Panel(body, padding=(1, 2), border_style="grey37", title="ss install --customize",
+    panel = Panel(body, padding=(1, 2), border_style="grey37", title="hub install --customize",
                   title_align="left")
     return Align.center(panel)
 

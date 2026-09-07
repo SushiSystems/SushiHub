@@ -1,4 +1,4 @@
-# The hub: `ss` in the terminal and on the desktop — Design
+# The hub: `hub` in the terminal and on the desktop — Design
 
 Date: 2026-09-05
 Status: approved in conversation, awaiting the wave 1 plans
@@ -11,10 +11,10 @@ serves one kind of person, an engineer who clones everything and builds it. It m
 kind, a licensed user who downloads the engine and opens a project, and it must serve both from the
 same download, with no fork and no mode switch.
 
-The `ss` command already owns the workspace: dependencies, module checkouts, module CLIs. This
-design makes `ss` the whole experience. In the terminal it stays the command it is, with sign-in,
+The `hub` command already owns the workspace: dependencies, module checkouts, module CLIs. This
+design makes `hub` the whole experience. In the terminal it stays the command it is, with sign-in,
 licence and binary installation added. On the desktop a Dear ImGui application gives every one of
-its commands a screen and calls `ss` underneath. The two faces share one core and one contract.
+its commands a screen and calls `hub` underneath. The two faces share one core and one contract.
 The programme is called the hub; there is no program of that name.
 
 ## 2. Decisions
@@ -25,31 +25,31 @@ The programme is called the hub; there is no program of that name.
 | How a licensed user receives sushiengine | A compiled binary per platform, downloaded from Sushi ID, never source |
 | How the binary carries sushiruntime and sushiblas | Inside the package, built together with the engine. The user's own checkouts of those modules are not involved |
 | Where the licence is checked | At download, by Sushi ID; and at run time, by the engine, with an offline rule the engine's own design sets |
-| Terminal interface | `ss` as it is. No text-mode application |
-| Desktop interface | C++ and Dear ImGui, in this repository, calling `ss` as a subprocess and reading JSON |
-| What the desktop application covers | Every `ss` command. Not the module CLIs; building, testing and running stay in the terminal |
+| Terminal interface | `hub` as it is. No text-mode application |
+| Desktop interface | C++ and Dear ImGui, in this repository, calling `hub` as a subprocess and reading JSON |
+| What the desktop application covers | Every `hub` command. Not the module CLIs; building, testing and running stay in the terminal |
 | Where the code lives | `sushihub/cli/` (today's `cli/`), `sushihub/gui/`, `sushihub/contract/`; `sushicore/` unchanged in role |
 | Does the Python side depend on `sushicore` | Yes, as it does today. The C++ side depends on nothing but the JSON contract |
-| How a developer and a user differ | Only in state `ss` finds: Git access to the private repository, a Sushi ID session, a licence, which modules are present |
-| Which toolchains `ss install` provisions | Those the present modules declare. An empty workspace installs the base fragment only |
+| How a developer and a user differ | Only in state `hub` finds: Git access to the private repository, a Sushi ID session, a licence, which modules are present |
+| Which toolchains `hub install` provisions | Those the present modules declare. An empty workspace installs the base fragment only |
 
 ## 3. Two people, one download
 
-Both run the same installer and receive the same `ss` and the same desktop application. What they
-see afterwards follows from what `ss` finds on their machine and in their account.
+Both run the same installer and receive the same `hub` and the same desktop application. What they
+see afterwards follows from what `hub` finds on their machine and in their account.
 
 | Step | Licensed user | Engineer |
 |---|---|---|
 | Install | `irm install.ps1 \| iex`; the desktop application opens | same command; stays in the terminal |
-| Sign in | in the application, with Sushi ID | `ss login`, or nothing: Git credentials suffice for source |
-| sushiengine | an "Install" button; the binary downloads | `ss add sushiengine`; the private repository clones |
-| Dependencies | none; the binary carries its own | `ss install`; the full toolchain set |
-| Other modules | may clone them; they are open source and build like anyone's | `ss add all` |
+| Sign in | in the application, with Sushi ID | `hub login`, or nothing: Git credentials suffice for source |
+| sushiengine | an "Install" button; the binary downloads | `hub add sushiengine`; the private repository clones |
+| Dependencies | none; the binary carries its own | `hub install`; the full toolchain set |
+| Other modules | may clone them; they are open source and build like anyone's | `hub add all` |
 | Run | choose a project; the editor opens | `se build`, `se editor` |
 
 Four mechanisms hold this together.
 
-**The form of a module is decided at install, not in code.** `ss add sushiengine` tries the
+**The form of a module is decided at install, not in code.** `hub add sushiengine` tries the
 source path first: with the user's Git identity it asks the private repository whether it is
 reachable (`git ls-remote`). If it is, it clones. If not, it asks the Sushi ID session for a live
 licence; with one, it downloads the binary and records the module as `binary`. With neither it
@@ -57,11 +57,11 @@ says which of the two is missing and where each is obtained. The four open-sourc
 path; everyone clones. The desktop application makes the same decision and labels its button
 "Clone" or "Install" accordingly.
 
-**Dependencies follow the present modules.** `ss install` merges the base fragment with each
+**Dependencies follow the present modules.** `hub install` merges the base fragment with each
 present module's `cli/sushistack.deps.toml` (`cli/sushistack/setup/dependency_source.py`). A binary
 sushiengine ships no fragment, so a licensed user never downloads a SYCL toolchain, vcpkg or LLVM.
 Today this rule is broken in one place: `build_pipeline` in `cli/sushistack/setup/factory.py`
-turns every toolchain on unconditionally, and both install scripts run `ss install` before any
+turns every toolchain on unconditionally, and both install scripts run `hub install` before any
 module is added. Wave 1b repairs it (§9). If a user clones an open-source module beside a binary
 engine, the toolchains that module declares will download, several gigabytes of them; that is the
 right behaviour, because there is now something to build, and the desktop application says so
@@ -73,7 +73,7 @@ marker, and `se` registers its command set from it: in a source install every co
 install `editor`, `player`, `package` and the diagnostics. One package, one version, one branch.
 The change to `se` itself belongs to the sushiengine repository (§10).
 
-**`ss status` and `ss doctor` tell the truth about both.** For the user, a line such as
+**`hub status` and `hub doctor` tell the truth about both.** For the user, a line such as
 "sushiengine: binary 1.4.2, licence valid to 2027-03-01". For the engineer, "sushiengine: cloned,
 main, 3 ahead". A dependency no present module needs reports as not needed, not as missing.
 
@@ -81,10 +81,10 @@ main, 3 ahead". A dependency no present module needs reports as not needed, not 
 
 ```
 sushistack/
-  sushicore/              the CLI engine: ss, sr, se, sa, sb, sd all consume it
+  sushicore/              the CLI engine: hub, sr, se, sa, sb, sd all consume it
   sushihub/
-    cli/                  Python: the ss command (today's cli/, moved whole)
-    gui/                  C++: the Dear ImGui application; calls ss as a subprocess
+    cli/                  Python: the hub command (today's cli/, moved whole)
+    gui/                  C++: the Dear ImGui application; calls hub as a subprocess
     contract/             the JSON schema; cli tests and gui tests both run against it
   install.sh, install.ps1
   docs/
@@ -101,49 +101,49 @@ The dependency direction is one way. `sushihub/cli` imports `sushicore`, as it d
 ## 5. Presence: a third form of module
 
 A module is present in a workspace in one of three forms, recorded in `cli/modules.local.toml`
-and shown by `ss status`:
+and shown by `hub status`:
 
-| Form | How it arrived | What `ss update` does | What its CLI offers |
+| Form | How it arrived | What `hub update` does | What its CLI offers |
 |---|---|---|---|
-| `cloned` | `ss add`, a checkout under the workspace root | `git pull --ff-only` | everything |
-| `linked` | `ss link`, a checkout elsewhere | `git pull --ff-only` | everything |
-| `binary` | `ss add`, a release downloaded and unpacked | asks Sushi ID for a newer release, downloads it | the consumer subset |
+| `cloned` | `hub add`, a checkout under the workspace root | `git pull --ff-only` | everything |
+| `linked` | `hub link`, a checkout elsewhere | `git pull --ff-only` | everything |
+| `binary` | `hub add`, a release downloaded and unpacked | asks Sushi ID for a newer release, downloads it | the consumer subset |
 
 A binary install lives at the same path a clone would (`<workspace>/sushiengine`), so every
 sibling-resolution rule (`docs/architecture/WORKSPACE.md`) holds unchanged. Its root carries the
 marker file and a manifest the release ships: product, version, platform, the bundled
-sushiruntime and sushiblas versions, and the signature `ss` verified before unpacking.
+sushiruntime and sushiblas versions, and the signature `hub` verified before unpacking.
 
 ## 6. Sign-in and licence
 
-`ss login` opens the browser on Sushi ID's device-authorization page, shows the code in the
+`hub login` opens the browser on Sushi ID's device-authorization page, shows the code in the
 terminal, polls until the grant completes, and stores the refresh token in the operating system's
-credential store through `keyring`. `ss logout` removes it. `ss whoami` prints the account and its
+credential store through `keyring`. `hub logout` removes it. `hub whoami` prints the account and its
 live licences. The desktop application drives the same three through the contract; its sign-in
 screen is the terminal flow with the code rendered as a button that opens the browser.
 
-`ss license` prints the licences the account holds, each with product, form (account or
-organization seat) and expiry. `ss add sushiengine` on the binary path asks Sushi ID for a download
+`hub license` prints the licences the account holds, each with product, form (account or
+organization seat) and expiry. `hub add sushiengine` on the binary path asks Sushi ID for a download
 URL for the account's licence and the machine's platform, downloads to a temporary path, verifies
 the release signature, unpacks, and writes the licence file the engine reads at start-up. The file's
-contents and the engine's offline rule are the engine's design; `ss` only writes what Sushi ID
+contents and the engine's offline rule are the engine's design; `hub` only writes what Sushi ID
 hands it.
 
-`ss projects` lists the projects a binary engine knows about, so the desktop application can show
+`hub projects` lists the projects a binary engine knows about, so the desktop application can show
 them and open one with `se editor --project <name>`.
 
 Every one of these needs a Sushi ID endpoint that does not exist yet (§10). Wave 2 builds the
-`ss` side against a fake server that speaks the agreed shapes, so the two repositories can move in
+`hub` side against a fake server that speaks the agreed shapes, so the two repositories can move in
 parallel.
 
 ## 7. The JSON contract
 
 Two halves, both versioned in `sushihub/contract/` as JSON Schema.
 
-**Description.** `ss --describe` prints the command catalogue: each command's name, help text,
+**Description.** `hub --describe` prints the command catalogue: each command's name, help text,
 arguments and options with their types, defaults and choices, and which forms of presence it
 applies to. Typer holds all of this already; the catalogue is a serialisation, not a second
-declaration. The desktop application renders a form from a catalogue entry, so a new `ss` command
+declaration. The desktop application renders a form from a catalogue entry, so a new `hub` command
 appears on the desktop without desktop code.
 
 **Events.** Every command run with `--json` writes one event per line to stdout and nothing else
@@ -168,16 +168,16 @@ the engineer's taste and the stack's toolchain; it starts in under a second and 
 display's rate. It is not a web view and never will be.
 
 Five screens are drawn by hand because they are opened every day: status, modules, dependencies,
-licence, projects. Every other `ss` command is a generated form from the catalogue, so the rule
+licence, projects. Every other `hub` command is a generated form from the catalogue, so the rule
 "every terminal command has a desktop equivalent" is kept by construction. As a generated form
 proves worth polishing, it gains a hand-drawn screen; the form stays as the fallback.
 
-The bridge spawns `ss <command> --json` and reads stdout line by line into a queue the UI thread
+The bridge spawns `hub <command> --json` and reads stdout line by line into a queue the UI thread
 drains each frame; a long download shows its `progress` events as they arrive. A `prompt` event
 opens a dialog whose answer goes to the child's stdin. Nothing in the application knows a module's
 name, a file path or a toolchain; all of it arrives in events.
 
-The application is installed by the install scripts beside `ss` (wave 7) and is what a licensed
+The application is installed by the install scripts beside `hub` (wave 7) and is what a licensed
 user sees first. An engineer may never open it.
 
 ## 9. Waves
@@ -189,12 +189,12 @@ status is kept.
 | Wave | Work | Waits on |
 |---|---|---|
 | 0 | Documentation skeleton; this document | nothing |
-| 1a | `cli/` → `sushihub/cli/`; the contract schema; `JsonRenderer`; `ss --describe`; `--json` on every existing command | 0 |
-| 1b | Dependencies follow the modules (§3); `ss doctor` reports by owner in dependency order; install scripts stop provisioning before a module exists | 0 |
-| 2 | The `binary` form; the marker in `ModuleProfile`; `ss login`, `ss logout`, `ss whoami` against a fake Sushi ID | 1a |
+| 1a | `cli/` → `sushihub/cli/`; the contract schema; `JsonRenderer`; `hub --describe`; `--json` on every existing command | 0 |
+| 1b | Dependencies follow the modules (§3); `hub doctor` reports by owner in dependency order; install scripts stop provisioning before a module exists | 0 |
+| 2 | The `binary` form; the marker in `ModuleProfile`; `hub login`, `hub logout`, `hub whoami` against a fake Sushi ID | 1a |
 | 3 | Sushi ID endpoints, in sushiweb | none here |
 | 4 | `sushihub/gui`: skeleton, bridge, five screens, generated forms | 1a; 2 alongside |
-| 5 | `ss add sushiengine` source-or-binary; download, verify, unpack; licence file; `ss projects` | 2, 3 |
+| 5 | `hub add sushiengine` source-or-binary; download, verify, unpack; licence file; `hub projects` | 2, 3 |
 | 6 | sushiengine: binary command set; `se editor --project`; runtime licence client | 5 |
 | 7 | Install scripts fetch the desktop application; both journeys walked end to end | 4, 6 |
 
@@ -216,7 +216,7 @@ to change.
 sushiruntime and sushiblas, the root marker and manifest, signed. `se`'s command set from the
 marker. `se editor --project <name>`. A runtime licence client with an offline rule. The build
 that produces releases. All of it designed in that repository; this document only names the
-marker and the manifest fields `ss` reads.
+marker and the manifest fields `hub` reads.
 
 ## 11. Out of scope
 

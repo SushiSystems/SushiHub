@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://sushisystems.io/contract/describe.schema.json",
   "title": "The command catalogue",
-  "description": "What `ss --describe` prints: every command, its parameters and where it applies.",
+  "description": "What `hub --describe` prints: every command, its parameters and where it applies.",
   "type": "object",
   "properties": {
     "program": {"type": "string"},

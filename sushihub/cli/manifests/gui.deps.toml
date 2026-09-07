@@ -1,5 +1,5 @@
 # SushiHub GUI dependency fragment: what the desktop application under sushihub/gui links.
-# `ss install` provisions these into the shared dependencies/ tree; `ss gui build` configures
+# `hub install` provisions these into the shared dependencies/ tree; `hub gui build` configures
 # against that tree. gtest is the base fragment's.
 
 [imgui]

@@ -1,4 +1,4 @@
-"""The command catalogue `ss --describe` prints.
+"""The command catalogue `hub --describe` prints.
 
 A serialisation of the Typer application's own Click command objects, so a new
 subcommand reaches the desktop application without a second declaration of it

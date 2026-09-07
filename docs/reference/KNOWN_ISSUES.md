@@ -4,11 +4,11 @@ Some failures are not bugs in this workspace. They are a toolchain, a package ma
 vendor doing something a reasonable reader would not expect. This page records those, each with
 the symptom, the cause and the rule, so the next person recognises one instead of diagnosing it
 again. Add an entry whenever a failure turns out not to be the code's fault. Each module keeps its
-own page for failures inside its build; this one covers what `ss` provisions.
+own page for failures inside its build; this one covers what `hub` provisions.
 
 ## Raising the CUDA pin above 12.6 breaks Pascal builds far from the cause
 
-**Symptom.** After the CUDA toolkit is bumped past 12.6, `nvcc --version` succeeds, `ss doctor`
+**Symptom.** After the CUDA toolkit is bumped past 12.6, `nvcc --version` succeeds, `hub doctor`
 reports the toolkit present, and the CMake configure passes. The build then fails in the ptxas
 link step with an unknown-architecture error for `sm_61`.
 
@@ -28,26 +28,26 @@ such as `61;86`, so a machine that has moved to Ampere can still ship a Pascal b
 without a Pascal build proving the replacement works. A passing `nvcc --version` proves nothing
 here.
 
-## Changing a vcpkg port's feature set needs `--recurse`, which `ss install` cannot pass
+## Changing a vcpkg port's feature set needs `--recurse`, which `hub install` cannot pass
 
 **Symptom.** A manifest changes a port's features, for example `sdl2` to `sdl2[vulkan]` in
-`sushiengine/cli/sushistack.deps.toml`. `ss install` then fails at the vcpkg step: vcpkg refuses
+`sushiengine/cli/sushistack.deps.toml`. `hub install` then fails at the vcpkg step: vcpkg refuses
 to rebuild the already-installed port with different features and asks for `--recurse`.
 
 **Cause.** vcpkg treats a feature change on an installed port as a removal plus a reinstall of
 everything depending on it, and only does that when told to with `--recurse`. `VcpkgManager.install`
 in `sushihub/cli/sushistack/setup/package_managers.py` runs a plain `vcpkg install <port>:<triplet>` with
-no way to add that flag, and no `ss install` option exposes it.
+no way to add that flag, and no `hub install` option exposes it.
 
 **Rule.** After a feature-set change, run the install once by hand with the workspace's vcpkg
-(`ss home` prints the `dependencies/` path; the root is `vcpkg_root` in `cli/config.toml` when
+(`hub home` prints the `dependencies/` path; the root is `vcpkg_root` in `cli/config.toml` when
 set):
 
 ```
 <dependencies>/vcpkg/vcpkg install sdl2[vulkan]:x64-windows --recurse
 ```
 
-Then rerun `ss install`; vcpkg's list output now carries the featured port, so the check passes.
+Then rerun `hub install`; vcpkg's list output now carries the featured port, so the check passes.
 Do not remove the plain port to work around it; `--recurse` is the supported path.
 
 ## The runtime, engine and CI lanes build against different SYCL toolchains
@@ -55,7 +55,7 @@ Do not remove the plain port to work around it; `--recurse` is the supported pat
 **Symptom.** A SYCL-level behaviour that holds on a developer's machine fails in CI, or the other
 way round, with no change in the code under test.
 
-**Cause.** Three different SYCL toolchains are in use. `ss install` downloads the newest
+**Cause.** Three different SYCL toolchains are in use. `hub install` downloads the newest
 intel/llvm nightly bundle at the time it runs (`install_intel_llvm` in
 `sushihub/cli/sushistack/setup/toolchains.py`), and the install is then reused forever unless
 `--refresh-toolchains` is given, so two developer machines can differ from one another. The
@@ -68,3 +68,13 @@ open, such as whether a particular call allocates.
 **Rule.** A contract stated at the SYCL level (allocation freedom, ordering, what a runtime call
 may do) is not proven by a local run. It needs CI proof on the lane that ships it, and a claim
 that holds on one lane must say which one.
+
+## The command was `ss`, and is now `hub`
+
+**Symptom.** Documentation and scripts predating this entry call the workspace command `ss`.
+
+**Cause.** `ss` is not free to claim: iproute2 ships `/usr/bin/ss` on every Linux distribution, so
+the workspace command shadowed a system tool of the same name on every machine that had one.
+
+**Rule.** The command is `hub`. The installer offers `sh` as an optional interactive alias for
+typing, which changes typing only and leaves `/bin/sh` untouched.

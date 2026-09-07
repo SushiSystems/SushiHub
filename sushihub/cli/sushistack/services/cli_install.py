@@ -1,4 +1,4 @@
-"""`ss install-cli` service: install a module's own developer CLI.
+"""`hub install-cli` service: install a module's own developer CLI.
 
 One program name per module — `sr`, `se`, `sa`, `sb`, `sd` — resolved from
 ``MODULES`` in :mod:`sushistack.services.modules`, which is the single place
@@ -12,7 +12,7 @@ module ships its own bootstrap script. Each module CLI depends on ``sushicore``
 (the shared presentation layer), which is not published to any index — so it
 cannot be resolved as a normal pip dependency. This service installs the module
 CLI into an isolated pipx venv, then injects ``sushicore`` from its sibling
-checkout, exactly as `ss` itself is bootstrapped.
+checkout, exactly as `hub` itself is bootstrapped.
 """
 
 from __future__ import annotations
@@ -85,7 +85,7 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
         console.error(
             "sushicore checkout not found in the workspace, a linked path, or a "
             "sibling. The bootstrap normally fetches it; run it again, "
-            "`ss link sushicore <path>`, or set SUSHICORE_DIR.")
+            "`hub link sushicore <path>`, or set SUSHICORE_DIR.")
         return 1
 
     if dry_run:

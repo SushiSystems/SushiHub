@@ -6,7 +6,7 @@ Precedence (lowest to highest):
 The active platform's ``[tool.<platform>]`` table is merged over the common
 ``[tool]`` table, so a single file describes both Linux and Windows.
 
-SushiStack is the umbrella workspace: the user clones it first, then `ss add`
+SushiStack is the umbrella workspace: the user clones it first, then `hub add`
 clones the stack modules (sushiruntime, sushiengine, …) inside it. Everything the
 installer downloads lands in ``<workspace>/dependencies`` and is shared by every
 module, so the modules never provision their own toolchain or vcpkg tree.
@@ -26,8 +26,8 @@ from pathlib import Path
 from sushicore.config_base import ToolConfig, load_tool_config, write_tool_section
 from sushicore.workspace import WORKSPACE_CLI_DIR, has_marker, read_toml, resolve_env_path, walk_up
 
-# Marker file written at the workspace root by `ss init`. Its presence is how any
-# stack CLI invocation (`ss`, `sr`, `se`, `sa`, `sb`) locates the shared
+# Marker file written at the workspace root by `hub init`. Its presence is how any
+# stack CLI invocation (`hub`, `sr`, `se`, `sa`, `sb`) locates the shared
 # workspace from a nested directory.
 WORKSPACE_MARKER = ".sushistack"
 
@@ -39,7 +39,7 @@ def workspace_root(start: Path | None = None) -> Path:
     tells us nothing about where the workspace lives — the invocation directory
     does. Resolution order: ``SUSHISTACK_HOME`` env var, then a walk up from CWD
     looking for the ``.sushistack`` marker (or a ``sushihub/cli/manifests`` tree, which is
-    the repo's own signature). Run any `ss` command from anywhere inside the tree.
+    the repo's own signature). Run any `hub` command from anywhere inside the tree.
     """
     home = resolve_env_path("SUSHISTACK_HOME")
     if home:
@@ -48,7 +48,7 @@ def workspace_root(start: Path | None = None) -> Path:
     if root is None:
         raise SystemExit(
             "Not inside a SushiStack workspace: no .sushistack marker found in the "
-            "current directory or any parent. Run `ss init` first, or set "
+            "current directory or any parent. Run `hub init` first, or set "
             "SUSHISTACK_HOME to the workspace root."
         )
     return root
@@ -66,15 +66,15 @@ def config_dir(root: Path | None = None) -> Path:
 
 # Registry of modules linked to existing checkouts outside the workspace tree.
 # Kept in its own file so writing it never disturbs the [tool] paths that
-# `ss install` writes into config.local.toml.
+# `hub install` writes into config.local.toml.
 MODULES_FILE = "modules.local.toml"
 
 
 def registered_modules() -> dict[str, str]:
-    """name -> absolute path for modules linked via ``ss link``.
+    """name -> absolute path for modules linked via ``hub link``.
 
     A developer's working checkouts often live outside the workspace tree (e.g.
-    sibling repos). Linking one records its path here so ``ss`` aggregates its
+    sibling repos). Linking one records its path here so ``hub`` aggregates its
     ``sushistack.deps.toml`` and tracks it, without cloning a second copy. Read
     from ``<workspace>/sushihub/cli/modules.local.toml`` ``[modules]``.
     """
@@ -113,12 +113,12 @@ def identity_url() -> str:
 
 
 def deps_dir() -> Path:
-    """The single self-contained directory for everything ``ss install`` downloads.
+    """The single self-contained directory for everything ``hub install`` downloads.
 
     Everything vendorable — the intel/llvm bundle, AdaptiveCpp, a portable CMake
     and Ninja, and the vcpkg tree with its C++ library ports — lands under here,
     so a user can see exactly what was fetched and reclaim it all by deleting one
-    folder (``ss remove --all``). Defaults to ``<workspace>/dependencies`` (git-
+    folder (``hub remove --all``). Defaults to ``<workspace>/dependencies`` (git-
     ignored) so every module shares one tree; override with ``SUSHISTACK_DEPS_DIR``.
     Falls back to a user-local path when not inside a workspace.
 
@@ -151,15 +151,15 @@ TOOLCHAIN_COMPILERS = {
     "oneapi": ("icx", "icpx"),
 }
 
-# `ss install` provisions EVERYTHING by default — all three SYCL toolchains
+# `hub install` provisions EVERYTHING by default — all three SYCL toolchains
 # (intel/llvm, AdaptiveCpp, oneAPI) plus CUDA. SYCL is a heavy ecosystem by
 # nature, so there is no footprint-vs-breadth profile to choose: a user who is
-# missing a toolchain will blame us, not their own narrowing. `ss install
+# missing a toolchain will blame us, not their own narrowing. `hub install
 # --customize` is the escape hatch — a picker for users who deliberately want a
 # subset. ``active`` is written as the default SR_SYCL_TOOLCHAIN.
 DEFAULT_ACTIVE_TOOLCHAIN = "intel-llvm"
 
-# The customizable, weighty components `ss install --customize` lets a user pick.
+# The customizable, weighty components `hub install --customize` lets a user pick.
 # key -> (label, InstallContext field it gates). All default ON.
 CUSTOMIZABLE_COMPONENTS = (
     ("intel-llvm",  "intel/llvm SYCL toolchain (clang++ -fsycl) — primary", "install_intel_llvm"),
@@ -196,7 +196,7 @@ class Config(ToolConfig):
 
     Inherits the generic host build-tool fields (cmake/ninja/vcpkg paths, etc.)
     from :class:`ToolConfig` and adds the SYCL toolchain selection and compiler
-    roots ``ss install`` discovers and writes into config.local.toml.
+    roots ``hub install`` discovers and writes into config.local.toml.
     """
 
     # SYCL toolchain selection (intel-llvm | adaptivecpp | oneapi). Persisted by
@@ -212,7 +212,7 @@ class Config(ToolConfig):
     # intel/llvm nightly bundle root (holds bin/clang++) for the intel-llvm
     # toolchain, and the AdaptiveCpp compiler for the adaptivecpp toolchain.
     # On Windows these are how the non-oneAPI toolchains provide a SYCL compiler;
-    # they are discovered by `ss install` and written to config.local.toml.
+    # they are discovered by `hub install` and written to config.local.toml.
     llvm_root: str = ""
     acpp_exe: str = ""
 
@@ -278,7 +278,7 @@ def set_toolchain(toolchain: str) -> Path:
         config_dir() / "config.local.toml",
         {"toolchain": toolchain},
         [
-            "# Managed by the SushiStack CLI. `ss` writes the toolchain key and the",
+            "# Managed by the SushiStack CLI. `hub` writes the toolchain key and the",
             "# [tool.<platform>] tool paths every module reads.",
         ],
     )

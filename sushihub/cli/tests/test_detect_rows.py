@@ -1,4 +1,4 @@
-"""What `ss doctor` says, and in what order."""
+"""What `hub doctor` says, and in what order."""
 
 from sushistack.setup.pipeline import InstallContext
 from sushistack.setup.steps import DetectStep

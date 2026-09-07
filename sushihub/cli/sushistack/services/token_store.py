@@ -1,4 +1,4 @@
-"""Where the Sushi ID session lives between two `ss` runs.
+"""Where the Sushi ID session lives between two `hub` runs.
 
 The client in ``sushistack.services.identity`` never names a credential store: it
 takes a :class:`TokenStore`. In production that is :class:`KeyringStore`, which
@@ -33,7 +33,7 @@ class Tokens:
 
 
 class TokenStore(Protocol):
-    """Reads, writes and forgets the one session `ss` holds."""
+    """Reads, writes and forgets the one session `hub` holds."""
 
     def load(self) -> Tokens | None:
         """Return the stored session, or None when nobody is signed in."""

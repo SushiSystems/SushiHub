@@ -89,7 +89,7 @@ def presence_of(root: Path, name: str, linked: Mapping[str, str]) -> Presence:
     Args:
         root: Workspace root.
         name: Module name, which is also its directory name under *root*.
-        linked: Module name to path, as ``ss link`` recorded it.
+        linked: Module name to path, as ``hub link`` recorded it.
     """
     where = _module_dir(root, name, linked)
     if name in linked:
@@ -102,12 +102,12 @@ def presence_of(root: Path, name: str, linked: Mapping[str, str]) -> Presence:
 
 
 def describe(root: Path, name: str, linked: Mapping[str, str]) -> tuple[str, str]:
-    """Say where module *name* lives and what state it is in, as `ss status` shows it.
+    """Say where module *name* lives and what state it is in, as `hub status` shows it.
 
     Args:
         root: Workspace root.
         name: Module name.
-        linked: Module name to path, as ``ss link`` recorded it.
+        linked: Module name to path, as ``hub link`` recorded it.
 
     Returns:
         The location — the module's directory, or the linked path — and the

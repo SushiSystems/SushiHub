@@ -39,7 +39,7 @@ _RC_GLOBS = [
 # Linux well-known install locations. Neither the apt CUDA toolkit nor oneAPI
 # add themselves to PATH: nvcc lands under /usr/local/cuda*, and icpx/icx under
 # /opt/intel/oneapi/compiler/*/bin (normally exposed only after `setvars.sh`).
-# The probe checks these directly so a fresh `ss install` reports them present.
+# The probe checks these directly so a fresh `hub install` reports them present.
 _NVCC_GLOBS_LINUX = [
     "/usr/local/cuda/bin/nvcc",
     "/usr/local/cuda-*/bin/nvcc",

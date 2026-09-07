@@ -23,7 +23,7 @@ jobs:
       - name: Test
         run: python -m pytest sushicore/tests -q
 
-  ss:
+  hub:
     strategy:
       fail-fast: false
       matrix:
@@ -35,7 +35,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
-      - name: Install sushicore, then the ss CLI
+      - name: Install sushicore, then the hub CLI
         # sushicore is published to no index, so it must already be in the
         # environment before the CLI is installed against it.
         run: pip install -e ./sushicore -e "./sushihub/cli[test]"
@@ -45,7 +45,7 @@ jobs:
   # ---------------------------------------------------------------------------
   # Consumer CLI contract
   # ---------------------------------------------------------------------------
-  # sushicore is a hard import-time dependency of six CLIs -- ss (this repo) and
+  # sushicore is a hard import-time dependency of six CLIs -- hub (this repo) and
   # sr / se / sa / sb / sd in sushiruntime / sushiengine / sushiai / sushiblas /
   # sushidsp -- and it is published to no index, so none of them can pin it as
   # an ordinary pip dependency. Each of those five repositories already runs a

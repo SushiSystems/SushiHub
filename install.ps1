@@ -5,16 +5,20 @@
 .DESCRIPTION
     Bootstraps Python and Git — using winget when available, direct downloads
     otherwise (no Microsoft Store required). Clones the SushiStack workspace,
-    installs the `ss` CLI, then provisions the shared dependency tree with
-    `ss install`. The portable CMake/Ninja lands in <workspace>\dependencies, so
-    only Python and Git are bootstrapped here. `ss install` provisions what the
+    installs the `hub` CLI, then provisions the shared dependency tree with
+    `hub install`. The portable CMake/Ninja lands in <workspace>\dependencies, so
+    only Python and Git are bootstrapped here. `hub install` provisions what the
     present modules declare, which in a fresh workspace is the base build tools
-    alone; to choose a different set, run `ss install --customize` after.
+    alone; to choose a different set, run `hub install --customize` after.
 
 .PARAMETER Add
     Space- or comma-separated module list to clone into the workspace, e.g.
     -Add "sushiruntime sushiengine". Each module brings the toolchains it
     declares as it arrives. Default: none.
+
+.PARAMETER NoAlias
+    Skip the offer to append `function sh { hub @args }` to the PowerShell
+    profile. The offer is skipped anyway when input is redirected.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File install.ps1
@@ -28,7 +32,8 @@
 [CmdletBinding()]
 param(
     [string]$Add = "",
-    [switch]$DryRun
+    [switch]$DryRun,
+    [switch]$NoAlias
 )
 
 $ErrorActionPreference = "Stop"
@@ -72,6 +77,30 @@ function Prompt-WorkspaceDir($defaultDir) {
     Write-Host ""
     Info "No input received, using default: $defaultDir"
     return $defaultDir
+}
+
+$AliasMarker = "# sushi hub alias"
+
+# Ask once whether to append `function sh { hub @args }` to the profile, and append it if the answer is yes.
+function Offer-Alias {
+    if ($NoAlias) { return }
+    if (-not [Environment]::UserInteractive) { return }
+    try {
+        if ([Console]::IsInputRedirected) { return }
+    } catch { return }
+
+    $profilePath = $PROFILE.CurrentUserAllHosts
+    if ((Test-Path $profilePath) -and (Select-String -Path $profilePath -SimpleMatch $AliasMarker -Quiet)) { return }
+
+    Info "The alias only changes what you type in an interactive shell; sh.exe and every #!/bin/sh script keep the real sh."
+    Write-Host "[INFO] Add ``function sh { hub @args }`` to $profilePath ? [y/N] " -ForegroundColor Cyan -NoNewline
+    $reply = Read-Host
+    if ($reply -notmatch '^(y|yes)$') { return }
+
+    $parent = Split-Path $profilePath -Parent
+    if (-not (Test-Path $parent)) { New-Item -ItemType Directory -Path $parent -Force | Out-Null }
+    Add-Content -Path $profilePath -Encoding utf8 -Value @("", $AliasMarker, 'function sh { hub @args }')
+    Info "Alias written to $profilePath; open a new PowerShell to pick it up."
 }
 
 function Refresh-Path {
@@ -133,9 +162,9 @@ function Ensure-Git {
     Refresh-Path
 }
 
-# Bootstrap only what `ss` itself needs to run and clone: Python and Git. CMake,
+# Bootstrap only what `hub` itself needs to run and clone: Python and Git. CMake,
 # Ninja, and the SYCL toolchains are downloaded portably into the shared
-# <workspace>\dependencies by `ss install` and `ss add`.
+# <workspace>\dependencies by `hub install` and `hub add`.
 Ensure-Python
 Ensure-Git
 
@@ -158,32 +187,42 @@ if ($ScriptDir -and (Test-Path (Join-Path $ScriptDir "sushihub\cli\manifests")))
 Set-Location $WorkspaceDir
 Info "Workspace: $WorkspaceDir"
 
-# Install the ss CLI.
-Info "Installing the ss CLI..."
+# Install the hub CLI.
+Info "Installing the hub CLI..."
 python sushihub/cli/install.py
 
 $PipxBinDir = python -m pipx environment --value PIPX_BIN_DIR
-$SsCmd = Join-Path $PipxBinDir "ss.exe"
-if (-not (Test-Path $SsCmd)) { $SsCmd = "ss" }
+
+# An install from before the rename left a shim named ss.exe.
+$StaleShim = Join-Path $PipxBinDir "ss.exe"
+if (Test-Path $StaleShim) {
+    Info "Removing the ss shim an earlier install left in $PipxBinDir"
+    Remove-Item $StaleShim -Force -Confirm:$false
+}
+
+$HubCmd = Join-Path $PipxBinDir "hub.exe"
+if (-not (Test-Path $HubCmd)) { $HubCmd = "hub" }
 
 # Mark the workspace, then provision what it declares today: the base tools.
-& $SsCmd init
+& $HubCmd init
 
 $flags = @("install")
 if ($DryRun) { $flags += "--dry-run" }
-Info "Running: ss $($flags -join ' ')"
-& $SsCmd @flags
-$ssExit = $LASTEXITCODE
-if ($ssExit -ne 0) { exit $ssExit }
+Info "Running: hub $($flags -join ' ')"
+& $HubCmd @flags
+$hubExit = $LASTEXITCODE
+if ($hubExit -ne 0) { exit $hubExit }
 
-# Optionally clone the requested modules; `ss add` provisions what each needs.
+# Optionally clone the requested modules; `hub add` provisions what each needs.
 $modules = ($Add -replace ',', ' ').Split(' ', [StringSplitOptions]::RemoveEmptyEntries)
 if ($modules.Count -gt 0) {
     Info "Adding modules: $($modules -join ' ')"
-    & $SsCmd add @modules
+    & $HubCmd add @modules
 }
+
+Offer-Alias
 
 Info "Done. Workspace ready at $WorkspaceDir"
 if ($modules.Count -eq 0) {
-    Info "Next: ss add sushiruntime   (then: cd sushiruntime; sr build)"
+    Info "Next: hub add sushiruntime   (then: cd sushiruntime; sr build)"
 }

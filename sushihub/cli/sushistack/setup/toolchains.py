@@ -221,7 +221,7 @@ def install_intel_llvm(cfg: Config, dry_run: bool,
             console.warn(
                 "This bundle ships no compiler-rt sanitizer runtimes, so "
                 "`sr build --type asan` cannot link. Current bundles do carry "
-                "them — run [bold cyan]ss install --refresh-toolchains[/bold cyan] "
+                "them — run [bold cyan]hub install --refresh-toolchains[/bold cyan] "
                 "to replace it. (A newer bundle is the fix; a separate LLVM "
                 "install is not.)")
         return str(root)

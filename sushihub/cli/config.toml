@@ -41,7 +41,7 @@ vcpkg_triplet = "x64-windows"
 
 [cli]
 # CLI appearance, resolved by the shared `sushicore` package (same schema for
-# sr/se/ss). Override in config.local.toml or with SUSHI_CLI_THEME /
+# sr/se/hub). Override in config.local.toml or with SUSHI_CLI_THEME /
 # SUSHI_CLI_ICONS / SUSHI_CLI_COLOR — no rebuild needed. See sushicore's README
 # for the full list of presets and the [cli.colors] / [cli.icon_overrides]
 # tables for one-off overrides.
@@ -50,7 +50,7 @@ icons = "text"
 color = "auto"
 
 [identity]
-# Sushi ID: where `ss login`, `ss logout`, `ss whoami` and `ss license` send
+# Sushi ID: where `hub login`, `hub logout`, `hub whoami` and `hub license` send
 # their four requests. Override with SUSHI_ID_URL to point at a staging server
 # or at a fake one. The endpoints are in ../sushihub/contract/sushi-id.md.
 url = "https://id.sushisystems.io"

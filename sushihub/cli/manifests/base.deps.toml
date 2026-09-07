@@ -1,16 +1,16 @@
 # SushiStack base dependency fragment — the module-independent build and toolchain
 # infrastructure every workspace needs regardless of which modules are cloned.
 # Module-specific dependencies do NOT live here; each module declares its own in a
-# `sushistack.deps.toml` at its repo root, which `ss` aggregates with this file.
+# `sushistack.deps.toml` at its repo root, which `hub` aggregates with this file.
 #
-# `ss install` merges every cli/manifests/*.deps.toml fragment plus each known
+# `hub install` merges every cli/manifests/*.deps.toml fragment plus each known
 # module's sushistack.deps.toml into one dependency set, gathers the package names
 # for the active platform, checks what is already present, and installs only the
 # missing ones into the shared dependencies/ tree. No dependency name lives in the
 # installer code.
 #
 # Field reference:
-#   description    Human-readable purpose (shown by `ss doctor`).
+#   description    Human-readable purpose (shown by `hub doctor`).
 #   required       false => a missing one warns but does not stop the build.
 #   gpu_only       true  => only installed when `--gpu` is passed.
 #   linux_apt      apt package names; empty list = not needed on Linux.

@@ -1,5 +1,5 @@
 /** @file StatusScreen.hpp
- *  @brief Declares the screen that draws what `ss status` reports about the workspace.
+ *  @brief Declares the screen that draws what `hub status` reports about the workspace.
  *  @author Mustafa Garip
  */
 

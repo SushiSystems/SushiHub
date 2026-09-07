@@ -34,8 +34,8 @@ const std::vector<ScreenCommand>& screen_commands()
 
 }
 
-Workspace::Workspace(std::string ss_executable)
-    : ss_executable_(std::move(ss_executable))
+Workspace::Workspace(std::string hub_executable)
+    : hub_executable_(std::move(hub_executable))
 {
 }
 
@@ -61,12 +61,12 @@ void Workspace::refresh(std::string_view screen)
 
 const std::string& Workspace::executable() const
 {
-    return ss_executable_;
+    return hub_executable_;
 }
 
 std::vector<std::string> Workspace::argv_for(std::string_view screen) const
 {
-    std::vector<std::string> argv{ss_executable_, "--json"};
+    std::vector<std::string> argv{hub_executable_, "--json"};
 
     for (const ScreenCommand& entry : screen_commands())
     {

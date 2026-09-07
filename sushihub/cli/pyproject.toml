@@ -26,15 +26,15 @@ test = ["pytest>=7.0", "jsonschema>=4.0"]
 # (pipx, isolated venv) injects it automatically from that directory.
 
 [project.scripts]
-ss = "sushistack.cli:app"
-sushistack = "sushistack.cli:app"
+hub = "sushistack.cli:app"
+sushihub = "sushistack.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["sushistack*"]
 
 # The dependency fragments under cli/manifests/ are read from the cloned
-# workspace at run time (ss resolves the workspace root via the .sushistack
+# workspace at run time (hub resolves the workspace root via the .sushistack
 # marker), so they are not shipped inside the wheel.
 
 [tool.setuptools.package-data]

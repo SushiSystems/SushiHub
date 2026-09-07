@@ -26,8 +26,8 @@ constexpr ImGuiWindowFlags FRAME_FLAGS =
     ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus |
     ImGuiWindowFlags_NoNavFocus | ImGuiWindowFlags_NoScrollbar;
 
-/** @brief Holds the `ss` program the shell falls back to, found on the search path. */
-constexpr const char* DEFAULT_EXECUTABLE = "ss";
+/** @brief Holds the `hub` program the shell falls back to, found on the search path. */
+constexpr const char* DEFAULT_EXECUTABLE = "hub";
 
 /** @brief Holds the commands a hand-drawn screen already covers, so no form repeats them. */
 const std::vector<std::string>& covered_commands()
@@ -52,9 +52,9 @@ Shell::Shell()
 {
 }
 
-Shell::Shell(std::string ss_executable)
-    : workspace_(ss_executable),
-      catalogue_(ss_executable),
+Shell::Shell(std::string hub_executable)
+    : workspace_(hub_executable),
+      catalogue_(hub_executable),
       status_screen_(workspace_),
       modules_screen_(workspace_, *this),
       dependencies_screen_(workspace_, *this),

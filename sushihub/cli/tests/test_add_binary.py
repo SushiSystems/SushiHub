@@ -20,7 +20,7 @@ from .test_releases import release_members, zip_bytes
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
-    """Point `ss add` at a throwaway root where nothing is cloned or linked."""
+    """Point `hub add` at a throwaway root where nothing is cloned or linked."""
     monkeypatch.setattr(modules, "workspace_root", lambda: tmp_path)
     monkeypatch.setattr(modules, "registered_modules", lambda: {})
     monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
@@ -33,14 +33,14 @@ def workspace(tmp_path, monkeypatch):
 
 @pytest.fixture
 def recorder(monkeypatch):
-    """Capture every line `ss add` and `ss update` print."""
+    """Capture every line `hub add` and `hub update` print."""
     spy = Recorder()
     monkeypatch.setattr(modules, "console", spy)
     return spy
 
 
 def sign_in(fake_id, monkeypatch, tokens=Tokens("access-1", "refresh-1", 1e12)):
-    """Point every Sushi ID call in `ss` at the fake server with *tokens* stored."""
+    """Point every Sushi ID call in `hub` at the fake server with *tokens* stored."""
     client = SushiId(fake_id.url, MemoryStore(tokens), now=lambda: 0.0)
     monkeypatch.setattr(session, "client", lambda: client)
     return client
@@ -110,7 +110,7 @@ def test_add_names_both_ways_in_when_neither_is_open(
     sign_in(fake_id, monkeypatch, tokens=None)
     assert modules.add(["sushiengine"], provision=lambda dry_run: 0) == 1
     assert recorder.said("a Git identity with access")
-    assert recorder.said("`ss login`")
+    assert recorder.said("`hub login`")
     assert not (workspace / "sushiengine").exists()
 
 
@@ -118,7 +118,7 @@ def test_add_binary_without_a_session_asks_for_the_login_alone(
         workspace, recorder, monkeypatch, fake_id):
     sign_in(fake_id, monkeypatch, tokens=None)
     assert modules.add(["sushiengine"], binary=True, provision=lambda dry_run: 0) == 1
-    assert recorder.said("Run `ss login` first.")
+    assert recorder.said("Run `hub login` first.")
     assert not recorder.said("a Git identity with access")
 
 
@@ -207,7 +207,7 @@ def test_update_asks_for_a_login_before_refreshing_a_binary_install(
         encoding="utf-8")
     sign_in(fake_id, monkeypatch, tokens=None)
     assert modules.update(["sushiengine"]) == 1
-    assert recorder.said("Run `ss login` first.")
+    assert recorder.said("Run `hub login` first.")
 
 
 def test_write_licence_returns_the_expiry_and_writes_the_bare_token(

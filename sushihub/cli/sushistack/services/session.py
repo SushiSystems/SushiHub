@@ -1,9 +1,9 @@
-"""The four Sushi ID commands: what `ss login`, `logout`, `whoami` and `license` do.
+"""The four Sushi ID commands: what `hub login`, `logout`, `whoami` and `license` do.
 
 Each function drives :class:`~sushistack.services.identity.SushiId` and writes to
 the console, and returns the exit code and the payload the ``result`` event
 carries. One factory, :func:`client`, decides which server and which credential
-store every Sushi ID call in `ss` talks to, so a test replaces the pair in one
+store every Sushi ID call in `hub` talks to, so a test replaces the pair in one
 place. The endpoints are in ``sushihub/contract/sushi-id.md``.
 """
 
@@ -78,7 +78,7 @@ def whoami() -> Outcome:
     """Print the signed-in account as a two-column table."""
     account = client().me()
     if account is None:
-        console.warn("Not signed in. Run `ss login`.")
+        console.warn("Not signed in. Run `hub login`.")
         return Outcome(1, {})
     console.table(
         ["Field", "Value"],
@@ -94,7 +94,7 @@ def license() -> Outcome:
     """Print the licences the signed-in account holds, one row each."""
     account = client().me()
     if account is None:
-        console.warn("Not signed in. Run `ss login`.")
+        console.warn("Not signed in. Run `hub login`.")
         return Outcome(1, {})
     if not account.licenses:
         console.info("No licences on this account.")

@@ -26,9 +26,9 @@ class GeneratedForm
 public:
     /**
      * @brief Binds the form to @p command and to the executable a run is spawned from.
-     * @param ss_executable The `ss` program, however the workspace found it.
+     * @param hub_executable The `hub` program, however the workspace found it.
      */
-    GeneratedForm(Command command, std::string ss_executable);
+    GeneratedForm(Command command, std::string hub_executable);
 
     /**
      * @brief Enters @p values into the command's positional arguments, in declaration order.
@@ -80,8 +80,8 @@ private:
     /** @brief Holds the catalogue entry every widget is drawn from. */
     Command command_;
 
-    /** @brief Holds the `ss` program a run is spawned from. */
-    std::string ss_executable_;
+    /** @brief Holds the `hub` program a run is spawned from. */
+    std::string hub_executable_;
 
     /** @brief Holds one field per parameter, in the order the command declares them. */
     std::vector<Field> fields_;

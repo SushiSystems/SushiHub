@@ -78,7 +78,7 @@ TEST(CatalogueTest, ReadsTheProgramVersionAndContract)
 {
     const Catalogue catalogue = recorded_catalogue();
 
-    EXPECT_EQ(catalogue.program, "ss");
+    EXPECT_EQ(catalogue.program, "hub");
     EXPECT_FALSE(catalogue.version.empty());
     EXPECT_EQ(catalogue.contract, "1");
     EXPECT_FALSE(catalogue.commands.empty());
@@ -168,10 +168,10 @@ TEST(CatalogueTest, RefusesABadCatalogueWithAReasonInsteadOfThrowing)
     const std::vector<std::string> refused{
         "not json at all",
         "[]",
-        R"({"program":"ss","version":"1","contract":"1"})",
-        R"({"program":"ss","version":"1","contract":"1","commands":{}})",
-        R"({"program":"ss","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"flag","type":"string","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})",
-        R"({"program":"ss","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"option","type":"colour","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})"};
+        R"({"program":"hub","version":"1","contract":"1"})",
+        R"({"program":"hub","version":"1","contract":"1","commands":{}})",
+        R"({"program":"hub","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"flag","type":"string","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})",
+        R"({"program":"hub","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"option","type":"colour","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})"};
 
     for (const std::string& document : refused)
     {

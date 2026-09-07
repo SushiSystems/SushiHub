@@ -36,9 +36,9 @@ def _runner() -> CliRunner:
 
 
 def _run(args, cwd):
-    """Invoke ``ss`` in-process from *cwd*, with *cwd* as the workspace.
+    """Invoke ``hub`` in-process from *cwd*, with *cwd* as the workspace.
 
-    ``ss init`` marks the directory the process runs in, not ``SUSHISTACK_HOME``,
+    ``hub init`` marks the directory the process runs in, not ``SUSHISTACK_HOME``,
     so the run happens inside the throwaway workspace and never in the checkout.
     """
     previous = Path.cwd()
@@ -94,7 +94,7 @@ def test_events_schema_rejects_an_unknown_key_and_level():
 
 def test_describe_schema_accepts_the_documented_example():
     v = jsonschema.Draft202012Validator(_schema("describe.schema.json"))
-    v.validate({"program": "ss", "version": "1.0.0", "contract": "1", "commands": [
+    v.validate({"program": "hub", "version": "1.0.0", "contract": "1", "commands": [
         {"name": "add", "help": "h", "applies_to": ["cloned", "linked", "binary"], "params": [
             {"name": "modules", "kind": "argument", "type": "string", "multiple": True, "required": True,
              "default": None, "choices": None, "flags": [], "help": "x"}]}]})
