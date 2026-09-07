@@ -1,10 +1,10 @@
 """The registry of projects, and the three commands that keep it.
 
 A project is a directory the engine opens; the desktop application reads
-``ss --json projects list`` to show them and launches ``se editor --project
+``hub --json projects list`` to show them and launches ``se editor --project
 <path>`` for the one a person picks. The registry is one file beside
 ``modules.local.toml``, so writing it never disturbs the toolchain paths
-``ss install`` writes into ``config.local.toml``.
+``hub install`` writes into ``config.local.toml``.
 
 Two halves: the registry itself, which reads and writes the file and knows
 nothing of a terminal, and the three commands under it, which print and return
@@ -94,7 +94,7 @@ def show() -> tuple[int, dict]:
     """Print one row per registered project. Return the exit code and the payload."""
     found = list_projects()
     if not found:
-        console.info("No projects registered. Add one with `ss projects add <path>`.")
+        console.info("No projects registered. Add one with `hub projects add <path>`.")
         return 0, {"projects": []}
     rows = [(item, Path(item.path).is_dir()) for item in found]
     console.table(
@@ -125,7 +125,7 @@ def add(path: str, name: str | None = None) -> tuple[int, dict]:
 def remove(name: str) -> tuple[int, dict]:
     """Drop a project from the registry. Return the exit code and the payload."""
     if not remove_project(name):
-        console.error(f"No project called {name}. `ss projects list` shows the names.")
+        console.error(f"No project called {name}. `hub projects list` shows the names.")
         return 1, {}
     console.success(f"Removed {name} from the registry. The directory is untouched.")
     return 0, {"name": name}
@@ -139,7 +139,7 @@ def _write(entries: dict[str, str]) -> None:
             so a name with a space and a Windows path both survive the trip.
     """
     lines = [
-        "# Managed by `ss projects`: the project directories the desktop",
+        "# Managed by `hub projects`: the project directories the desktop",
         "# application lists and opens with `se editor --project <path>`.",
         "",
         "[projects]",

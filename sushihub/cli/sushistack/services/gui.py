@@ -6,12 +6,12 @@ cmake command line is spawned is :class:`sushicore.cmake_driver.CMakeDriver`'s.
 The split is the one every module CLI in the stack keeps, so the application is
 built the way sushiblas is rather than by a second mechanism.
 
-The build tree is ``build/ss`` under the application, beside the ``build/<preset>``
+The build tree is ``build/hub`` under the application, beside the ``build/<preset>``
 trees CMakePresets.json writes. The two never share a directory: a preset build
 runs under whatever environment the shell already had, and this one runs under the
 vcvars snapshot, so a cache written by one is wrong for the other.
 
-The configure turns vcpkg's manifest mode off. `ss install` fills a classic-mode
+The configure turns vcpkg's manifest mode off. `hub install` fills a classic-mode
 tree under ``dependencies/vcpkg`` and manifest mode ignores it, which is what the
 failed configure in docs/agent/plans/2026-09-05-wave-4b-gui-through-ss.md showed.
 """
@@ -47,7 +47,7 @@ _CMAKE_BUILD_TYPE = {
 }
 
 #: What a command says when the build tree it needs is not there yet.
-_NOT_BUILT = "build/ss not found. Run `ss gui build` first."
+_NOT_BUILT = "build/hub not found. Run `hub gui build` first."
 
 _RUNNER = Runner(console, GUI_PROFILE.program)
 _DRIVER = CMakeDriver(console, _RUNNER)
@@ -57,8 +57,8 @@ _EXECUTABLES = ExecutableIndex(skip_dirs=("_deps",))
 
 
 def _build_dir(root: Path) -> Path:
-    """Return the build tree `ss gui` owns under the application root."""
-    return root / "build" / "ss"
+    """Return the build tree `hub gui` owns under the application root."""
+    return root / "build" / "hub"
 
 
 def _configure_args(cfg: GuiConfig, root: Path, build_dir: Path, build_type: str,
@@ -229,7 +229,7 @@ def run(target: str | None = None, args: Sequence[str] = (), *, runner=None,
 
 
 def clean(*, driver=None) -> int:
-    """Remove the build tree `ss gui` owns.
+    """Remove the build tree `hub gui` owns.
 
     Args:
         driver: The cmake driver, or None for the shared one.

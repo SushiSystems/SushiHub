@@ -1,5 +1,5 @@
 /** @file DependenciesScreen.hpp
- *  @brief Declares the screen that draws what `ss doctor` found and what it did not.
+ *  @brief Declares the screen that draws what `hub doctor` found and what it did not.
  *  @author Mustafa Garip
  */
 

@@ -1,4 +1,4 @@
-"""`ss install` service: thin wrapper that runs the installer pipeline.
+"""`hub install` service: thin wrapper that runs the installer pipeline.
 
 The CLI command parses flags, this builds the pipeline via the composition root,
 runs it, and maps success to an exit code. All the real logic lives in the
@@ -57,8 +57,8 @@ def run(step: str = "all", dry_run: bool = False,
                     default=False,
                 )
             if not ctx.assume_acpp_llvm:
-                console.info("Skipping the LLVM download. Re-run `ss install` to retry, "
-                             "or `ss install --customize` and deselect AdaptiveCpp.")
+                console.info("Skipping the LLVM download. Re-run `hub install` to retry, "
+                             "or `hub install --customize` and deselect AdaptiveCpp.")
 
     # Prime sudo up front (Linux, non-root) so the password prompt happens here,
     # attached to the terminal, rather than being swallowed by the live progress
@@ -71,8 +71,8 @@ def run(step: str = "all", dry_run: bool = False,
     if ok:
         console.success("Inventory complete." if detect_only else "Install completed.")
         if step in ("all", "provision", "configure"):
-            console.info("Next: `ss add sushiruntime` then build it with `sr build`, "
-                         "or `ss status` to see what is installed.")
+            console.info("Next: `hub add sushiruntime` then build it with `sr build`, "
+                         "or `hub status` to see what is installed.")
         return 0
     console.error("Inventory failed." if detect_only else "Install did not complete. See messages above.")
     return 1
@@ -84,7 +84,7 @@ def uninstall(
     everything: bool = False,
     assume_yes: bool = False,
 ) -> int:
-    """Remove packages and config files placed by `ss install`. Return exit code."""
+    """Remove packages and config files placed by `hub install`. Return exit code."""
     console.header("SushiStack Remove")
     if dry_run:
         console.info("Dry-run: showing actions without changing the system.")

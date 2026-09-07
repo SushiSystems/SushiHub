@@ -59,7 +59,7 @@ def build_pipeline(
     combo ('provision'|'all'). By default the toolchains the present modules
     declare are provisioned, and nothing else. ``selection`` overrides that per
     component (keys: ``install_intel_llvm``, ``install_acpp``, ``oneapi``,
-    ``gpu``), as gathered by ``ss install --customize``. ``source``/``managers``
+    ``gpu``), as gathered by ``hub install --customize``. ``source``/``managers``
     can be injected for tests.
     """
     cfg = cfg or load_config()
@@ -84,7 +84,7 @@ def build_pipeline(
             all_steps["verify"],
         ]
     elif only == "provision":
-        # `ss install`: detect + install + write config, but no verify. The
+        # `hub install`: detect + install + write config, but no verify. The
         # workspace has no single project to build, so VerifyStep (which compiles
         # and smoke-tests a checkout) is left to each module's own CLI
         # (`sr`, `se`, `sa`, `sb`).

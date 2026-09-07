@@ -1,9 +1,9 @@
-"""SushiStack developer CLI (`ss`).
+"""SushiStack developer CLI (`hub`).
 
 The umbrella that provisions one shared dependency tree for the whole stack and
 manages the module checkouts (sushiruntime, sushiengine, sushiai, sushiblas, sushidsp)
 that live inside the workspace. Each module keeps its own CLI — `sr`, `se`,
-`sa`, `sb`, `sd` — for building and testing; `ss` only owns downloading, installing,
+`sa`, `sb`, `sd` — for building and testing; `hub` only owns downloading, installing,
 and module lifecycle.
 
 Thin Typer layer: commands parse arguments and delegate to the service layer in
@@ -27,7 +27,7 @@ from .services import modules as modules_svc
 from .services import setup as setup_svc
 
 app = typer.Typer(
-    name="ss",
+    name="hub",
     help="SushiStack CLI — one shared dependency tree and module manager for the stack.",
     rich_markup_mode="rich",
 )
@@ -144,7 +144,7 @@ def link(
 ):
     """Register an existing checkout (outside the workspace) as a module.
 
-    For developers whose working repos live elsewhere: `ss` then aggregates that
+    For developers whose working repos live elsewhere: `hub` then aggregates that
     checkout's dependencies and tracks it, with no second clone. The module's own
     CLI resolves the shared deps via SUSHISTACK_HOME. What the linked module
     declares is provisioned afterwards unless [bold]--skip-install[/bold] is given.
@@ -275,8 +275,8 @@ def gui_build(
 ):
     """Configure and compile the desktop application.
 
-    Builds into [cyan]sushihub/gui/build/ss[/cyan] under the Visual Studio
-    environment on Windows, against the vcpkg tree `ss install` provisions.
+    Builds into [cyan]sushihub/gui/build/hub[/cyan] under the Visual Studio
+    environment on Windows, against the vcpkg tree `hub install` provisions.
     """
     _finish(gui_svc.build(build_type, clean=clean, defines=define))
 

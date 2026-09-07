@@ -48,7 +48,7 @@ class InstallContext:
     oneapi: bool = False
 
     # Which SYCL toolchains this run provisions. Default to both (intel-llvm +
-    # AdaptiveCpp); ``ss install --customize`` narrows this via ``selection`` in
+    # AdaptiveCpp); ``hub install --customize`` narrows this via ``selection`` in
     # ``factory.build_pipeline``. ``active_toolchain`` is the one ConfigureStep
     # pins as the default for subsequent builds (None => leave the existing
     # choice alone).
@@ -57,7 +57,7 @@ class InstallContext:
     active_toolchain: str | None = None
     # Re-download a toolchain that is already present. Off by default — a present
     # toolchain is the whole point of an idempotent install — and set by
-    # ``ss install --refresh-toolchains`` when the installed bundle predates
+    # ``hub install --refresh-toolchains`` when the installed bundle predates
     # something the build now needs.
     refresh_toolchains: bool = False
     # Consent for the heavy Windows LLVM download acpp needs. Gathered up front
@@ -114,7 +114,7 @@ class InstallPipeline:
         """Execute every step in order. Return True if none failed.
 
         ``show_progress`` draws the setup progress bar. Read-only flows (a bare
-        `detect`, i.e. `ss doctor`) pass False: a "Setup Complete!" bar there is
+        `detect`, i.e. `hub doctor`) pass False: a "Setup Complete!" bar there is
         misleading — nothing is being installed.
         """
         total = len(self._steps)

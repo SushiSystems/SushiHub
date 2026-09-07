@@ -1,11 +1,11 @@
-# Managed by `ss init`: shared dependencies and cloned modules are not tracked.
+# Managed by `hub init`: shared dependencies and cloned modules are not tracked.
 /dependencies/
 /sushiruntime/
 /sushiengine/
 /sushiai/
 /sushiblas/
 
-# Local machine config written by `ss install` / `ss link`.
+# Local machine config written by `hub install` / `hub link`.
 /sushihub/cli/config.local.toml
 /sushihub/cli/modules.local.toml
 /sushihub/cli/projects.local.toml

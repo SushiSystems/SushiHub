@@ -1,5 +1,5 @@
 /** @file Catalogue.hpp
- *  @brief Declares the command catalogue `ss --describe` prints and its parameter records.
+ *  @brief Declares the command catalogue `hub --describe` prints and its parameter records.
  *  @author Mustafa Garip
  */
 
@@ -64,7 +64,7 @@ struct Parameter
 /** @brief Describes one command a form can be generated from. */
 struct Command
 {
-    /** @brief Holds the subcommand name as `ss` accepts it. */
+    /** @brief Holds the subcommand name as `hub` accepts it. */
     std::string name;
 
     /** @brief Holds the command's first help paragraph. */
@@ -80,7 +80,7 @@ struct Command
 /** @brief Holds one program's whole command catalogue. */
 struct Catalogue
 {
-    /** @brief Holds the program name, `ss` for this contract. */
+    /** @brief Holds the program name, `hub` for this contract. */
     std::string program;
 
     /** @brief Holds the installed distribution's version, "0" when it runs from a source tree. */
@@ -94,7 +94,7 @@ struct Catalogue
 };
 
 /**
- * @brief Reads the object `ss --describe` prints into a catalogue.
+ * @brief Reads the object `hub --describe` prints into a catalogue.
  * @param json The whole catalogue document, not a stream of event lines.
  * @return The catalogue, or the reason it could not be read. Never throws.
  */

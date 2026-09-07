@@ -2,13 +2,13 @@
 # SushiStack one-script installer (Linux / WSL).
 #
 # Bootstraps Python, pip, and Git, clones the SushiStack workspace, installs the
-# `ss` CLI, then provisions the shared dependency tree with `ss install`. The
+# `hub` CLI, then provisions the shared dependency tree with `hub install`. The
 # portable CMake/Ninja lands in <workspace>/dependencies, so only Python and Git
 # need bootstrapping here.
 #
-# `ss install` provisions what the present modules declare, which in a fresh
+# `hub install` provisions what the present modules declare, which in a fresh
 # workspace is the base build tools alone. Each module added below brings its own
-# toolchains as it arrives; `ss install --customize` picks a different set.
+# toolchains as it arrives; `hub install --customize` picks a different set.
 #
 # Supports Debian/Ubuntu (apt), Fedora/RHEL (dnf/yum), Arch (pacman), and
 # openSUSE (zypper).
@@ -20,12 +20,16 @@
 #   curl -fsSL https://sushisystems.io/install.sh | bash -s -- --add "sushiruntime sushiengine"
 #
 # Usage (inside a checkout):
-#   bash install.sh [--add "..."] [--dry-run]
+#   bash install.sh [--add "..."] [--dry-run] [--no-alias]
+#
+# The installer offers, once, to append `alias sh='hub'` to the interactive shell
+# rc file. `--no-alias` declines without asking.
 set -euo pipefail
 
 REPO_URL="${SUSHISTACK_REPO_URL:-https://github.com/sushisystems/sushistack.git}"
 DRY_FLAG=""
 MODULES=""
+NO_ALIAS=0
 expect_add=0
 for arg in "$@"; do
   if [ "$expect_add" -eq 1 ]; then MODULES="$arg"; expect_add=0; continue; fi
@@ -33,6 +37,7 @@ for arg in "$@"; do
     --add)         expect_add=1 ;;
     --add=*)       MODULES="${arg#*=}" ;;
     --dry-run)     DRY_FLAG="--dry-run" ;;
+    --no-alias)    NO_ALIAS=1 ;;
     *) printf '[WARN] unknown argument: %s\n' "$arg" ;;
   esac
 done
@@ -51,7 +56,36 @@ bootstrap_yum()    { log "Installing Python and Git via yum...";    $SUDO yum in
 bootstrap_pacman() { log "Installing Python and Git via pacman..."; $SUDO pacman -Sy --noconfirm python python-pip git; }
 bootstrap_zypper() { log "Installing Python and Git via zypper..."; $SUDO zypper install -y python3 python3-pip git; }
 
-# Only Python and Git need bootstrapping; everything else is downloaded by `ss
+ALIAS_MARKER="# sushi hub alias"
+
+# Name the rc file the user's login shell reads when it starts interactively.
+alias_rc_file() {
+  case "${SHELL:-}" in
+    */zsh) printf '%s\n' "$HOME/.zshrc" ;;
+    *)     printf '%s\n' "$HOME/.bashrc" ;;
+  esac
+}
+
+# Ask once whether to append `alias sh='hub'`, and append it if the answer is yes.
+offer_alias() {
+  [ "$NO_ALIAS" -eq 1 ] && return 0
+  [ -t 0 ] || return 0
+  rc_file="$(alias_rc_file)"
+  if [ -f "$rc_file" ] && grep -qF "$ALIAS_MARKER" "$rc_file"; then return 0; fi
+
+  log "The alias only changes what you type in an interactive shell; /bin/sh and every #!/bin/sh script keep the real sh."
+  printf '\033[1;34m[INFO]\033[0m Add `alias sh='"'"'hub'"'"'` to %s? [y/N] ' "$rc_file"
+  if ! IFS= read -r reply; then printf '\n'; return 0; fi
+  case "$reply" in
+    [yY]|[yY][eE][sS]) ;;
+    *) return 0 ;;
+  esac
+
+  printf '\n%s\nalias sh=%s\n' "$ALIAS_MARKER" "'hub'" >> "$rc_file"
+  log "Alias written to $rc_file; open a new shell or run: . $rc_file"
+}
+
+# Only Python and Git need bootstrapping; everything else is downloaded by `hub
 # install` into the shared dependencies/ tree.
 need_bootstrap=0
 for tool in python3 git; do
@@ -99,29 +133,38 @@ fi
 cd "$WORKSPACE_DIR"
 log "Workspace: $WORKSPACE_DIR"
 
-# Install the ss CLI.
-log "Installing the ss CLI..."
+# Install the hub CLI.
+log "Installing the hub CLI..."
 python3 sushihub/cli/install.py
 
 PIPX_BIN_DIR=$(python3 -m pipx environment --value PIPX_BIN_DIR)
-SS_CMD="$PIPX_BIN_DIR/ss"
-if [ ! -x "$SS_CMD" ]; then SS_CMD="ss"; fi
+
+# An install from before the rename left a shim named ss, which shadows iproute2's.
+if [ -e "$PIPX_BIN_DIR/ss" ]; then
+  log "Removing the ss shim an earlier install left in $PIPX_BIN_DIR"
+  rm -f "$PIPX_BIN_DIR/ss"
+fi
+
+HUB_CMD="$PIPX_BIN_DIR/hub"
+if [ ! -x "$HUB_CMD" ]; then HUB_CMD="hub"; fi
 
 # Mark the workspace, then provision what it declares today: the base tools.
-"$SS_CMD" init
-log "Running: ss install $DRY_FLAG"
-"$SS_CMD" install $DRY_FLAG
-SS_EXIT=$?
-if [ "$SS_EXIT" -ne 0 ]; then exit "$SS_EXIT"; fi
+"$HUB_CMD" init
+log "Running: hub install $DRY_FLAG"
+"$HUB_CMD" install $DRY_FLAG
+HUB_EXIT=$?
+if [ "$HUB_EXIT" -ne 0 ]; then exit "$HUB_EXIT"; fi
 
-# Optionally clone the requested modules; `ss add` provisions what each needs.
+# Optionally clone the requested modules; `hub add` provisions what each needs.
 if [ -n "$MODULES" ]; then
   log "Adding modules: $MODULES"
   # shellcheck disable=SC2086
-  "$SS_CMD" add $MODULES
+  "$HUB_CMD" add $MODULES
 fi
+
+offer_alias
 
 log "Done. Workspace ready at $WORKSPACE_DIR"
 if [ -z "$MODULES" ]; then
-  log "Next: ss add sushiruntime   (then: cd sushiruntime && sr build)"
+  log "Next: hub add sushiruntime   (then: cd sushiruntime && sr build)"
 fi

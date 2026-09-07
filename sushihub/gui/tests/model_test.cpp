@@ -36,7 +36,7 @@ protected:
     LineQueue queue_;
 
     /** @brief Holds the run that folds queue_ and spawns nothing. */
-    CommandRun run_{{"ss", "--json", "status"}, queue_};
+    CommandRun run_{{"hub", "--json", "status"}, queue_};
 };
 
 }

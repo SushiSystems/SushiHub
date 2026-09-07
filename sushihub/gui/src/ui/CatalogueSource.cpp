@@ -13,8 +13,8 @@ namespace SushiHub
 namespace Gui
 {
 
-CatalogueSource::CatalogueSource(std::string ss_executable)
-    : ss_executable_(std::move(ss_executable))
+CatalogueSource::CatalogueSource(std::string hub_executable)
+    : hub_executable_(std::move(hub_executable))
 {
 }
 
@@ -26,10 +26,10 @@ void CatalogueSource::start()
     }
     started_ = true;
 
-    process_ = Process::start({ss_executable_, "--describe"}, queue_);
+    process_ = Process::start({hub_executable_, "--describe"}, queue_);
     if (process_ == nullptr)
     {
-        error_ = "could not start " + ss_executable_;
+        error_ = "could not start " + hub_executable_;
         finished_ = true;
     }
 }
@@ -74,7 +74,7 @@ void CatalogueSource::adopt_document()
 {
     if (document_.empty())
     {
-        error_ = ss_executable_ + " printed no catalogue";
+        error_ = hub_executable_ + " printed no catalogue";
         return;
     }
 

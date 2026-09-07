@@ -30,11 +30,11 @@ namespace Gui
 class Shell : public FormOpener
 {
 public:
-    /** @brief Builds the shell over the `ss` program found on the search path. */
+    /** @brief Builds the shell over the `hub` program found on the search path. */
     Shell();
 
-    /** @brief Builds the shell over @p ss_executable, which every run is spawned from. */
-    explicit Shell(std::string ss_executable);
+    /** @brief Builds the shell over @p hub_executable, which every run is spawned from. */
+    explicit Shell(std::string hub_executable);
 
     /** @brief Draws one frame of the sidebar and of whatever the sidebar has selected. */
     void draw();

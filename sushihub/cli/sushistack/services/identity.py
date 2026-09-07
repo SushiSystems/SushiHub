@@ -20,7 +20,7 @@ from typing import Callable
 from .token_store import TokenStore, Tokens
 
 # The client identifier every device-grant request carries.
-CLIENT_ID = "ss"
+CLIENT_ID = "sushihub"
 
 # How close to expiry an access token is refreshed rather than used, in seconds.
 REFRESH_MARGIN = 30.0
@@ -143,7 +143,7 @@ class SushiId:
 
         Waits ``code.interval`` seconds between polls and doubles that wait each
         time the endpoint answers ``slow_down``. *on_poll* is called with the
-        number of polls made so far, which is how `ss login` reports progress.
+        number of polls made so far, which is how `hub login` reports progress.
 
         Raises:
             LoginDenied: The person refused the grant.
@@ -166,13 +166,13 @@ class SushiId:
             if error == "access_denied":
                 raise LoginDenied("The sign-in was refused in the browser.")
             if error == "expired_token":
-                raise LoginExpired("The sign-in code expired. Run `ss login` again.")
+                raise LoginExpired("The sign-in code expired. Run `hub login` again.")
             if error == "slow_down":
                 interval *= 2
             elif error != "authorization_pending":
                 raise LoginError(f"Sushi ID answered '{error or status}' while polling.")
             if self._now() >= deadline:
-                raise LoginExpired("The sign-in code expired. Run `ss login` again.")
+                raise LoginExpired("The sign-in code expired. Run `hub login` again.")
             self._sleep(interval)
 
     def access_token(self) -> str | None:
@@ -269,7 +269,7 @@ class SushiId:
         """
         token = self.access_token()
         if token is None:
-            raise SushiIdError("Not signed in to Sushi ID. Run `ss login`.")
+            raise SushiIdError("Not signed in to Sushi ID. Run `hub login`.")
         return self._post(path, body, token=token)
 
     @staticmethod

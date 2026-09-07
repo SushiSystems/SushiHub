@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Install the SushiStack `ss` CLI.
+"""Install the SushiStack `hub` CLI.
 
 Usage:
     python sushihub/cli/install.py            # install / upgrade (always editable)
     python sushihub/cli/install.py --uninstall
 
 Strategy:
-  * All platforms -> pipx (isolated, puts `ss` on PATH; pipx is bootstrapped if absent).
-  * Always installed --editable, against the workspace checkout at REPO_ROOT. `ss`
-    is one half of a self-updating pair with `ss sync`/`ss update` (which pull this
-    same checkout) -- a non-editable install would silently freeze `ss` at whatever
+  * All platforms -> pipx (isolated, puts `hub` on PATH; pipx is bootstrapped if absent).
+  * Always installed --editable, against the workspace checkout at REPO_ROOT. `hub`
+    is one half of a self-updating pair with `hub sync`/`hub update` (which pull this
+    same checkout) -- a non-editable install would silently freeze `hub` at whatever
     revision was on disk when it was first installed, so every later fix would need
     a manual reinstall to take effect. There is no non-editable mode to opt into.
 
@@ -82,6 +82,26 @@ def ensure_pipx() -> str:
 	return f"{sys.executable} -m pipx"
 
 
+def remove_legacy_shim(pipx: list[str]) -> None:
+	"""Delete the `ss` shim an install made before the command was renamed.
+
+	pipx removes only the shims of the console scripts it currently knows, so
+	the `ss` entry point dropped from pyproject.toml survives on PATH until it
+	is deleted by name.
+	"""
+	probe = subprocess.run([*pipx, "environment", "--value", "PIPX_BIN_DIR"],
+	                       capture_output=True, text=True)
+	if probe.returncode != 0:
+		return
+	bin_dir = Path(probe.stdout.strip())
+	for shim in (bin_dir / "ss", bin_dir / "ss.exe"):
+		try:
+			shim.unlink()
+		except OSError:
+			continue
+		print(f"[INFO] Removed the old shim {shim}")
+
+
 def install() -> int:
 	pkg_dir = find_package_dir()
 	sushicore_dir = find_sushicore_dir()
@@ -95,8 +115,9 @@ def install() -> int:
 		rc = run([*pipx, "inject", PACKAGE_NAME, "--editable", str(sushicore_dir)])
 
 	if rc == 0:
-		print("\n[SUCCESS] CLI installed. Try:  ss --help   (or: sushistack --help)")
-		print("[NOTE] If `ss` is not found, open a new terminal "
+		remove_legacy_shim(pipx)
+		print("\n[SUCCESS] CLI installed. Try:  hub --help   (or: sushihub --help)")
+		print("[NOTE] If `hub` is not found, open a new terminal "
 		      "(pipx may have just added it to PATH).")
 	else:
 		print("\n[ERROR] Installation failed.")
@@ -109,7 +130,7 @@ def uninstall() -> int:
 
 
 def main() -> None:
-	parser = argparse.ArgumentParser(description="Install the SushiStack `ss` CLI.")
+	parser = argparse.ArgumentParser(description="Install the SushiStack `hub` CLI.")
 	parser.add_argument("--uninstall", action="store_true",
 	                    help="Uninstall the CLI instead of installing.")
 	args = parser.parse_args()

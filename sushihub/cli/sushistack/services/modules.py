@@ -2,7 +2,7 @@
 
 SushiStack is the workspace the user clones first; the stack's modules
 (sushiruntime, sushiengine, …) are git checkouts that live *inside* it, cloned by
-``ss add``. This service owns that lifecycle — initialising the workspace, cloning
+``hub add``. This service owns that lifecycle — initialising the workspace, cloning
 and updating modules, and reporting status — while the dependency engine in
 ``sushistack.setup`` owns everything under ``dependencies/``.
 """
@@ -56,7 +56,7 @@ MODULES: dict[str, Module] = {
 
 # sushicore is the shared CLI presentation layer, not a stack build module: it
 # ships no dependency fragment, is never built, and stays out of MODULES so it is
-# excluded from `ss add all`, readiness, and dependency aggregation. It lives
+# excluded from `hub add all`, readiness, and dependency aggregation. It lives
 # inside this repository (see `sushicore/`), so there is nothing to clone and no
 # checkout for anyone to manage -- cloning SushiStack already produced it.
 SUSHICORE_NAME = "sushicore"
@@ -73,8 +73,8 @@ REACHABLE_TIMEOUT = 15
 
 
 # Short aliases for the module names, matching each module's own CLI program
-# name (sushiruntime -> `sr`, sushiengine -> `se`, ...), so `ss add sr` works
-# the same as `ss add sushiruntime`.
+# name (sushiruntime -> `sr`, sushiengine -> `se`, ...), so `hub add sr` works
+# the same as `hub add sushiruntime`.
 _ALIASES: dict[str, str] = {
     "sr": "sushiruntime",
     "se": "sushiengine",
@@ -83,11 +83,11 @@ _ALIASES: dict[str, str] = {
     "sd": "sushidsp",
 }
 
-# Lines `ss init` ensures are present in the workspace .gitignore: the shared
+# Lines `hub init` ensures are present in the workspace .gitignore: the shared
 # dependency tree and every module checkout are build artifacts of the workspace,
 # not part of it.
 _GITIGNORE_LINES = [
-    "# Managed by `ss init`: shared dependencies and cloned modules are not tracked.",
+    "# Managed by `hub init`: shared dependencies and cloned modules are not tracked.",
     "/dependencies/",
     *(f"/{m.directory}/" for m in MODULES.values()),
     "/sushihub/cli/config.local.toml",
@@ -99,8 +99,8 @@ _GITIGNORE_LINES = [
 def module_dest(root: Path, name: str) -> Path:
     """Where module *name* lives: its linked external path, else inside the workspace.
 
-    A module registered via ``ss link`` resolves to that checkout; otherwise it is
-    the conventional ``<workspace>/<directory>`` that ``ss add`` clones into.
+    A module registered via ``hub link`` resolves to that checkout; otherwise it is
+    the conventional ``<workspace>/<directory>`` that ``hub add`` clones into.
     """
     linked = registered_modules().get(name)
     if linked:
@@ -127,8 +127,8 @@ def _write_link(name: str, path: Path) -> None:
     registry[name] = str(path)
     target = config_dir() / MODULES_FILE
     lines = [
-        "# Managed by `ss link`: modules pointed at existing checkouts outside the",
-        "# workspace tree. `ss` reads these to aggregate their dependency fragments",
+        "# Managed by `hub link`: modules pointed at existing checkouts outside the",
+        "# workspace tree. `hub` reads these to aggregate their dependency fragments",
         "# and track them alongside cloned modules.",
         "",
         "[modules]",
@@ -208,12 +208,12 @@ def _add_binary(name: str, dest: Path, requested: bool) -> bool:
     if client.access_token() is None:
         if requested:
             console.error(f"{name}: a binary install needs a Sushi ID licence. "
-                          "Run `ss login` first.")
+                          "Run `hub login` first.")
         else:
             console.error(
                 f"{name}: neither way in is open. The source needs a Git identity with "
                 f"access to {MODULES[name].repo}; the binary needs a licence, which "
-                "`ss login` signs you in for.")
+                "`hub login` signs you in for.")
         return False
     return _install_binary(name, dest, client)
 
@@ -232,7 +232,7 @@ def _update_binary(name: str, dest: Path) -> bool:
     client = session.client()
     if client.access_token() is None:
         console.error(f"{name}: a binary install is refreshed through Sushi ID. "
-                      "Run `ss login` first.")
+                      "Run `hub login` first.")
         return False
     try:
         info = client.resolve_release(name, releases.host_platform())
@@ -251,9 +251,9 @@ def _update_binary(name: str, dest: Path) -> bool:
 def _pipx_cmd() -> list[str] | None:
     """Return a command that runs pipx, or None if pipx can't be found.
 
-    `ss` itself was installed by pipx, so pipx is normally on PATH; fall back to
+    `hub` itself was installed by pipx, so pipx is normally on PATH; fall back to
     `python -m pipx` under whichever interpreter has it. We never sys.executable
-    here — that is `ss`'s own isolated pipx venv, which has no pipx module.
+    here — that is `hub`'s own isolated pipx venv, which has no pipx module.
     """
     exe = shutil.which("pipx")
     if exe:
@@ -286,7 +286,7 @@ def _cli_package_name(cli_dir: Path, module: str) -> str:
 def _install_module_cli(name: str, dest: Path, root: Path) -> bool:
     """Install a cloned module's own CLI (`sr`, `se`, …) so it is ready to use.
 
-    Mirrors how the umbrella installs its own `ss` CLI: pipx-install the module's
+    Mirrors how the umbrella installs its own `hub` CLI: pipx-install the module's
     `cli/` package, then inject the shared sushicore presentation layer (which is
     not a resolvable pip dependency). Best-effort — a module without a `cli/`
     package, or a pipx we can't locate, is a warning, not a hard failure.
@@ -351,7 +351,7 @@ def init() -> int:
         console.info(f"Already a SushiStack workspace: {root}")
     else:
         marker.write_text(
-            "# SushiStack workspace marker. `ss` locates the workspace by walking\n"
+            "# SushiStack workspace marker. `hub` locates the workspace by walking\n"
             "# up to this file. Delete it to detach this directory.\n",
             encoding="utf-8",
         )
@@ -368,7 +368,7 @@ def init() -> int:
 
     deps_dir().mkdir(parents=True, exist_ok=True)
     console.info(f"Dependencies will install into: {deps_dir()}")
-    console.info("Next: `ss install` to provision deps, then `ss add sushiruntime`.")
+    console.info("Next: `hub install` to provision deps, then `hub add sushiruntime`.")
     return 0
 
 
@@ -406,7 +406,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
     failed = False
     for name in resolved:
         if name in linked:
-            console.info(f"{name}: linked to {linked[name]} (use `ss link` to change); skipping clone.")
+            console.info(f"{name}: linked to {linked[name]} (use `hub link` to change); skipping clone.")
             if not dry_run:
                 _install_module_cli(name, module_dest(root, name), root)
             continue
@@ -449,7 +449,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
     if failed:
         return 1
     if brought_in and skip_install:
-        console.info("Skipped the dependency install; run `ss install` to pick up "
+        console.info("Skipped the dependency install; run `hub install` to pick up "
                      "what the new modules need.")
     elif brought_in:
         rc = provision(dry_run)
@@ -466,7 +466,7 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
     """Register an existing checkout as a module, in place (no clone). Return code.
 
     For developers whose working repos live outside the workspace tree: links the
-    module to that path so `ss` aggregates its dependency fragment and tracks it.
+    module to that path so `hub` aggregates its dependency fragment and tracks it.
     The module's own CLI still resolves the shared deps via SUSHISTACK_HOME. The
     linked module's dependencies are provisioned afterwards, unless the link was
     already there or *skip_install* is set.
@@ -502,7 +502,7 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
     if not fragment.is_file():
         console.info(f"Note: cli/{fragment.name} not found there; this module adds no deps.")
     if already_linked or skip_install:
-        console.info("Run `ss install` to pick up its dependencies.")
+        console.info("Run `hub install` to pick up its dependencies.")
         return 0
     return provision(False)
 
@@ -523,8 +523,8 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
         console.info("Dry-run: showing actions without pulling.")
 
     # The workspace repo itself (this CLI's own source, cli/ + setup pipeline) is
-    # a git checkout too. Pull it here so a single `ss update` reaches every fix,
-    # not just the ones in modules — otherwise an editable-installed `ss` goes
+    # a git checkout too. Pull it here so a single `hub update` reaches every fix,
+    # not just the ones in modules — otherwise an editable-installed `hub` goes
     # stale until someone remembers to pull the umbrella by hand.
     _self_update(root, dry_run=dry_run)
 
@@ -544,7 +544,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
             continue
         if state is Presence.ABSENT:
             if names and names != ["all"]:
-                console.warn(f"{name}: not present (run `ss add {name}` or `ss link {name} <path>`).")
+                console.warn(f"{name}: not present (run `hub add {name}` or `hub link {name} <path>`).")
             continue
         any_present = True
         if dry_run:
@@ -555,7 +555,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
             console.error(f"{name}: update failed.")
             failed = True
     if not any_present:
-        console.info("No modules present yet. Add one with `ss add sushiruntime`.")
+        console.info("No modules present yet. Add one with `hub add sushiruntime`.")
     return 1 if failed else 0
 
 
@@ -564,7 +564,7 @@ def _status_rows(root: Path, linked: dict[str, str]) -> list[dict]:
 
     Args:
         root: Workspace root.
-        linked: Module name to path, as ``ss link`` recorded it.
+        linked: Module name to path, as ``hub link`` recorded it.
 
     Returns:
         A row per module carrying its name, where it lives, the state the table
@@ -597,7 +597,7 @@ def status_payload() -> dict:
     """Collect the workspace, its modules and the dependency tree as one structure.
 
     Returns:
-        The ``result`` payload of ``ss status``: the workspace path, one entry per
+        The ``result`` payload of ``hub status``: the workspace path, one entry per
         module with its location, state, presence and version, and where the
         dependencies live.
     """
@@ -626,19 +626,19 @@ def status(payload: dict) -> int:
     )
     deps = payload["dependencies"]
     if deps["present"]:
-        console.info(f"Dependencies: {deps['path']} (present). Verify with `ss doctor`.")
+        console.info(f"Dependencies: {deps['path']} (present). Verify with `hub doctor`.")
     else:
-        console.info(f"Dependencies: {deps['path']} (empty). Provision with `ss install`.")
+        console.info(f"Dependencies: {deps['path']} (empty). Provision with `hub install`.")
     return 0
 
 
 def _self_update(root: Path, dry_run: bool) -> None:
-    """Fast-forward the SushiStack workspace repo itself (the ``ss`` source tree).
+    """Fast-forward the SushiStack workspace repo itself (the ``hub`` source tree).
 
-    ``ss sync``/``ss update`` only pull the *modules* (sushiruntime, ...); the
+    ``hub sync``/``hub update`` only pull the *modules* (sushiruntime, ...); the
     workspace root — where `cli/` and its setup pipeline actually live — is a git
     checkout too, and a stale one means every fix here (e.g. a CUDA pin change)
-    silently never reaches an editable-installed `ss` until someone thinks to
+    silently never reaches an editable-installed `hub` until someone thinks to
     pull it by hand. Best-effort: a failure here must not block the rest of sync.
     """
     if not (root / ".git").is_dir():
@@ -649,16 +649,16 @@ def _self_update(root: Path, dry_run: bool) -> None:
     console.info(f"sushistack: git pull ({root})")
     if _run_git(["pull", "--ff-only"], cwd=root) != 0:
         console.warn("sushistack: self-update failed; continuing with the "
-                      "current checkout. Pull it by hand if `ss` behaves stale.")
+                      "current checkout. Pull it by hand if `hub` behaves stale.")
 
 
 def sync(dry_run: bool) -> int:
     """Bring the workspace to a working state in one shot.
 
-    Fast-forwards the workspace and every present module first (via `ss update`),
-    then provisions any missing dependencies (everything, like `ss install`) so
+    Fast-forwards the workspace and every present module first (via `hub update`),
+    then provisions any missing dependencies (everything, like `hub install`) so
     the provision pipeline runs with today's fixes rather than whatever was
-    checked out last. Module cloning stays explicit (`ss add`) so `sync` never
+    checked out last. Module cloning stays explicit (`hub add`) so `sync` never
     pulls in repos the user did not ask for.
     """
     from . import setup as setup_svc

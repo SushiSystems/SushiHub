@@ -143,7 +143,7 @@ class DetectStep(Step):
     def _sycl_compiler_row(self, ctx: InstallContext) -> tuple[str, str, str, str]:
         """Probe the SYCL compiler a build would use and return its row.
 
-        The intel/llvm bundle and acpp live off PATH, so the paths ``ss install``
+        The intel/llvm bundle and acpp live off PATH, so the paths ``hub install``
         recorded are consulted when PATH holds nothing.
         """
         compiler, where = probe.find_sycl_compiler(ctx.cfg)
@@ -259,7 +259,7 @@ class DetectStep(Step):
         from ..config import deps_dir
         console.info(f"Vendored dependencies go in one folder: {deps_dir()}")
         console.info("Remove the whole install by deleting that folder "
-                     "(`ss remove --all` does it for you).")
+                     "(`hub remove --all` does it for you).")
         if ctx.cfg.platform == "windows":
             console.info("System prerequisites kept outside that folder: the C++ "
                          "host compiler (Visual Studio Build Tools + Windows SDK), "
@@ -351,7 +351,7 @@ class DetectStep(Step):
                 continue
             if state is Presence.ABSENT:
                 verb = "linked but missing at" if name in linked else "not cloned yet"
-                hint = f" ({dest})" if name in linked else f" (ss add {name})"
+                hint = f" ({dest})" if name in linked else f" (hub add {name})"
                 console.console.print(f"  [dim]{name}: {verb}{hint}[/dim]")
                 continue
             missing = self._missing_requirements(
@@ -417,7 +417,7 @@ class InstallDepsStep(Step):
             elif not ctx.install_intel_llvm:
                 console.warn("AdaptiveCpp is the only toolchain selected but it did "
                              "not install; the project will not build. Re-run "
-                             "`ss install --customize` and also pick intel-llvm as "
+                             "`hub install --customize` and also pick intel-llvm as "
                              "a fallback.")
 
     # -- Linux ---------------------------------------------------------------- #

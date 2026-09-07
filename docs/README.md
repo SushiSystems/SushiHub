@@ -22,14 +22,14 @@ from here. Facts about one component live in that component's own README, beside
 
 Each component's own facts live beside its code:
 
-- `../sushihub/cli/README.md` — the `ss` command: every subcommand, the files it reads and writes.
+- `../sushihub/cli/README.md` — the `hub` command: every subcommand, the files it reads and writes.
 - `../sushicore/docs/README.md` — the shared CLI engine: presentation layer, config plumbing, the
   cmake driver, and how a Sushi CLI consumes it.
-- `../sushihub/contract/README.md` — the JSON contract between `ss` and the desktop application:
+- `../sushihub/contract/README.md` — the JSON contract between `hub` and the desktop application:
   event shapes and the command catalogue.
-- `../sushihub/gui/README.md` — the desktop application over `ss --json`: the four layers, the
+- `../sushihub/gui/README.md` — the desktop application over `hub --json`: the four layers, the
   five hand-drawn screens, and the form generated for every other command.
-- `../sushihub/contract/sushi-id.md` — the four Sushi ID endpoints `ss` signs in and reads licences
+- `../sushihub/contract/sushi-id.md` — the four Sushi ID endpoints `hub` signs in and reads licences
   through, and the device grant that walks between them.
 
 ## Guides
@@ -53,7 +53,7 @@ Each component's own facts live beside its code:
 
 Everything an agent wrote while working, kept as a record rather than as part of the manual:
 
-- `agent/specs/2026-09-05-hub-design.md` — the hub: `ss` as the workspace's one experience in
+- `agent/specs/2026-09-05-hub-design.md` — the hub: `hub` as the workspace's one experience in
   the terminal and on the desktop, the binary distribution of sushiengine, and the licence flow
   through Sushi ID.
 - `agent/specs/2026-08-25-cmake-driver-design.md` — the shared cmake driver: what five

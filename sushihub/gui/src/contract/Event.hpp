@@ -1,5 +1,5 @@
 /** @file Event.hpp
- *  @brief Declares the eight event kinds one line of `ss --json` output can be.
+ *  @brief Declares the eight event kinds one line of `hub --json` output can be.
  *  @author Mustafa Garip
  */
 
@@ -116,7 +116,7 @@ struct ParseError
 };
 
 /**
- * @brief Reads one line of `ss --json` output into the event it describes.
+ * @brief Reads one line of `hub --json` output into the event it describes.
  * @param line One JSON object, without its newline.
  * @return The event, or the reason the line could not be read. Never throws.
  */

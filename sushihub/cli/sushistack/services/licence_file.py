@@ -1,6 +1,6 @@
-"""The licence token `ss` writes beside a binary install.
+"""The licence token `hub` writes beside a binary install.
 
-Sushi ID issues one token per product; `ss` writes it, bare, into the module's
+Sushi ID issues one token per product; `hub` writes it, bare, into the module's
 own directory and reads its expiry back to report. Nothing here verifies the
 token: the engine does that offline against Sushi ID's JWKS at start-up, which
 is why the file holds the token and nothing around it.

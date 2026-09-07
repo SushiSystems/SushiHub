@@ -6,7 +6,7 @@ CLI in the stack — sushiruntime, sushiengine, sushiai and sushiblas. See
 sushicore's README to change colors.
 
 The console is built on first use, not on import, so a command that needs no
-workspace (`ss --help`, `ss --describe`) still runs outside one. Every name this
+workspace (`hub --help`, `hub --describe`) still runs outside one. Every name this
 module exposes resolves through :class:`~sushicore.cli_console.LazyConsole`:
 ``console`` for the raw Rich console, ``info``/``success``/``warn``/``error``,
 ``command``, ``header``, ``fail_panel``, ``accent``, and the machine-readable

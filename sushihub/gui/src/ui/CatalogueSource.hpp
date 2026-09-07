@@ -1,5 +1,5 @@
 /** @file CatalogueSource.hpp
- *  @brief Declares the one-off read of `ss --describe` the sidebar's command list comes from.
+ *  @brief Declares the one-off read of `hub --describe` the sidebar's command list comes from.
  *  @author Mustafa Garip
  */
 
@@ -17,12 +17,12 @@ namespace SushiHub
 namespace Gui
 {
 
-/** @brief Runs `ss --describe` once and hands back the catalogue it prints. */
+/** @brief Runs `hub --describe` once and hands back the catalogue it prints. */
 class CatalogueSource
 {
 public:
-    /** @brief Binds the source to the `ss` program the catalogue is read from. */
-    explicit CatalogueSource(std::string ss_executable);
+    /** @brief Binds the source to the `hub` program the catalogue is read from. */
+    explicit CatalogueSource(std::string hub_executable);
 
     CatalogueSource(const CatalogueSource&) = delete;
     CatalogueSource& operator=(const CatalogueSource&) = delete;
@@ -46,8 +46,8 @@ private:
     /** @brief Parses what the child wrote into the catalogue or into the error. */
     void adopt_document();
 
-    /** @brief Holds the `ss` program the read is spawned from. */
-    std::string ss_executable_;
+    /** @brief Holds the `hub` program the read is spawned from. */
+    std::string hub_executable_;
 
     /** @brief Holds the lines the read writes. */
     LineQueue queue_;

@@ -1,4 +1,4 @@
-"""How a module is present on disk, and what every `ss` command does about it."""
+"""How a module is present on disk, and what every `hub` command does about it."""
 
 import json
 
@@ -55,7 +55,7 @@ def checkout(path) -> None:
 
 
 def workspace(tmp_path, monkeypatch):
-    """Point every `ss` lookup at *tmp_path* and return it as the workspace root."""
+    """Point every `hub` lookup at *tmp_path* and return it as the workspace root."""
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
     return tmp_path
 

@@ -1,5 +1,5 @@
 /** @file CommandRun.hpp
- *  @brief Declares one run of one `ss` command and the fold from its lines into a RunState.
+ *  @brief Declares one run of one `hub` command and the fold from its lines into a RunState.
  *  @author Mustafa Garip
  */
 

@@ -4,7 +4,7 @@ A parent process cannot ``call vcvars64.bat`` and inherit the result, so the
 shell runs as a child and its environment is dumped and cached — see
 :mod:`sushicore.build_env` for the mechanism. That is the whole reason
 `cmake --preset windows-x64` from a plain PowerShell found no compiler and
-`ss gui build` does.
+`hub gui build` does.
 
 The application consumes the shared tree rather than provisioning anything, so
 its environment is exactly :class:`sushicore.build_env.StackBuildEnv` with the

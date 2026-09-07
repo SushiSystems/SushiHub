@@ -4,8 +4,8 @@ Both files here are recorded from a real run on 2026-09-05 with the two commands
 whenever the contract or the command set changes.
 
 ```
-ss --json status > events/status.jsonl
-ss --describe    > describe.json
+hub --json status > events/status.jsonl
+hub --describe    > describe.json
 ```
 
 The tests read whatever is in these files, so a recorded stream that differs from the hand-written
