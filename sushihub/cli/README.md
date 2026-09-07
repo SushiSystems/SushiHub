@@ -14,13 +14,12 @@ sushihub/cli/
     config.py            workspace root, config dir, the registered-modules file
     gui_config.py        the desktop application's profile, config and root
     gui_env.py           its build environment, vcvars snapshot included
-    services/            module lifecycle, Sushi ID, releases, the licence file, projects, the gui build policy
+    services/            module lifecycle, Sushi ID, releases, the licence file, the gui build policy
     setup/               the dependency engine: manifests, package managers, toolchains, the pipeline
   manifests/             dependency fragments this repository ships (*.deps.toml)
   config.toml            defaults for the [tool], [cli] and [identity] tables
   config.local.toml      machine-local overrides written by `hub install`; git-ignored
   modules.local.toml     checkouts registered with `hub link`; git-ignored
-  projects.local.toml    projects registered with `hub projects`; git-ignored
   install.py             installs `hub` into a pipx venv and injects sushicore
   pyproject.toml
 ```
@@ -51,9 +50,6 @@ them. See "Machine-readable output".
 | `hub logout` | Forget the stored Sushi ID session. Sushi ID is not told. |
 | `hub whoami` | Print the signed-in account: its id, its email and how many licences it holds. |
 | `hub license` | Print one row per licence on the account: product, holder (`account` or `org`), expiry. |
-| `hub projects list` | Print the registered projects: name, path, and whether the directory is still there. |
-| `hub projects add <path> [--name <name>]` | Register a project directory. The name is the directory's own unless `--name` says otherwise. |
-| `hub projects remove <name>` | Drop a project from the registry. Its directory is untouched. |
 
 Tab completion: run `hub --install-completion` once.
 
@@ -140,7 +136,6 @@ fragment declares a dependency of that name, so an empty workspace gets the base
 | `<workspace>/.sushistack` | `hub init` | Marks the workspace root; every `hub` and module CLI walks up to it. |
 | `sushihub/cli/config.local.toml` | `hub install` | Resolved toolchain paths for this machine, read by every module CLI through `sushicore`. |
 | `sushihub/cli/modules.local.toml` | `hub link` | Modules that live outside the workspace tree, by name and path. |
-| `sushihub/cli/projects.local.toml` | `hub projects` | The projects the desktop application lists and opens, by name and path. |
 | `<workspace>/sushiengine/sushi-release.json` | the release | Product, version, platform and what the package bundles. Its presence is what makes the directory a binary install. |
 | `<workspace>/sushiengine/sushi-licence.jwt` | `hub add`, `hub update` | The licence token the engine reads at start-up. Nothing but the token. |
 | `<workspace>/dependencies/` | `hub install`, `hub remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |

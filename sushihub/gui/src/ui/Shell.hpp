@@ -12,7 +12,6 @@
 #include "ui/screens/DependenciesScreen.hpp"
 #include "ui/screens/LicenceScreen.hpp"
 #include "ui/screens/ModulesScreen.hpp"
-#include "ui/screens/ProjectsScreen.hpp"
 #include "ui/screens/StatusScreen.hpp"
 
 #include <cstddef>
@@ -74,9 +73,6 @@ private:
 
     /** @brief Draws the account, its licences and the sign-in. */
     LicenceScreen licence_screen_;
-
-    /** @brief Draws the registered projects and the buttons that change the registry. */
-    ProjectsScreen projects_screen_;
 
     /** @brief Holds one form per command that has been opened, keyed by command name. */
     std::map<std::string, std::unique_ptr<GeneratedForm>> forms_;
