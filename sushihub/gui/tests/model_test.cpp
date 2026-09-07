@@ -1,10 +1,12 @@
 /** @file model_test.cpp
- *  @brief Checks that a scripted line queue folds into the RunState the UI reads.
+ *  @brief Checks that a scripted line queue folds into the RunState the UI reads,
+ *         and that the run log points at whichever run the strip was handed.
  *  @author Mustafa Garip
  */
 
 #include "bridge/LineQueue.hpp"
 #include "model/CommandRun.hpp"
+#include "model/RunLog.hpp"
 #include "model/RunState.hpp"
 
 #include "FixtureFile.hpp"
@@ -19,6 +21,7 @@ namespace
 
 using SushiHub::Gui::CommandRun;
 using SushiHub::Gui::LineQueue;
+using SushiHub::Gui::RunLog;
 using SushiHub::Gui::RunState;
 using SushiHub::GuiTests::fixture_lines;
 
@@ -146,4 +149,40 @@ TEST(CommandRunTest, ReportsAProgramThatCannotBeSpawned)
     EXPECT_TRUE(run.state().finished);
     ASSERT_EQ(run.state().lines.size(), 1U);
     EXPECT_EQ(run.state().lines.front().level, "error");
+}
+
+TEST(RunLogTest, HoldsNoRunBeforeTheFirstAdoption)
+{
+    RunLog log;
+
+    EXPECT_FALSE(log.has_run());
+    EXPECT_TRUE(log.label().empty());
+}
+
+TEST(RunLogTest, PointsAtTheRunItAdoptedAndKeepsItsLabel)
+{
+    LineQueue queue;
+    CommandRun run({"hub", "--json", "status"}, queue);
+    RunLog log;
+
+    log.adopt(run, "hub status");
+
+    ASSERT_TRUE(log.has_run());
+    EXPECT_EQ(&log.run(), &run);
+    EXPECT_EQ(log.label(), "hub status");
+}
+
+TEST(RunLogTest, FollowsTheRunAdoptedLast)
+{
+    LineQueue first_queue;
+    LineQueue second_queue;
+    CommandRun first({"hub", "--json", "status"}, first_queue);
+    CommandRun second({"hub", "--json", "doctor"}, second_queue);
+    RunLog log;
+
+    log.adopt(first, "hub status");
+    log.adopt(second, "hub doctor");
+
+    EXPECT_EQ(&log.run(), &second);
+    EXPECT_EQ(log.label(), "hub doctor");
 }

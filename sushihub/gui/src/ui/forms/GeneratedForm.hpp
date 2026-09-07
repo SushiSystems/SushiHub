@@ -7,6 +7,7 @@
 
 #include "contract/Catalogue.hpp"
 #include "model/CommandRun.hpp"
+#include "model/RunLog.hpp"
 #include "ui/widgets/PromptDialog.hpp"
 
 #include <array>
@@ -27,8 +28,9 @@ public:
     /**
      * @brief Binds the form to @p command and to the executable a run is spawned from.
      * @param hub_executable The `hub` program, however the workspace found it.
+     * @param run_log The log the activity strip reads, which every started run is adopted into.
      */
-    GeneratedForm(Command command, std::string hub_executable);
+    GeneratedForm(Command command, std::string hub_executable, RunLog& run_log);
 
     /**
      * @brief Enters @p values into the command's positional arguments, in declaration order.
@@ -36,7 +38,7 @@ public:
      */
     void prefill_arguments(const std::vector<std::string>& values);
 
-    /** @brief Draws the parameter widgets, the Run button and whatever the run has produced. */
+    /** @brief Draws the parameter widgets, the Run button and the question a run stops on. */
     void draw();
 
     /** @brief Returns the command the form was generated from. */
@@ -68,7 +70,7 @@ private:
     /** @brief Draws the Run button, the state that disables it and the run it starts. */
     void draw_controls();
 
-    /** @brief Draws the progress, the prompt, the log and the payload of the started run. */
+    /** @brief Polls the started run and answers the question it stops on. */
     void draw_run();
 
     /** @brief Assembles the command line the Run button starts. */
@@ -88,6 +90,9 @@ private:
 
     /** @brief Holds the run the Run button started, null until it is pressed. */
     std::unique_ptr<CommandRun> run_;
+
+    /** @brief Holds the log the strip reports this form's run from. */
+    RunLog& run_log_;
 
     /** @brief Collects the answer to a question the run stops on. */
     Widgets::PromptDialog prompt_;
