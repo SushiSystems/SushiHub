@@ -45,8 +45,10 @@ modules declare. `hub install-cli <module…>` reinstalls a CLI on demand, for i
 What the modules in the workspace declare. In an empty workspace that is the base fragment
 alone: cmake, ninja, gtest, opencl and pkgconf. A toolchain arrives with the module that asks
 for it, so `hub add sushiruntime` is what pulls the intel/llvm SYCL bundle, AdaptiveCpp with the
-LLVM it builds against, oneAPI and CUDA. Pass `--skip-install` to `hub add` or `hub link` to defer
-that, and `hub install --customize` to add or drop a component by hand.
+LLVM it builds against and oneAPI. The toolkit for this machine's GPU is the exception: `hub install`
+detects the GPU and installs its toolkit without being asked, and on Windows the CUDA installer
+asks once for administrator rights. Pass `--skip-install` to `hub add` or `hub link` to defer
+that, and `hub install --customize` to add or drop a component by hand, the GPU toolkit included.
 
 ## Checking the result
 

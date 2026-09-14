@@ -152,8 +152,8 @@ TOOLCHAIN_COMPILERS = {
 }
 
 # `hub install` provisions EVERYTHING by default — all three SYCL toolchains
-# (intel/llvm, AdaptiveCpp, oneAPI) plus CUDA. SYCL is a heavy ecosystem by
-# nature, so there is no footprint-vs-breadth profile to choose: a user who is
+# (intel/llvm, AdaptiveCpp, oneAPI) plus the detected GPU's toolkit. SYCL is
+# a heavy ecosystem by nature, so there is no footprint-vs-breadth profile to choose: a user who is
 # missing a toolchain will blame us, not their own narrowing. `hub install
 # --customize` is the escape hatch — a picker for users who deliberately want a
 # subset. ``active`` is written as the default SR_SYCL_TOOLCHAIN.
@@ -165,7 +165,7 @@ CUSTOMIZABLE_COMPONENTS = (
     ("intel-llvm",  "intel/llvm SYCL toolchain (clang++ -fsycl) — primary", "install_intel_llvm"),
     ("adaptivecpp", "AdaptiveCpp (acpp) — secondary SYCL toolchain",        "install_acpp"),
     ("oneapi",      "Intel oneAPI DPC++ (icx/icpx) — heavy, several GB",    "oneapi"),
-    ("cuda",        "NVIDIA CUDA toolkit (SYCL nvptx64 backend)",           "gpu"),
+    ("gpu",         "Toolkit for this machine's GPU, detected automatically", "gpu"),
 )
 
 # Maps a Config field to the SR_* env var that overrides it.

@@ -13,6 +13,7 @@ from __future__ import annotations
 import glob
 import shutil
 import subprocess
+import sys
 from pathlib import Path
 
 from ..config import Config, deps_dir
@@ -146,37 +147,101 @@ def toolchain_status(cfg: Config, gpu: bool) -> list[tuple[str, bool, str]]:
 def detect_gpu_vendor() -> str:
     """Best-effort discrete-GPU vendor detection: nvidia | amd | intel | none.
 
-    Order: vendor management tools first (definitive when present), then a
-    portable ``lspci`` scan of the display-controller lines so we still classify
-    a fresh machine that has no vendor stack installed yet. Returns ``none`` when
-    nothing recognisable is found — the caller then provisions only the CPU
+    Vendor management tools answer first when present. Otherwise the display
+    adapters this operating system reports are classified, so a fresh machine
+    with no vendor stack installed is still recognised. Returns ``none`` when
+    nothing recognisable is found; the caller then provisions only the CPU
     (SPIR/OpenCL) path.
     """
     if shutil.which("nvidia-smi"):
         return "nvidia"
     if shutil.which("rocminfo") or shutil.which("rocm-smi"):
         return "amd"
+    reader = _windows_display_adapters if sys.platform == "win32" else _linux_display_adapters
+    return classify_display_adapters(reader())
 
+
+#: Name fragments, without spaces or hyphens, that mark an AMD or Intel adapter as integrated.
+_INTEGRATED_MARKERS = (
+    "radeon(tm)graphics", "radeongraphics", "radeonvega", "vegaseries", "vegamobile",
+    "610m", "660m", "680m", "740m", "760m", "780m", "880m", "890m",
+    "raven", "picasso", "renoir", "lucienne", "cezanne", "barcelo", "rembrandt",
+    "mendocino", "phoenix", "hawkpoint", "raphael", "graniteridge", "strix",
+    "uhdgraphics", "hdgraphics", "iris", "alderlake", "raptorlake", "meteorlake",
+    "lunarlake", "arrowlake", "tigerlake", "cometlake", "coffeelake", "arc(tm)graphics",
+)
+#: Name fragments, without spaces or hyphens, that mark an adapter as discrete over any integrated marker.
+_DISCRETE_MARKERS = (
+    "nvidia", "radeonrx", "rxvega", "radeonpro", "firepro", "instinct", "navi",
+    "arc(tm)a", "arc(tm)b", "[arca", "[arcb", "dg1", "dg2", "battlemage", "irisxemax",
+)
+
+#: Vendor keys in preference order, each with the name fragments that identify it.
+_VENDOR_MARKERS = (
+    ("nvidia", ("nvidia",)),
+    ("amd", ("advancedmicrodevices", "amd/ati", "radeon")),
+    ("intel", ("intel",)),
+)
+
+
+def _normalise_adapter(line: str) -> str:
+    """Return a display-adapter line lower-cased with its spaces and hyphens removed."""
+    return line.lower().replace(" ", "").replace("-", "")
+
+
+def is_integrated_adapter(line: str) -> bool:
+    """Return True when one display-adapter line names an integrated GPU."""
+    name = _normalise_adapter(line)
+    if any(marker in name for marker in _DISCRETE_MARKERS):
+        return False
+    return any(marker in name for marker in _INTEGRATED_MARKERS)
+
+
+def _adapter_vendor(line: str) -> str | None:
+    """Return the vendor key one display-adapter line names, or None."""
+    name = _normalise_adapter(line)
+    for vendor, markers in _VENDOR_MARKERS:
+        if any(marker in name for marker in markers):
+            return vendor
+    return None
+
+
+def classify_display_adapters(adapters: str) -> str:
+    """Return the vendor to provision for display-adapter text, or ``none`` when no vendor is known.
+
+    A discrete adapter is preferred over an integrated one; within each group the
+    order is NVIDIA, AMD, Intel.
+    """
+    ranked = [(is_integrated_adapter(line), rank, vendor)
+              for line in adapters.splitlines()
+              for rank, (vendor, _markers) in enumerate(_VENDOR_MARKERS)
+              if _adapter_vendor(line) == vendor]
+    return min(ranked)[2] if ranked else "none"
+
+
+def _linux_display_adapters() -> str:
+    """Return the lower-case display-controller lines ``lspci`` reports, or ''."""
     try:
         out = subprocess.run(["lspci"], capture_output=True, text=True,
                              timeout=10).stdout.lower()
     except Exception:
-        out = ""
-    gpu_lines = "\n".join(
+        return ""
+    return "\n".join(
         ln for ln in out.splitlines()
         if "vga compatible controller" in ln or "3d controller" in ln
         or "display controller" in ln
     )
-    # NVIDIA/AMD discrete parts win over an Intel iGPU on the same line-set, so
-    # they are checked first (a laptop often reports both Intel + a discrete GPU).
-    if "nvidia" in gpu_lines:
-        return "nvidia"
-    if ("advanced micro devices" in gpu_lines or "amd/ati" in gpu_lines
-            or "radeon" in gpu_lines):
-        return "amd"
-    if "intel" in gpu_lines:
-        return "intel"
-    return "none"
+
+
+def _windows_display_adapters() -> str:
+    """Return the lower-case names of the video controllers Windows reports, or ''."""
+    cmd = ["powershell", "-NoProfile", "-NonInteractive", "-Command",
+           "Get-CimInstance Win32_VideoController | ForEach-Object { $_.Name }"]
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True,
+                              timeout=30).stdout.lower()
+    except Exception:
+        return ""
 
 
 def binary_works(cmd: str) -> bool:

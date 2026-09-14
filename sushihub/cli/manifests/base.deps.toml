@@ -12,7 +12,7 @@
 # Field reference:
 #   description    Human-readable purpose (shown by `hub doctor`).
 #   required       false => a missing one warns but does not stop the build.
-#   gpu_only       true  => only installed when `--gpu` is passed.
+#   gpu_only       true  => skipped when the GPU component is turned off in `hub install --customize`.
 #   linux_apt      apt package names; empty list = not needed on Linux.
 #   windows_vcpkg  vcpkg port names; empty list = not needed on Windows.
 #   check_cmd      Optional command; exit 0 means "already installed" (idempotency).
