@@ -155,26 +155,72 @@ def toolchains_dir() -> Path:
 TOOLCHAIN_STAMP = ".sushi_toolchain.json"
 
 
-def read_toolchain_stamp(root: Path) -> dict[str, str]:
+def read_toolchain_stamp(root: Path) -> dict:
     """Return the recorded provenance of a toolchain tree, or an empty dict.
 
     :param root: Bundle root (the directory holding ``bin/`` and ``lib/``).
-    :return: The stamp's fields (``source``, ``tag``), empty when absent or
-        unreadable — an older install predates stamping and is simply unknown.
+    :return: The stamp's fields (``source``, ``tag``, ``adapters``), empty when
+        absent, unreadable, invalid JSON or not a JSON object.
     """
     try:
-        return json.loads((root / TOOLCHAIN_STAMP).read_text())
-    except (OSError, json.JSONDecodeError):
+        data = json.loads((root / TOOLCHAIN_STAMP).read_text())
+    except (OSError, ValueError):
         return {}
+    return data if isinstance(data, dict) else {}
+
+
+def _rewrite_stamp(root: Path, mutate) -> None:
+    """Apply *mutate* to the stamp's current fields and write it back atomically.
+
+    :param mutate: Called with the stamp dict; changes it in place.
+    """
+    stamp = read_toolchain_stamp(root)
+    mutate(stamp)
+    path = root / TOOLCHAIN_STAMP
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        tmp.write_text(json.dumps(stamp, indent=2))
+        os.replace(tmp, path)
+    except OSError:
+        tmp.unlink(missing_ok=True)
 
 
 def _write_toolchain_stamp(root: Path, source: str, tag: str) -> None:
-    """Record where a freshly installed toolchain tree came from."""
-    try:
-        (root / TOOLCHAIN_STAMP).write_text(
-            json.dumps({"source": source, "tag": tag}, indent=2))
-    except OSError:
-        pass  # provenance is diagnostic, never worth failing an install over
+    """Record where a freshly installed toolchain tree came from.
+
+    Preserves every other field already in the stamp, such as ``adapters``.
+    """
+    def mutate(stamp: dict) -> None:
+        stamp["source"] = source
+        stamp["tag"] = tag
+    _rewrite_stamp(root, mutate)
+
+
+def record_toolchain_adapter(root: Path, vendor: str, commit: str) -> None:
+    """Record *vendor*'s adapter commit in the stamp, keeping its other fields.
+
+    :param root: Bundle root (the directory holding ``bin/`` and ``lib/``).
+    :param vendor: The backend's own vendor name.
+    :param commit: The intel/llvm commit the adapter was built from.
+    """
+    def mutate(stamp: dict) -> None:
+        existing = stamp.get("adapters")
+        adapters = dict(existing) if isinstance(existing, dict) else {}
+        adapters[vendor] = commit
+        stamp["adapters"] = adapters
+    _rewrite_stamp(root, mutate)
+
+
+def toolchain_adapter_commit(root: Path, vendor: str) -> str | None:
+    """Return the commit recorded for *vendor*'s adapter, or None.
+
+    :param root: Bundle root (the directory holding ``bin/`` and ``lib/``).
+    :param vendor: The backend's own vendor name.
+    """
+    adapters = read_toolchain_stamp(root).get("adapters")
+    if not isinstance(adapters, dict):
+        return None
+    return adapters.get(vendor)
 
 
 def has_sanitizer_runtime(root: Path) -> bool:

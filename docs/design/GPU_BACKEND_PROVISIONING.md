@@ -1,9 +1,11 @@
 # GPU backend provisioning: one brick per vendor, one branch per operating system
 
-**Status:** designed, unbuilt. The owner approved the shape on 2026-09-14. CUDA on Windows and on
-Linux is the first filled brick; ROCm and Level Zero are declared and empty. The phases in §7 are
-open. The need comes from SushiEngine's `docs/design/SYCL_VULKAN_INTEROP.md` §10 and the spike in
-its `docs/agent/reports/2026_09_14_CUDA_ADAPTER_SPIKE.md`.
+**Status:** P1 and P2 built. `backend.py`, `registry.py`, `compiler_identity.py`, and the vendor
+specs `cuda.py`, `rocm.py` and `level_zero.py` exist under
+`sushihub/cli/sushistack/setup/gpu_backends/`, each importing shared apt helpers from
+`sushihub/cli/sushistack/setup/apt.py`. P3 onward (§7) are open. The need comes from
+SushiEngine's `docs/design/SYCL_VULKAN_INTEROP.md` §10 and the spike in its
+`docs/agent/reports/2026_09_14_CUDA_ADAPTER_SPIKE.md`.
 
 ## 1. The problem
 
@@ -43,13 +45,14 @@ A package `sushihub/cli/sushistack/setup/gpu_backends/`, one responsibility per 
 | `rocm.py` | The ROCm spec, adapter option `UR_BUILD_ADAPTER_HIP`. The Linux locator is today's `ensure_rocm`; the Windows locator reports "not provided". |
 | `level_zero.py` | The Level Zero spec, adapter option `UR_BUILD_ADAPTER_L0`. The Linux locator is today's `ensure_intel_gpu_runtime`; the Windows locator reports "not provided". |
 | `registry.py` | `BACKENDS`, the ordered tuple of specs, and `backend_for_vendor(vendor)`. |
-| `adapter_builder.py` | Builds one spec's adapter for one compiler commit: sparse fetch of `unified-runtime/` at that commit into a short build directory under `dependencies/build/`, configure with only that adapter on, build its target, copy the binaries into the toolchain's `bin/`, and record the commit in the toolchain stamp. Skips when the stamp already names that commit for that vendor. Vendor-agnostic: it reads the spec and nothing else. |
+| `adapter_builder.py` | Builds one spec's adapter for one compiler commit: sparse fetch of `unified-runtime/` at that commit into a short build directory under `dependencies/build/`, configure with only that adapter on, build its target, copy the binaries into the toolchain's `bin/`, and record the commit in the toolchain stamp through `toolchains.py`, which owns the stamp format. Skips when the stamp already names that commit for that vendor. Vendor-agnostic: it reads the spec and nothing else. |
 | `compiler_identity.py` | Reads the intel/llvm commit from `clang++ --version` of an installed toolchain. |
 
 `install_gpu_stack` becomes a registry lookup and a `provision` call. The Windows and Linux install
 steps both run one loop after the toolchains: for every backend whose locator finds a toolkit,
 build its adapter for the installed compiler. The adapter build needs the MSVC environment on
-Windows, which it takes from the `vcvars64.bat` snapshot `gui_env.py` already produces.
+Windows, which it takes from the same `vcvars64.bat` environment snapshot the desktop
+application's build uses, once per install run.
 
 The registry holds one backend per probed vendor, so two backends for one vendor, such as Level
 Zero and OpenCL for Intel, need the lookup to return a tuple first.
