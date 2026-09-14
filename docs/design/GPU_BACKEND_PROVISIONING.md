@@ -1,9 +1,12 @@
 # GPU backend provisioning: one brick per vendor, one branch per operating system
 
-**Status:** P1 and P2 built. `backend.py`, `registry.py`, `compiler_identity.py`, and the vendor
-specs `cuda.py`, `rocm.py` and `level_zero.py` exist under
-`sushihub/cli/sushistack/setup/gpu_backends/`, each importing shared apt helpers from
-`sushihub/cli/sushistack/setup/apt.py`. P3 onward (§7) are open. The need comes from
+**Status:** P1 through P4 built. `backend.py`, `registry.py`, `compiler_identity.py`,
+`adapter_builder.py` and `provisioning.py` exist under
+`sushihub/cli/sushistack/setup/gpu_backends/`, alongside the vendor specs `cuda.py`, `rocm.py`
+and `level_zero.py`, each importing shared apt helpers from `sushihub/cli/sushistack/setup/apt.py`.
+`setup/steps.py` calls `provision_gpu_adapters` after the SYCL toolchains on both Windows and
+Linux. `hub install` has not yet been run against this wiring on real hardware. R1 onward (§7)
+are open. The need comes from
 SushiEngine's `docs/design/SYCL_VULKAN_INTEROP.md` §10 and the spike in its
 `docs/agent/reports/2026_09_14_CUDA_ADAPTER_SPIKE.md`.
 
@@ -41,12 +44,13 @@ A package `sushihub/cli/sushistack/setup/gpu_backends/`, one responsibility per 
 | File | Holds |
 | --- | --- |
 | `backend.py` | `ToolkitInstall` (root, version), the `ToolkitLocator` protocol with `locate(cfg) -> ToolkitInstall \| None` and `provision(cfg, dry_run) -> bool`, and the frozen `GpuBackendSpec`: vendor name, the vendor key `probe.py` reports, locator, adapter option, adapter configure definitions from a toolkit root, adapter binaries. |
-| `cuda.py` | The CUDA spec. A Windows locator reading `CUDA_PATH_V12_6` then `CUDA_PATH`, reporting and never installing; the Linux locator, which is today's apt code moved here unchanged. |
+| `cuda.py` | The CUDA spec. A Windows locator reading `CUDA_PATH`, the same variable SushiRuntime's CMake locator reads, reporting and never installing; the Linux locator, which is today's apt code moved here unchanged. |
 | `rocm.py` | The ROCm spec, adapter option `UR_BUILD_ADAPTER_HIP`. The Linux locator is today's `ensure_rocm`; the Windows locator reports "not provided". |
 | `level_zero.py` | The Level Zero spec, adapter option `UR_BUILD_ADAPTER_L0`. The Linux locator is today's `ensure_intel_gpu_runtime`; the Windows locator reports "not provided". |
 | `registry.py` | `BACKENDS`, the ordered tuple of specs, and `backend_for_vendor(vendor)`. |
 | `adapter_builder.py` | Builds one spec's adapter for one compiler commit: sparse fetch of `unified-runtime/` at that commit into a short build directory under `dependencies/build/`, configure with only that adapter on, build its target, copy the binaries into the toolchain's `bin/`, and record the commit in the toolchain stamp through `toolchains.py`, which owns the stamp format. Skips when the stamp already names that commit for that vendor. Vendor-agnostic: it reads the spec and nothing else. |
 | `compiler_identity.py` | Reads the intel/llvm commit from `clang++ --version` of an installed toolchain. |
+| `provisioning.py` | `provision_gpu_adapters`: reads the installed toolchain's commit once, then asks every registered spec's locator for its toolkit and hands a found one to `adapter_builder.build`. Reports every outcome through console and never raises. |
 
 `install_gpu_stack` becomes a registry lookup and a `provision` call. The Windows and Linux install
 steps both run one loop after the toolchains: for every backend whose locator finds a toolkit,
@@ -98,7 +102,7 @@ CUDA toolkit binary is staged.
 | P1 | `backend.py`, `registry.py`, `compiler_identity.py`, and the fake-spec tests | the registry and identity tests pass |
 | P2 | `cuda.py`, `rocm.py`, `level_zero.py`, with today's Linux code moved in unchanged | the existing Linux behaviour is identical; Windows CUDA locator tests pass |
 | P3 | `adapter_builder.py` and its tests with a fake runner | the builder test passes for the CUDA spec and the fake spec |
-| P4 | Install step wiring on Windows and Linux; docs | `hub install` on the RTX 3080 Ti puts `ur_adapter_cuda.dll` and `umf.dll` in `llvm-sycl/bin` |
+| P4 | Install step wiring on Windows and Linux; docs | landed; `hub install` on the RTX 3080 Ti puts `ur_adapter_cuda.dll` and `umf.dll` in `llvm-sycl/bin`, not yet run |
 | R1 | SushiRuntime locate functions, `DetectGpu.cmake` loop, `--cuda-path`, bundle order, docs | `sr build` reports `SR_GPU_BACKEND_RESOLVED=cuda`; `Unit_NvidiaTopologyTest` runs and passes |
 | E1 | SushiEngine `umf` staging role | `se build` stages `umf.dll`; the interop device-tier test runs |
 | X | ROCm or Level Zero filled on real hardware | its locator bodies and one test; no other file changes |

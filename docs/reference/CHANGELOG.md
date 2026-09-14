@@ -3,6 +3,7 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-14 — Wired the GPU backend registry's adapter build into `hub install` on Windows and Linux (`sushihub/cli/sushistack/setup/gpu_backends/provisioning.py`, `sushihub/cli/sushistack/setup/steps.py`).
 - 2026-09-14 — Moved CUDA, ROCm and Level Zero provisioning into one spec per vendor and shared apt helpers (`sushihub/cli/sushistack/setup/gpu_backends/{cuda,rocm,level_zero}.py`, `sushihub/cli/sushistack/setup/apt.py`).
 - 2026-09-07 — Rebuilt the desktop application around a title bar, a four-entry rail and one activity strip (`sushihub/gui/src/ui/Shell.cpp`, `sushihub/gui/src/ui/chrome/`, `sushihub/gui/src/ui/screens/`).
 - 2026-09-07 — Removed the project registry from the hub, which the engine owns (`sushihub/cli/sushistack/cli.py`, `sushihub/gui/src/ui/Shell.cpp`).

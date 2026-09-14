@@ -29,8 +29,9 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 ## Outside the programme
 
 - **GPU backend provisioning.** One brick per vendor and one branch per operating system, CUDA on
-  Windows first, ROCm and Level Zero declared empty. Design: `GPU_BACKEND_PROVISIONING.md`; phases
-  P1 to P4, R1 in SushiRuntime and E1 in SushiEngine are open.
+  Windows first, ROCm and Level Zero declared empty. Design: `GPU_BACKEND_PROVISIONING.md`; P1
+  through P4 are built and `hub install` wires the adapter build into both platforms, but the run
+  itself has not been done on real hardware yet. R1 in SushiRuntime and E1 in SushiEngine are open.
 - **The sign-in code travels as text.** `hub login` prints the user code and the verification link as
   `line` events; the desktop application scans them by shape (`sushihub/gui/src/ui/DeviceGrant.cpp`).
   A `prompt`-like structured event, or the two fields in the `result` payload, would end the scan.

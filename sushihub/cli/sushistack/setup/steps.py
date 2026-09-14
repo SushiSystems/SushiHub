@@ -10,6 +10,7 @@ everything the installer placed on the system.
 
 from __future__ import annotations
 
+import dataclasses
 import shutil
 import subprocess
 from pathlib import Path
@@ -20,6 +21,9 @@ from . import probe
 from .probe import binary_works
 from .dependency_source import SHARED_OWNER, Dependency, IDependencySource
 from .ordering import owner_order
+from .gpu_backends.adapter_builder import AdapterBuilder, SubprocessCommandRunner
+from .gpu_backends.provisioning import provision_gpu_adapters
+from .gpu_backends.registry import DEFAULT_REGISTRY
 from .package_managers import (
     IPackageManager,
     LinuxPackageManager,
@@ -35,6 +39,23 @@ from . import toolchains
 # System toolchain installed through the toolchain manager (not via the manifest
 # since these tools must exist before vcpkg/pip can run).
 _LINUX_TOOLCHAIN_APT = ["build-essential", "cmake", "ninja-build", "git"]
+
+
+def provision_adapters_for_run(ctx: InstallContext) -> None:
+    """Build every located GPU backend's Unified Runtime adapter for this run.
+
+    Reads the intel/llvm root from ``ctx.resolved_paths["llvm_root"]``, refreshes
+    PATH and re-probes the local config, then builds against the refreshed copy.
+    """
+    llvm_root = ctx.resolved_paths.get("llvm_root")
+    if not llvm_root:
+        console.info("No intel/llvm toolchain installed; GPU adapter build skipped.")
+        return
+    refresh_windows_path()
+    probed = probe.resolve_local_config(ctx.cfg, gpu=ctx.gpu)
+    cfg = dataclasses.replace(ctx.cfg, **probed) if probed else ctx.cfg
+    builder = AdapterBuilder(cfg=cfg, runner=SubprocessCommandRunner())
+    provision_gpu_adapters(cfg, DEFAULT_REGISTRY, Path(llvm_root), builder, ctx.dry_run)
 
 
 def _check_cmd_ok(cmd: list[str]) -> bool:
@@ -72,10 +93,17 @@ _NOT_NEEDED = "NOT NEEDED"
 
 #: What each discrete-GPU vendor implies for the compute SDK that gets installed.
 _VENDOR_SDK = {
-    "nvidia": "NVIDIA — installs CUDA toolkit",
-    "amd":    "AMD — installs ROCm (HIP)",
-    "intel":  "Intel — installs Level Zero + Intel OpenCL",
-    "none":   "no discrete GPU — CPU (SPIR/OpenCL) path",
+    "amd":  "AMD — installs ROCm (HIP)",
+    "intel": "Intel — installs Level Zero + Intel OpenCL",
+    "none": "no discrete GPU — CPU (SPIR/OpenCL) path",
+}
+
+#: NVIDIA's row differs by platform: no unattended CUDA installer exists for
+#: Windows, so that side only reports what it finds (see cuda.py's
+#: WindowsCudaLocator); Linux installs it through its apt repo.
+_VENDOR_SDK_NVIDIA = {
+    "windows": "NVIDIA — reports the CUDA toolkit (install it yourself)",
+    "linux":   "NVIDIA — installs CUDA toolkit",
 }
 
 
@@ -208,8 +236,11 @@ class DetectStep(Step):
         vendor = self._gpu_vendor()
         ctx.gpu_vendor = vendor
         ctx.detected["nvidia_gpu"] = vendor == "nvidia"
-        return ("GPU vendor", _status(vendor != "none"), SHARED_OWNER,
-                _VENDOR_SDK.get(vendor, vendor))
+        if vendor == "nvidia":
+            detail = _VENDOR_SDK_NVIDIA.get(ctx.cfg.platform, _VENDOR_SDK_NVIDIA["linux"])
+        else:
+            detail = _VENDOR_SDK.get(vendor, vendor)
+        return ("GPU vendor", _status(vendor != "none"), SHARED_OWNER, detail)
 
     def inventory_rows(self, ctx: InstallContext,
                        all_deps: list[Dependency]) -> list[tuple[str, str, str, str]]:
@@ -501,9 +532,8 @@ class InstallDepsStep(Step):
                          "Intel oneAPI DPC++ compiler manually.")
 
         # GPU compute SDK, chosen by the detected vendor (NVIDIA->CUDA, AMD->ROCm,
-        # Intel->Level Zero). Only when GPU support is requested and apt is the
-        # manager (the vendor repos target Debian/Ubuntu). Non-fatal: a missing
-        # GPU stack leaves the CPU (SPIR/OpenCL) path working.
+        # Intel->Level Zero). Installed only on apt; the adapter build below
+        # runs for every manager.
         if ctx.gpu and mgr.name == "apt":
             vendor = ctx.gpu_vendor or probe.detect_gpu_vendor()
             ctx.gpu_vendor = vendor
@@ -516,6 +546,9 @@ class InstallDepsStep(Step):
         elif ctx.gpu and ctx.gpu_vendor not in ("", "none"):
             console.warn(f"GPU SDK auto-install for '{ctx.gpu_vendor}' is only "
                          f"automated on apt; install it manually on {mgr.name}.")
+
+        if ctx.gpu:
+            provision_adapters_for_run(ctx)
         return StepResult.OK if ok else StepResult.FAILED
 
     # -- Windows -------------------------------------------------------------- #
@@ -538,6 +571,13 @@ class InstallDepsStep(Step):
         # Lean SYCL toolchains (intel-llvm bundle + AdaptiveCpp), like the
         # Dockerfile's default. oneAPI is installed below only with --oneapi.
         self._install_toolchains(ctx, mgr=None, vcpkg=vcpkg)
+
+        # GPU compute SDK, chosen by the detected vendor, then its adapter build.
+        if ctx.gpu:
+            vendor = ctx.gpu_vendor or probe.detect_gpu_vendor()
+            ctx.gpu_vendor = vendor
+            install_gpu_stack(ctx.cfg, vendor, ctx.dry_run)
+            provision_adapters_for_run(ctx)
 
         tool_ok = self._install_oneapi(ctx) and tool_ok
 
