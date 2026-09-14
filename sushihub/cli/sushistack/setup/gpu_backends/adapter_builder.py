@@ -21,8 +21,11 @@ from ..toolchains import record_toolchain_adapter, toolchain_adapter_commit
 if typing.TYPE_CHECKING:
     from .backend import GpuBackendSpec, ToolkitInstall
 
-#: Windows work_root paths beyond this length hit a long-path ninja failure.
+#: Windows work_root paths beyond this length push fetched object paths past MAX_PATH.
 _MAX_WORK_ROOT_LENGTH = 60
+
+#: Commit characters used in directory names under the work root.
+_COMMIT_PREFIX_LENGTH = 8
 
 #: Exception types a failing filesystem or stamp read can raise. None of them
 #: is left to escape :meth:`AdapterBuilder.build`.
@@ -63,7 +66,7 @@ class SubprocessCommandRunner:
 
 def _default_work_root() -> Path:
     """A short build directory under the shared dependency tree."""
-    return deps_dir() / "build" / "ur"
+    return deps_dir() / "ur"
 
 
 def _default_environment(cfg: Config) -> dict[str, str]:
@@ -163,8 +166,9 @@ class AdapterBuilder:
                 return False
 
         env = self._environment()
-        src_dir = self.work_root / f"src-{commit[:12]}"
-        build_dir = self.work_root / f"{spec.vendor}-{commit[:12]}"
+        short_commit = commit[:_COMMIT_PREFIX_LENGTH]
+        src_dir = self.work_root / f"s-{short_commit}"
+        build_dir = self.work_root / f"{spec.vendor}-{short_commit}"
 
         if not self._fetch_sources(src_dir, commit, env):
             return False
@@ -238,7 +242,7 @@ class AdapterBuilder:
             "-DUR_BUILD_TOOLS=OFF",
             "-DUR_ENABLE_SANITIZER=OFF",
             "-DUR_ENABLE_TRACING=OFF",
-            f"-DFETCHCONTENT_BASE_DIR={self.work_root / f'deps-{commit[:12]}'}",
+            f"-DFETCHCONTENT_BASE_DIR={self.work_root / f'd-{commit[:_COMMIT_PREFIX_LENGTH]}'}",
         ]
         for key, value in spec.adapter_definitions(install).items():
             argv.append(f"-D{key}={value}")
