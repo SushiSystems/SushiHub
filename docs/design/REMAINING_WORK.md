@@ -28,10 +28,20 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 
 ## Outside the programme
 
+- **Every GPU vendor on a machine, not one.** `probe.detect_gpu_vendor` still picks a single
+  vendor, and the registry holds one backend per vendor; a machine with an NVIDIA card and an AMD
+  iGPU provisions only CUDA. `GPU_BACKEND_PROVISIONING.md` §3 records the limit.
+- **AMD integrated GPUs through SYCL.** Windows has no path: intel/llvm ships no HIP adapter there
+  and AMD's OpenCL driver takes no SPIR-V, so `sycl-ls` does not list the 7600X's Radeon Graphics.
+  Linux candidates, both unverified: Mesa rusticl, which accepts SPIR-V, and ROCm with
+  `HSA_OVERRIDE_GFX_VERSION`.
+- **Measure the 7600X iGPU before building for it.** One kernel on the CPU through SYCL and on the
+  iGPU through Vulkan compute, timed, decides whether the two-core RDNA2 part is worth a backend.
 - **GPU backend provisioning.** One brick per vendor and one branch per operating system, CUDA on
   Windows first, ROCm and Level Zero declared empty. Design: `GPU_BACKEND_PROVISIONING.md`; P1
-  through P4 are built and `hub install` wires the adapter build into both platforms, but the run
-  itself has not been done on real hardware yet. R1 in SushiRuntime and E1 in SushiEngine are open.
+  through P4 are built and `hub install` wires the adapter build into both platforms. The GPU
+  component is on by default and Windows installs CUDA 12.6.3 through NVIDIA's silent installer,
+  but neither has run on real hardware yet. R1 in SushiRuntime and E1 in SushiEngine are open.
 - **The sign-in code travels as text.** `hub login` prints the user code and the verification link as
   `line` events; the desktop application scans them by shape (`sushihub/gui/src/ui/DeviceGrant.cpp`).
   A `prompt`-like structured event, or the two fields in the `result` payload, would end the scan.

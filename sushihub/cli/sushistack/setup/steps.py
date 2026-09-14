@@ -58,6 +58,12 @@ def provision_adapters_for_run(ctx: InstallContext) -> None:
     provision_gpu_adapters(cfg, DEFAULT_REGISTRY, Path(llvm_root), builder, ctx.dry_run)
 
 
+def _resolve_gpu_vendor(ctx: InstallContext) -> str:
+    """Return the GPU vendor the detect step recorded, probing the machine when it did not."""
+    ctx.gpu_vendor = ctx.gpu_vendor or probe.detect_gpu_vendor() or "none"
+    return ctx.gpu_vendor
+
+
 def _check_cmd_ok(cmd: list[str]) -> bool:
     """True if *cmd* runs and exits 0 (its tool is present and the check passes)."""
     try:
@@ -98,12 +104,10 @@ _VENDOR_SDK = {
     "none": "no discrete GPU — CPU (SPIR/OpenCL) path",
 }
 
-#: NVIDIA's row differs by platform: no unattended CUDA installer exists for
-#: Windows, so that side only reports what it finds (see cuda.py's
-#: WindowsCudaLocator); Linux installs it through its apt repo.
+#: NVIDIA's row names how each platform installs the toolkit (see cuda.py).
 _VENDOR_SDK_NVIDIA = {
-    "windows": "NVIDIA — reports the CUDA toolkit (install it yourself)",
-    "linux":   "NVIDIA — installs CUDA toolkit",
+    "windows": "NVIDIA — installs CUDA toolkit (NVIDIA installer, one UAC prompt)",
+    "linux":   "NVIDIA — installs CUDA toolkit (NVIDIA apt repo)",
 }
 
 
@@ -294,11 +298,11 @@ class DetectStep(Step):
         if ctx.cfg.platform == "windows":
             console.info("System prerequisites kept outside that folder: the C++ "
                          "host compiler (Visual Studio Build Tools + Windows SDK), "
-                         "git, and — with --gpu — the CUDA toolkit.")
+                         "git, and the toolkit for the detected GPU.")
         else:
             console.info("System prerequisites kept outside that folder: the host "
                          "compiler (gcc) plus the -dev packages (hwloc, gtest, "
-                         "opencl), git, and — with --gpu — the CUDA toolkit.")
+                         "opencl), git, and the toolkit for the detected GPU.")
 
         self._report_readiness(ctx, all_deps)
         return StepResult.OK
@@ -534,20 +538,21 @@ class InstallDepsStep(Step):
         # GPU compute SDK, chosen by the detected vendor (NVIDIA->CUDA, AMD->ROCm,
         # Intel->Level Zero). Installed only on apt; the adapter build below
         # runs for every manager.
+        vendor = _resolve_gpu_vendor(ctx) if ctx.gpu else "none"
         if ctx.gpu and mgr.name == "apt":
-            vendor = ctx.gpu_vendor or probe.detect_gpu_vendor()
-            ctx.gpu_vendor = vendor
-            if not install_gpu_stack(ctx.cfg, vendor, ctx.dry_run) and vendor not in ("", "none"):
+            if not install_gpu_stack(ctx.cfg, vendor, ctx.dry_run) and vendor != "none":
                 message = (f"GPU compute SDK for '{vendor}' was not installed — "
                            f"the build will fall back to the CPU (SPIR/OpenCL) path. "
                            f"See the log above for the failing command.")
                 console.error(message)
                 ctx.warnings.append(message)
-        elif ctx.gpu and ctx.gpu_vendor not in ("", "none"):
-            console.warn(f"GPU SDK auto-install for '{ctx.gpu_vendor}' is only "
+        elif ctx.gpu and vendor == "none":
+            install_gpu_stack(ctx.cfg, vendor, ctx.dry_run)
+        elif ctx.gpu:
+            console.warn(f"GPU SDK auto-install for '{vendor}' is only "
                          f"automated on apt; install it manually on {mgr.name}.")
 
-        if ctx.gpu:
+        if vendor != "none":
             provision_adapters_for_run(ctx)
         return StepResult.OK if ok else StepResult.FAILED
 
@@ -574,10 +579,10 @@ class InstallDepsStep(Step):
 
         # GPU compute SDK, chosen by the detected vendor, then its adapter build.
         if ctx.gpu:
-            vendor = ctx.gpu_vendor or probe.detect_gpu_vendor()
-            ctx.gpu_vendor = vendor
+            vendor = _resolve_gpu_vendor(ctx)
             install_gpu_stack(ctx.cfg, vendor, ctx.dry_run)
-            provision_adapters_for_run(ctx)
+            if vendor != "none":
+                provision_adapters_for_run(ctx)
 
         tool_ok = self._install_oneapi(ctx) and tool_ok
 

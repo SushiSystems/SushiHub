@@ -12,6 +12,7 @@ from sushistack.setup import package_managers
 from sushistack.setup.gpu_backends import cuda as cuda_mod
 from sushistack.setup.gpu_backends import level_zero as level_zero_mod
 from sushistack.setup.gpu_backends import rocm as rocm_mod
+from sushistack.setup.gpu_backends import windows_installer
 from sushistack.setup.gpu_backends.backend import NotProvided, ToolkitInstall
 from sushistack.setup.gpu_backends.cuda import CUDA
 from sushistack.setup.gpu_backends.level_zero import LEVEL_ZERO
@@ -46,6 +47,8 @@ def test_windows_cuda_locator_finds_the_toolkit_from_cuda_path(tmp_path, monkeyp
 
 
 def test_windows_cuda_locator_reports_nothing_without_nvcc_exe(tmp_path, monkeypatch):
+    monkeypatch.setattr(windows_installer.RegistryMachineEnvironment, "read",
+                        lambda self, name: None)
     monkeypatch.setenv("CUDA_PATH", str(tmp_path))
     cfg = SimpleNamespace(platform="windows")
 
@@ -53,17 +56,12 @@ def test_windows_cuda_locator_reports_nothing_without_nvcc_exe(tmp_path, monkeyp
 
 
 def test_windows_cuda_locator_reports_nothing_without_cuda_path(monkeypatch):
+    monkeypatch.setattr(windows_installer.RegistryMachineEnvironment, "read",
+                        lambda self, name: None)
     monkeypatch.delenv("CUDA_PATH", raising=False)
     cfg = SimpleNamespace(platform="windows")
 
     assert CUDA.locator.locate(cfg) is None
-
-
-def test_windows_cuda_provision_is_non_fatal_when_absent(monkeypatch):
-    monkeypatch.delenv("CUDA_PATH", raising=False)
-    cfg = SimpleNamespace(platform="windows")
-
-    assert CUDA.locator.provision(cfg, dry_run=False) is True
 
 
 def test_windows_cuda_provision_reports_an_existing_install(tmp_path, monkeypatch):

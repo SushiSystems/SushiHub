@@ -5,8 +5,10 @@
 `sushihub/cli/sushistack/setup/gpu_backends/`, alongside the vendor specs `cuda.py`, `rocm.py`
 and `level_zero.py`, each importing shared apt helpers from `sushihub/cli/sushistack/setup/apt.py`.
 `setup/steps.py` calls `provision_gpu_adapters` after the SYCL toolchains on both Windows and
-Linux. `hub install` has not yet been run against this wiring on real hardware. R1 onward (§7)
-are open. The need comes from
+Linux. The GPU component is on by default and provisions the vendor `probe.detect_gpu_vendor` reports on
+Windows and Linux; on Windows, `cuda.py` installs CUDA 12.6.3 through NVIDIA's network installer
+with `windows_installer.py`'s helpers. `hub install` has not yet been run against this wiring on
+real hardware. R1 onward (§7) are open. The need comes from
 SushiEngine's `docs/design/SYCL_VULKAN_INTEROP.md` §10 and the spike in its
 `docs/agent/reports/2026_09_14_CUDA_ADAPTER_SPIKE.md`.
 
@@ -44,13 +46,25 @@ A package `sushihub/cli/sushistack/setup/gpu_backends/`, one responsibility per 
 | File | Holds |
 | --- | --- |
 | `backend.py` | `ToolkitInstall` (root, version), the `ToolkitLocator` protocol with `locate(cfg) -> ToolkitInstall \| None` and `provision(cfg, dry_run) -> bool`, and the frozen `GpuBackendSpec`: vendor name, the vendor key `probe.py` reports, locator, adapter option, adapter configure definitions from a toolkit root, adapter binaries. |
-| `cuda.py` | The CUDA spec. A Windows locator reading `CUDA_PATH`, the same variable SushiRuntime's CMake locator reads, reporting and never installing; the Linux locator, which is today's apt code moved here unchanged. |
+| `cuda.py` | The CUDA spec. A Windows locator reading `CUDA_PATH`, the same variable SushiRuntime's CMake locator reads: the process value first, then the machine value in the registry, which it copies into the process when it names a toolkit. When neither does, it downloads NVIDIA's CUDA 12.6.3 network installer, checks the MD5 NVIDIA publishes, and runs it elevated with `-s nvcc_12.6 cudart_12.6 nvml_dev_12.6 -n`. Whatever the exit code, it then copies the machine `CUDA_PATH` and the new machine `PATH` entries into the process and locates again; a located toolkit is a success and the installer file is deleted. No `cupti_12.6`: the adapter CMake reads CUPTI only under `UR_ENABLE_TRACING AND UNIX`. The Linux locator is today's apt code moved here unchanged. |
+| `windows_installer.py` | Vendor-agnostic Windows installer helpers, each behind a protocol: `HttpDownloader` (fetch to `<file>.part` under `dependencies/installers/`, MD5 check, rename; a mismatching cached copy is deleted and fetched once more; network, HTTP, value and IO errors become a warning), `PowerShellElevatedRunner` (`Start-Process -Verb RunAs -Wait`, one UAC prompt; exit 1223 only when the error's `NativeErrorCode` is 1223, otherwise exit 1 with the error message), `RegistryMachineEnvironment` (HKLM environment block), and `adopt_machine_variable` and `prepend_machine_path`, bundled as `WindowsInstallerTools`. |
 | `rocm.py` | The ROCm spec, adapter option `UR_BUILD_ADAPTER_HIP`. The Linux locator is today's `ensure_rocm`; the Windows locator reports "not provided". |
 | `level_zero.py` | The Level Zero spec, adapter option `UR_BUILD_ADAPTER_L0`. The Linux locator is today's `ensure_intel_gpu_runtime`; the Windows locator reports "not provided". |
 | `registry.py` | `BACKENDS`, the ordered tuple of specs, and `backend_for_vendor(vendor)`. |
 | `adapter_builder.py` | Builds one spec's adapter for one compiler commit: sparse fetch of `unified-runtime/` at that commit into a short build directory under `dependencies/build/`, configure with only that adapter on, build its target, copy the binaries into the toolchain's `bin/`, and record the commit in the toolchain stamp through `toolchains.py`, which owns the stamp format. Skips when the stamp already names that commit for that vendor. Vendor-agnostic: it reads the spec and nothing else. |
 | `compiler_identity.py` | Reads the intel/llvm commit from `clang++ --version` of an installed toolchain. |
 | `provisioning.py` | `provision_gpu_adapters`: reads the installed toolchain's commit once, then asks every registered spec's locator for its toolkit and hands a found one to `adapter_builder.build`. Reports every outcome through console and never raises. |
+
+The GPU component of `hub install` is on unless the user turns it off in `--customize`; no
+module has to declare a dependency for it (`setup/selection.py`, `MACHINE_COMPONENTS`). It means
+"provision whatever GPU this machine has": `probe.detect_gpu_vendor` asks `nvidia-smi` or
+`rocminfo` first, then classifies the display adapters, read from `lspci` on Linux and from
+`Win32_VideoController` through PowerShell on Windows. A discrete adapter wins over an integrated
+one, and within each group NVIDIA wins over AMD, then Intel; `probe.is_integrated_adapter` is only
+that tie-break, matching best-effort name fragments with spaces and hyphens removed. An
+integrated-only machine provisions its own vendor, Level Zero for an Intel iGPU and ROCm for an
+AMD APU. "No discrete GPU detected" prints, and no adapter is built, only when no adapter names a
+known vendor.
 
 `install_gpu_stack` becomes a registry lookup and a `provision` call. The Windows and Linux install
 steps both run one loop after the toolchains: for every backend whose locator finds a toolkit,
@@ -90,10 +104,22 @@ CUDA toolkit binary is staged.
 ## 6. Failure
 
 - A locator that finds no toolkit makes its backend absent. The install continues and reports it.
+- A Windows toolkit install that cannot download or verify the installer, whose UAC prompt is
+  declined, or after which no toolkit is located warns with the reason and returns success. The
+  adapter build then finds no toolkit and skips. A non-zero exit code with a located toolkit is a
+  success.
 - An adapter build that fails warns and leaves the toolchain as it was. The CPU path still works.
 - A toolchain whose commit cannot be read skips every adapter build with one warning.
 - CMake detection stays authoritative: a toolkit the installer found but CMake cannot locate
   resolves to `cpu`, and the configure message names the variable it looked for.
+
+### Not verified
+
+- That `nvcc_12.6` and `cudart_12.6` alone bring `lib\x64\cuda.lib` and
+  `nvvm\libdevice\libdevice.10.bc`. NVIDIA's guide maps no files to subpackages. Check both after
+  the first silent install on a machine without CUDA.
+- That a declined UAC prompt surfaces as `NativeErrorCode` 1223 through `Start-Process`. No
+  elevated run has happened.
 
 ## 7. Phases
 

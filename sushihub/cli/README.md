@@ -32,7 +32,7 @@ them. See "Machine-readable output".
 | Command | What it does |
 |---|---|
 | `hub init` | Write the `.sushistack` workspace marker and add `dependencies/` to `.gitignore`. |
-| `hub install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker over the toolchains. `--yes` answers the LLVM-download prompt for unattended runs. `--refresh-toolchains` re-downloads an installed SYCL toolchain, which is otherwise reused forever; reused installs report the release they came from and say when they carry no sanitizer runtime. |
+| `hub install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker over the toolchains and the GPU toolkit, which is on by default. `--yes` answers the LLVM-download prompt for unattended runs. `--refresh-toolchains` re-downloads an installed SYCL toolchain, which is otherwise reused forever; reused installs report the release they came from and say when they carry no sanitizer runtime. |
 | `hub add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|sushidsp\|all> [--dry-run] [--skip-install] [--binary]` | Bring one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `hub install`. `--binary` installs sushiengine from its release rather than its source; see "Binary installs". Aliases: `sr`, `se`, `sa`, `sb`, `sd`. |
 | `hub link <module> <path> [--dry-run] [--skip-install]` | Register an existing checkout outside the workspace as a module, without cloning, then provision what it declares. `--skip-install` leaves that to a later `hub install`. Same names and aliases as `hub add`. |
 | `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `hub add`. |
@@ -116,7 +116,8 @@ the versions match, and downloads the new one and writes the licence file again 
 `hub install` merges every `sushihub/cli/manifests/*.deps.toml` fragment with each present module's own
 `cli/sushistack.deps.toml`, keeps the entries that name a package for the current platform, and
 installs the ones that are missing. No dependency name lives in the installer code. The SYCL
-toolchains and CUDA are sushiruntime's entries, not this repository's; the base fragment carries
+toolchains are sushiruntime's entries, not this repository's; the GPU toolkit is on for every
+workspace and follows the detected GPU vendor (`sushistack/setup/selection.py`); the base fragment carries
 only cmake, ninja, gtest, opencl and pkgconf.
 
 A shipped fragment is owned by the name in its filename, with `base.deps.toml` the exception

@@ -12,6 +12,7 @@ from sushistack.setup.gpu_backends.backend import GpuBackendSpec, ToolkitInstall
 from sushistack.setup.gpu_backends.provisioning import provision_gpu_adapters
 from sushistack.setup.gpu_backends.registry import Registry
 from sushistack.setup.package_managers import LinuxPackageManager
+from sushistack.setup.package_managers import install_gpu_stack as _real_install_gpu_stack
 from sushistack.setup.pipeline import InstallContext, StepResult
 from sushistack.setup.steps import InstallDepsStep, provision_adapters_for_run
 
@@ -317,3 +318,33 @@ def test_run_linux_skips_provision_adapters_for_run_without_gpu(monkeypatch, tmp
     step._run_linux(ctx)
 
     assert calls == []
+
+
+def test_run_windows_with_no_gpu_provisions_nothing(monkeypatch, tmp_path, capsys):
+    _patch_heavy_windows_steps(monkeypatch, str(tmp_path))
+    monkeypatch.setattr(steps_mod, "install_gpu_stack", _real_install_gpu_stack)
+    calls: list[InstallContext] = []
+    monkeypatch.setattr(steps_mod, "provision_adapters_for_run", calls.append)
+
+    step = InstallDepsStep(MemorySource([]), managers=[])
+    ctx = InstallContext(cfg=Config(platform="windows"), gpu=True, gpu_vendor="none")
+
+    step._run_windows(ctx)
+
+    assert calls == []
+    assert "No discrete GPU detected" in capsys.readouterr().out
+
+
+def test_run_linux_with_no_gpu_provisions_nothing(monkeypatch, tmp_path, capsys):
+    _patch_heavy_linux_steps(monkeypatch, str(tmp_path))
+    monkeypatch.setattr(steps_mod, "install_gpu_stack", _real_install_gpu_stack)
+    calls: list[InstallContext] = []
+    monkeypatch.setattr(steps_mod, "provision_adapters_for_run", calls.append)
+
+    step = InstallDepsStep(MemorySource([]), managers=[_FakeAptManager()])
+    ctx = InstallContext(cfg=Config(platform="linux"), gpu=True, gpu_vendor="none")
+
+    step._run_linux(ctx)
+
+    assert calls == []
+    assert "No discrete GPU detected" in capsys.readouterr().out

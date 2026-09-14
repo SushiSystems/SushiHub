@@ -1,8 +1,8 @@
 """The CUDA backend: NVIDIA's toolkit, located and provisioned per platform.
 
-The Linux locator carries today's apt install code unchanged in behaviour. The
-Windows locator only ever reports what it finds; it never installs, because no
-silent, unattended CUDA installer exists for Windows.
+The Linux locator installs the pinned toolkit from NVIDIA's apt repo. The
+Windows locator installs the same pin through NVIDIA's network installer in
+silent mode, selecting only the subpackages the SYCL CUDA adapter build needs.
 """
 
 from __future__ import annotations
@@ -11,12 +11,21 @@ import glob
 import os
 import pathlib
 import shutil
+import subprocess
 import typing
 
 from ... import console
 from .. import probe
 from ..apt import is_root, os_release, sudo_bash
 from .backend import GpuBackendSpec, PlatformLocator, ToolkitInstall
+from .windows_installer import (
+    ELEVATION_DECLINED,
+    ElevatedResult,
+    InstallerDownload,
+    WindowsInstallerTools,
+    adopt_machine_variable,
+    prepend_machine_path,
+)
 
 if typing.TYPE_CHECKING:
     from ...config import Config
@@ -33,6 +42,27 @@ _NVCC_GLOBS_LINUX = [
 # docs/reference/KNOWN_ISSUES.md, "Raising the CUDA pin above 12.6 breaks
 # Pascal builds far from the cause".
 _CUDA126_MAX_UBUNTU_TAG = "ubuntu2404"
+
+# NVIDIA's CUDA 12.6.3 network installer and the MD5 NVIDIA publishes for it in
+# https://developer.download.nvidia.com/compute/cuda/12.6.3/docs/sidebar/md5sum.txt
+_WINDOWS_INSTALLER = InstallerDownload(
+    url=("https://developer.download.nvidia.com/compute/cuda/12.6.3/"
+         "network_installers/cuda_12.6.3_windows_network.exe"),
+    file_name="cuda_12.6.3_windows_network.exe",
+    md5="48d5d66c3550b7744715c638dac4f522",
+)
+
+# Silent mode (-s) with the subpackages named in NVIDIA's Windows installation
+# guide; no Display.Driver, and -n forbids a reboot. The adapter's CMake needs
+# nvcc (with nvvm), cudart, and nvml_dev for CUDA::nvml. It reads CUPTI only under
+# `UR_ENABLE_TRACING AND UNIX`, so Windows installs no cupti.
+_WINDOWS_INSTALLER_ARGS = (
+    "-s", "nvcc_12.6", "cudart_12.6", "nvml_dev_12.6", "-n",
+)
+
+_MANUAL_HINT = ("Install CUDA Toolkit 12.6 from "
+                "https://developer.nvidia.com/cuda-12-6-3-download-archive; the build "
+                "otherwise uses the CPU path.")
 
 
 def _apt_distro_tag() -> str:
@@ -121,33 +151,99 @@ class LinuxCudaLocator:
 
 
 class WindowsCudaLocator:
-    """Reads the CUDA toolkit already installed by NVIDIA's own Windows installer."""
+    """Finds the CUDA toolkit through CUDA_PATH and installs it with NVIDIA's network installer.
+
+    :param tools: The download, elevation and machine-environment helpers.
+    """
+
+    def __init__(self, tools: WindowsInstallerTools | None = None) -> None:
+        """Store the installer helpers, defaulting to the real ones."""
+        self._tools = tools or WindowsInstallerTools()
 
     def locate(self, cfg: "Config") -> ToolkitInstall | None:
-        """Return the toolkit root from CUDA_PATH, when bin/nvcc.exe exists there."""
-        raw = os.environ.get("CUDA_PATH", "")
-        if not raw:
-            return None
-        root = pathlib.Path(os.path.normpath(raw))
-        if not (root / "bin" / "nvcc.exe").is_file():
-            return None
-        return ToolkitInstall(root=root, version=None)
+        """Return the toolkit named by the process CUDA_PATH, else by the machine CUDA_PATH.
+
+        A valid machine value is copied into this process, so a build started from
+        it inherits the toolkit even when the terminal predates the CUDA install.
+        """
+        found = _toolkit_at(os.environ.get("CUDA_PATH", ""))
+        if found is not None:
+            return found
+        machine = self._tools.environment.read("CUDA_PATH") or ""
+        found = _toolkit_at(machine)
+        if found is not None:
+            os.environ["CUDA_PATH"] = machine
+        return found
 
     def provision(self, cfg: "Config", dry_run: bool) -> bool:
-        """Report an existing install, or print manual install instructions.
+        """Report an existing toolkit, or download and silently install the pinned one.
 
-        No CUDA installer for Windows runs unattended, so this backend never
-        installs anything there. It always returns True: per the design's failure
-        section, an absent toolkit here is an ordinary outcome, not a failure.
+        Always returns True: a failed download, a declined UAC prompt or a failed
+        install leaves the CPU path working, per the design's failure section
+        (docs/design/GPU_BACKEND_PROVISIONING.md §6).
         """
         found = self.locate(cfg)
         if found is not None:
             console.info(f"CUDA toolkit already present at {found.root}.")
             return True
-        console.warn("CUDA toolkit not found. Install CUDA Toolkit 12.6 from NVIDIA's "
-                     "archive (https://developer.nvidia.com/cuda-12-6-0-download-archive) "
-                     "as administrator.")
+        dest_dir = self._tools.dest_dir()
+        exe = dest_dir / _WINDOWS_INSTALLER.file_name
+        command = self._tools.runner.command(exe, _WINDOWS_INSTALLER_ARGS)
+        if dry_run:
+            console.info(f"(dry-run) would download {_WINDOWS_INSTALLER.url} to {exe}")
+            console.command(subprocess.list2cmdline(command))
+            return True
+        downloaded = self._tools.downloader.fetch(_WINDOWS_INSTALLER, dest_dir)
+        if downloaded is None:
+            console.warn(f"CUDA toolkit not installed: {_WINDOWS_INSTALLER.file_name} "
+                         "could not be downloaded and verified. " + _MANUAL_HINT)
+            return True
+        console.info("Installing the CUDA 12.6 compiler, runtime and libraries. Windows "
+                     "will ask once for administrator rights.")
+        console.command(subprocess.list2cmdline(command))
+        result = self._tools.runner.run(downloaded, _WINDOWS_INSTALLER_ARGS)
+        self._refresh_environment()
+        installed = self.locate(cfg)
+        if installed is None:
+            console.warn(f"CUDA toolkit not installed: {_failure_reason(result)}. "
+                         + _MANUAL_HINT)
+            return True
+        suffix = f" (installer exit code {result.code})" if result.code else ""
+        console.success(f"CUDA toolkit installed at {installed.root}{suffix}.")
+        _delete_quietly(downloaded)
         return True
+
+    def _refresh_environment(self) -> None:
+        """Copy the machine CUDA_PATH and the new machine PATH entries into this process."""
+        adopt_machine_variable(self._tools.environment, "CUDA_PATH")
+        prepend_machine_path(self._tools.environment)
+
+
+def _toolkit_at(raw: str) -> ToolkitInstall | None:
+    """Return the toolkit rooted at *raw* when its bin/nvcc.exe exists, else None."""
+    if not raw:
+        return None
+    root = pathlib.Path(os.path.normpath(raw))
+    if not (root / "bin" / "nvcc.exe").is_file():
+        return None
+    return ToolkitInstall(root=root, version=None)
+
+
+def _failure_reason(result: ElevatedResult) -> str:
+    """Describe why an elevated installer run left no toolkit behind."""
+    if result.code == ELEVATION_DECLINED:
+        return "the administrator prompt was declined"
+    if result.message:
+        return f"the installer could not start (code {result.code}): {result.message}"
+    return f"the installer exited with code {result.code}"
+
+
+def _delete_quietly(path: pathlib.Path) -> None:
+    """Delete *path*, ignoring a file that is locked or already gone."""
+    try:
+        path.unlink(missing_ok=True)
+    except OSError:
+        pass
 
 
 def _adapter_definitions(install: ToolkitInstall) -> dict[str, str]:
