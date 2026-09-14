@@ -88,7 +88,7 @@ def _linux_cfg(**overrides) -> Config:
 
 def _build_dir_for(work_root: Path, vendor: str = "fake") -> Path:
     """The build directory the builder derives for *vendor* at :data:`_COMMIT`."""
-    return work_root / f"{vendor}-{_COMMIT[:12]}"
+    return work_root / f"{vendor}-{_COMMIT[:8]}"
 
 
 def test_a_full_build_records_the_expected_argv_and_installs_binaries(tmp_path, short_work_root):
@@ -124,7 +124,7 @@ def test_a_full_build_records_the_expected_argv_and_installs_binaries(tmp_path, 
     assert "-DUR_BUILD_TESTS=OFF" in configure_call
     assert "-DCMAKE_C_COMPILER=cl" in configure_call
     assert "-DCMAKE_CXX_COMPILER=cl" in configure_call
-    assert any(a.startswith("-DFETCHCONTENT_BASE_DIR=") and _COMMIT[:12] in a
+    assert any(a.startswith("-DFETCHCONTENT_BASE_DIR=") and _COMMIT[:8] in a
               for a in configure_call)
 
     build_call = next(c for c in runner.calls if c[:2] == ["cmake", "--build"])
