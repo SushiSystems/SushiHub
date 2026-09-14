@@ -51,16 +51,20 @@ steps both run one loop after the toolchains: for every backend whose locator fi
 build its adapter for the installed compiler. The adapter build needs the MSVC environment on
 Windows, which it takes from the `vcvars64.bat` snapshot `gui_env.py` already produces.
 
+The registry holds one backend per probed vendor, so two backends for one vendor, such as Level
+Zero and OpenCL for Intel, need the lookup to return a tuple first.
+
 Adding a backend is a new spec file and one line in `registry.py`. A test registers a fake spec and
 proves the loop and the builder handle it without any other edit.
 
 ## 4. SushiRuntime
 
-Each vendor strategy file under `cmake/gpu/` gains one function with the same name shape:
-`sushiruntime_gpu_cuda_locate_toolkit`, `sushiruntime_gpu_rocm_locate_toolkit`,
-`sushiruntime_gpu_intel_locate_toolkit`. It sets `<vendor>_TOOLKIT_ROOT` or leaves it empty, with
-its operating system branches inside the vendor file. The CUDA function reads `CUDA_PATH` on
-Windows and keeps today's prefixes on Linux.
+Each vendor gains a locator file beside its strategy file, `cmake/gpu/locate/<Vendor>Toolkit.cmake`,
+holding one function of the same name shape: `sushiruntime_gpu_locate_cuda_toolkit`,
+`sushiruntime_gpu_locate_rocm_toolkit`, `sushiruntime_gpu_locate_intel_toolkit`. It returns the
+toolkit root, or nothing, and a description of what it searched, with its operating system
+branches inside the file. `DetectGpu.cmake` publishes the root as `SR_<VENDOR>_TOOLKIT_ROOT`. The
+CUDA function reads `CUDA_PATH` on Windows and keeps today's prefixes on Linux.
 
 `DetectGpu.cmake` calls the locate function of every vendor in `SR_GPU_VENDORS` in one loop and
 stops naming `nvcc` or `hipcc`. A vendor strategy file also publishes the compiler flags that need
