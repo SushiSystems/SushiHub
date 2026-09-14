@@ -7,6 +7,9 @@ registry in a test (a fake spec) without touching :data:`DEFAULT_REGISTRY`.
 from __future__ import annotations
 
 from .backend import GpuBackendSpec
+from .cuda import CUDA
+from .level_zero import LEVEL_ZERO
+from .rocm import ROCM
 
 
 class Registry:
@@ -44,6 +47,6 @@ class Registry:
         return self._by_vendor.get(name)
 
 
-BACKENDS: tuple[GpuBackendSpec, ...] = ()
+BACKENDS: tuple[GpuBackendSpec, ...] = (CUDA, ROCM, LEVEL_ZERO)
 
 DEFAULT_REGISTRY = Registry(BACKENDS)

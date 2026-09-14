@@ -16,13 +16,14 @@ link step with an unknown-architecture error for `sm_61`.
 support. NVIDIA drops older architectures from ptxas across major releases, and CUDA 13 removed
 `sm_6x` outright. SushiRuntime's `SR_CUDA_ARCH` has no default; `cmake/gpu/Cuda.cmake` resolves
 it from `nvidia-smi`, so on a Pascal box it resolves to `61` on its own, and only a 12.x toolkit
-can compile that. `ensure_cuda_toolkit` in `sushihub/cli/sushistack/setup/package_managers.py` therefore
-installs the pinned `cuda-toolkit-12-6` package, never the unversioned `cuda-toolkit`
-meta-package. The same reason drives `_cuda_repo_tag`: NVIDIA's apt repos for Ubuntu releases
-newer than 24.04 carry only CUDA 13.x, so an exact distro tag there 404s on the 12.6 package and
-the install fails silently. The tag is clamped to `_CUDA126_MAX_UBUNTU_TAG` (`ubuntu2404`), whose
-debs run on newer Ubuntu. Multi-arch binaries are a real case too: `SR_CUDA_ARCH` accepts a list
-such as `61;86`, so a machine that has moved to Ampere can still ship a Pascal build.
+can compile that. `LinuxCudaLocator.provision` in
+`sushihub/cli/sushistack/setup/gpu_backends/cuda.py` therefore installs the pinned
+`cuda-toolkit-12-6` package, never the unversioned `cuda-toolkit` meta-package. The same reason
+drives `_cuda_repo_tag`, in the same file: NVIDIA's apt repos for Ubuntu releases newer than
+24.04 carry only CUDA 13.x, so an exact distro tag there 404s on the 12.6 package and the install
+fails silently. The tag is clamped to `_CUDA126_MAX_UBUNTU_TAG` (`ubuntu2404`), whose debs run on
+newer Ubuntu. Multi-arch binaries are a real case too: `SR_CUDA_ARCH` accepts a list such as
+`61;86`, so a machine that has moved to Ampere can still ship a Pascal build.
 
 **Rule.** Do not raise or unpin `cuda-toolkit-12-6`, and do not lift the `ubuntu2404` clamp,
 without a Pascal build proving the replacement works. A passing `nvcc --version` proves nothing

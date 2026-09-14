@@ -31,6 +31,9 @@ from typing import Callable
 
 from .. import console
 from ..config import Config, deps_dir
+from .apt import ensure_intel_oneapi_repo
+from .apt import is_root as _is_root
+from .gpu_backends.registry import DEFAULT_REGISTRY
 from .probe import binary_works as _binary_works
 
 
@@ -54,13 +57,6 @@ def _run(cmd: list[str], dry_run: bool, *, check: bool = False) -> int:
     if check and process.returncode != 0:
         console.error(f"Command failed ({process.returncode}).")
     return process.returncode
-
-
-def _is_root() -> bool:
-    try:
-        return os.geteuid() == 0  # type: ignore[attr-defined]
-    except AttributeError:
-        return False
 
 
 def prime_sudo() -> None:
@@ -113,226 +109,21 @@ def _tools_dir() -> Path:
     return deps_dir() / "tools"
 
 
-# Where the Intel oneAPI apt repo keyring and source list are written. Mirrors
-# the sushiruntime Dockerfile so `hub install` and the container agree.
-_ONEAPI_KEYRING = Path("/usr/share/keyrings/oneapi-archive-keyring.gpg")
-_ONEAPI_LIST = Path("/etc/apt/sources.list.d/oneAPI.list")
-_ONEAPI_KEY_URL = (
-    "https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB"
-)
+def install_gpu_stack(cfg: Config, vendor: str, dry_run: bool) -> bool:
+    """Provision the compute SDK for the detected GPU *vendor* through its backend spec.
 
-
-def _os_release() -> dict[str, str]:
-    """Parse /etc/os-release into a dict (empty off Linux or when unreadable)."""
-    data: dict[str, str] = {}
-    try:
-        for line in Path("/etc/os-release").read_text(encoding="utf-8").splitlines():
-            if "=" in line and not line.startswith("#"):
-                key, _, val = line.partition("=")
-                data[key.strip()] = val.strip().strip('"')
-    except OSError:
-        pass
-    return data
-
-
-def _apt_distro_tag() -> str:
-    """NVIDIA/ROCm-style distro tag for repo URLs, e.g. 'ubuntu2204'. '' if unknown."""
-    rel = _os_release()
-    idv = rel.get("ID", "").lower()
-    ver = rel.get("VERSION_ID", "").replace(".", "")
-    if idv in ("ubuntu", "debian") and ver:
-        return f"{idv}{ver}"
-    return ""
-
-
-# Newest Ubuntu/Debian repo tag for which NVIDIA publishes the pinned CUDA 12.6
-# packages. Newer releases (e.g. ubuntu2604) only carry CUDA 13.x, which dropped
-# Pascal/sm_6x — so an exact-version tag there 404s on cuda-toolkit-12-6 and the
-# install silently fails. The 12.6 debs built for this tag run fine on newer
-# distros, so clamp forward-dated Ubuntu releases down to it.
-_CUDA126_MAX_UBUNTU_TAG = "ubuntu2404"
-
-
-def _cuda_repo_tag() -> str:
-    """Distro tag for NVIDIA's CUDA apt repo, clamped to one that ships 12.6.
-
-    Returns '' if the distro is unrecognised. For Ubuntu releases newer than the
-    last one with cuda-toolkit-12-6 published, fall back to that release's repo.
-    """
-    tag = _apt_distro_tag()
-    if not tag:
-        return ""
-    if tag.startswith("ubuntu"):
-        try:
-            ver = int(tag[len("ubuntu"):])
-        except ValueError:
-            return tag
-        if ver > int(_CUDA126_MAX_UBUNTU_TAG[len("ubuntu"):]):
-            console.info(f"NVIDIA has no CUDA 12.6 repo for {tag}; using "
-                         f"{_CUDA126_MAX_UBUNTU_TAG} (Pascal-capable, runs on newer Ubuntu).")
-            return _CUDA126_MAX_UBUNTU_TAG
-    return tag
-
-
-def _sudo_bash(cmd: str, dry_run: bool) -> bool:
-    """Run a shell one-liner (as root via sudo when needed). Return True on success."""
-    console.command(cmd)
-    if dry_run:
-        console.info("(dry-run) not executed")
-        return True
-    return subprocess.run(["bash", "-c", cmd]).returncode == 0
-
-
-def ensure_cuda_toolkit(dry_run: bool) -> bool:
-    """Install the NVIDIA CUDA toolkit from NVIDIA's official apt repo (Ubuntu/Debian).
-
-    Ubuntu's own ``nvidia-cuda-toolkit`` is often years behind, so we add NVIDIA's
-    ``cuda-keyring`` network repo — the method NVIDIA documents — and install a
-    *pinned* ``cuda-toolkit-12-6``, not the unversioned ``cuda-toolkit`` meta-package.
-
-    The version pin exists to keep **Pascal** buildable, and that is a hard
-    requirement rather than a legacy courtesy: Pascal is hardware this project is
-    actively developed on. NVIDIA drops older architectures from ptxas across
-    major releases — CUDA 13 removed ``sm_6x`` outright — and installing "latest"
-    produces a toolchain that reports present (``nvcc --version`` succeeds) but
-    fails at the ptxas link step for anyone on Pascal/Maxwell/Volta hardware. Do
-    not raise or unpin this without a Pascal build proving the replacement works.
-
-    (SushiRuntime's ``SR_CUDA_ARCH`` has no default and is resolved from
-    ``nvidia-smi``, so on a Pascal box it resolves to 61 by itself; this pin is
-    what makes that resolution actually compilable.)
-
-    Best-effort and non-fatal: a build can still run CPU-only (SPIR/OpenCL)
-    without it.
-    """
-    if _binary_works("nvcc"):
-        console.info("CUDA toolkit already present (nvcc found).")
-        return True
-    tag = _cuda_repo_tag()
-    if not tag:
-        console.warn("Unrecognised distro for the NVIDIA CUDA repo; install the "
-                     "CUDA 12.x toolkit manually (https://developer.nvidia.com/cuda-downloads).")
-        return False
-    sudo = "" if _is_root() else "sudo "
-    keyring_url = (f"https://developer.download.nvidia.com/compute/cuda/repos/"
-                   f"{tag}/x86_64/cuda-keyring_1.1-1_all.deb")
-    steps = (
-        f"tmp=$(mktemp -d) && cd \"$tmp\" && "
-        f"curl -fsSLO {keyring_url} && "
-        f"{sudo}dpkg -i cuda-keyring_1.1-1_all.deb && "
-        f"{sudo}apt-get update && "
-        f"{sudo}apt-get install -y cuda-toolkit-12-6"
-    )
-    if not _sudo_bash(steps, dry_run):
-        console.warn("CUDA toolkit install failed. Install CUDA 12.x manually "
-                     "(https://developer.nvidia.com/cuda-downloads); the build will "
-                     "otherwise fall back to the CPU/OpenCL path.")
-        return False
-    return True
-
-
-def ensure_rocm(dry_run: bool) -> bool:
-    """Install AMD ROCm (HIP runtime + dev) from AMD's official apt repo (Ubuntu/Debian).
-
-    Adds the ROCm apt repository the way AMD documents and installs
-    ``rocm-hip-runtime-dev``. Best-effort / non-fatal.
-    """
-    if shutil.which("hipcc") or shutil.which("rocminfo"):
-        console.info("ROCm already present.")
-        return True
-    rel = _os_release()
-    codename = rel.get("VERSION_CODENAME", "")
-    if rel.get("ID", "").lower() not in ("ubuntu", "debian") or not codename:
-        console.warn("Unrecognised distro for the AMD ROCm repo; install ROCm "
-                     "manually (https://rocm.docs.amd.com).")
-        return False
-    sudo = "" if _is_root() else "sudo "
-    steps = (
-        f"{sudo}mkdir -p --mode=0755 /etc/apt/keyrings && "
-        f"curl -fsSL https://repo.radeon.com/rocm/rocm.gpg.key "
-        f"| {sudo}gpg --dearmor -o /etc/apt/keyrings/rocm.gpg && "
-        f'echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/rocm.gpg] '
-        f'https://repo.radeon.com/rocm/apt/latest {codename} main" '
-        f"| {sudo}tee /etc/apt/sources.list.d/rocm.list && "
-        f"{sudo}apt-get update && "
-        f"{sudo}apt-get install -y rocm-hip-runtime-dev"
-    )
-    if not _sudo_bash(steps, dry_run):
-        console.warn("ROCm install failed. Install it manually "
-                     "(https://rocm.docs.amd.com); the build will otherwise fall "
-                     "back to the CPU/OpenCL path.")
-        return False
-    return True
-
-
-def ensure_intel_gpu_runtime(dry_run: bool) -> bool:
-    """Install the Intel GPU compute stack (Level Zero + OpenCL) for Intel GPUs.
-
-    The oneAPI apt repo (configured by :func:`ensure_intel_oneapi_repo`) ships the
-    Level Zero loader; install it plus the Intel GPU OpenCL runtime so an Intel
-    GPU is exposed as a SYCL device. Best-effort / non-fatal.
-    """
-    if not ensure_intel_oneapi_repo(dry_run):
-        return False
-    sudo = "" if _is_root() else "sudo "
-    steps = (
-        f"{sudo}apt-get update && "
-        f"{sudo}apt-get install -y level-zero intel-oneapi-runtime-opencl "
-        f"intel-oneapi-runtime-libs"
-    )
-    if not _sudo_bash(steps, dry_run):
-        console.warn("Intel GPU runtime install failed; the build will fall back "
-                     "to the CPU/OpenCL path.")
-        return False
-    return True
-
-
-def install_gpu_stack(vendor: str, dry_run: bool) -> bool:
-    """Provision the compute SDK for the detected GPU *vendor* (Linux).
-
-    nvidia -> CUDA toolkit, amd -> ROCm, intel -> Level Zero + Intel OpenCL,
-    none -> nothing (the CPU SPIR/OpenCL path from the manifest already covers it).
+    Looks the vendor up in the GPU backend registry and delegates to its
+    locator's ``provision``, so nvidia/amd/intel each answer through the one
+    :class:`~sushistack.setup.gpu_backends.backend.GpuBackendSpec` that already
+    knows how to locate and install it. No vendor is named here: adding a
+    backend to the registry is enough for this function to reach it.
     Always best-effort: a failure here never fails `hub install`.
     """
-    if vendor == "nvidia":
-        return ensure_cuda_toolkit(dry_run)
-    if vendor == "amd":
-        return ensure_rocm(dry_run)
-    if vendor == "intel":
-        return ensure_intel_gpu_runtime(dry_run)
-    console.info("No discrete GPU detected; using the CPU (SPIR/OpenCL) path only.")
-    return True
-
-
-def ensure_intel_oneapi_repo(dry_run: bool) -> bool:
-    """Configure the Intel oneAPI apt repository (Debian/Ubuntu only).
-
-    ``intel-oneapi-compiler-dpcpp-cpp`` lives only in Intel's own apt repo, not in
-    the stock Ubuntu archive, so a plain ``apt-get install`` cannot find it. This
-    adds the keyring + source list exactly as the sushiruntime Dockerfile does,
-    making the default `hub install` provision oneAPI on Linux without any manual
-    steps. Idempotent: skips when both files already exist.
-    """
-    if _ONEAPI_KEYRING.is_file() and _ONEAPI_LIST.is_file():
-        console.info("Intel oneAPI apt repository already configured.")
+    spec = DEFAULT_REGISTRY.for_probe_vendor(vendor)
+    if spec is None:
+        console.info("No discrete GPU detected; using the CPU (SPIR/OpenCL) path only.")
         return True
-    sudo = "" if _is_root() else "sudo "
-    key_cmd = f"curl -fsSL {_ONEAPI_KEY_URL} | {sudo}gpg --dearmor -o {_ONEAPI_KEYRING}"
-    list_cmd = (
-        f'echo "deb [signed-by={_ONEAPI_KEYRING}] '
-        f'https://apt.repos.intel.com/oneapi all main" | {sudo}tee {_ONEAPI_LIST}'
-    )
-    console.command(key_cmd)
-    console.command(list_cmd)
-    if dry_run:
-        console.info("(dry-run) not executed")
-        return True
-    for cmd in (key_cmd, list_cmd):
-        if subprocess.run(["bash", "-c", cmd]).returncode != 0:
-            console.error("Failed to configure the Intel oneAPI apt repository "
-                          "(need curl and gpg). Install oneAPI manually or skip it.")
-            return False
-    return True
+    return spec.locator.provision(cfg, dry_run)
 
 
 def _gh_latest_asset(repo: str, asset_glob: str) -> str:
