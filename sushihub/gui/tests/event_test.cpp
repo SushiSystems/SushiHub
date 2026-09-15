@@ -78,9 +78,22 @@ Event parsed(const std::string& line)
 
 }
 
-TEST(EventTest, EveryRecordedLineParsesAndTheEightKindsAppear)
+TEST(EventTest, EveryRecordedLineParses)
 {
-    const std::vector<std::string> lines = fixture_lines("events/status.jsonl");
+    for (const char* name : {"events/status.jsonl", "events/doctor.jsonl"})
+    {
+        const std::vector<std::string> lines = fixture_lines(name);
+        ASSERT_FALSE(lines.empty()) << name;
+        for (const std::string& line : lines)
+        {
+            EXPECT_TRUE(std::holds_alternative<Event>(parse_event(line))) << name << ": " << line;
+        }
+    }
+}
+
+TEST(EventTest, EveryHandWrittenLineParsesAndTheEightKindsAppear)
+{
+    const std::vector<std::string> lines = fixture_lines("events/all_kinds.jsonl");
     ASSERT_FALSE(lines.empty());
 
     std::set<std::string> kinds;

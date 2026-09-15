@@ -1,5 +1,5 @@
 /** @file catalogue_test.cpp
- *  @brief Checks that the recorded catalogue parses and every parameter type maps.
+ *  @brief Checks that the recorded and hand-written catalogues parse and every type maps.
  *  @author Mustafa Garip
  */
 
@@ -27,17 +27,28 @@ using SushiHub::Gui::parse_catalogue;
 using SushiHub::Gui::parse_parameter_type;
 using SushiHub::GuiTests::fixture_text;
 
-/** @brief Parses the recorded catalogue and fails the test with the reason when it will not. */
-Catalogue recorded_catalogue()
+/** @brief Parses the fixture @p name and fails the test with the reason when it will not. */
+Catalogue catalogue_from(const char* name)
 {
-    const std::variant<Catalogue, ParseError> outcome =
-        parse_catalogue(fixture_text("describe.json"));
+    const std::variant<Catalogue, ParseError> outcome = parse_catalogue(fixture_text(name));
     if (std::holds_alternative<ParseError>(outcome))
     {
         ADD_FAILURE() << std::get<ParseError>(outcome).reason;
         return Catalogue{};
     }
     return std::get<Catalogue>(outcome);
+}
+
+/** @brief Parses what `hub --describe` printed when the fixture was last recorded. */
+Catalogue recorded_catalogue()
+{
+    return catalogue_from("describe.json");
+}
+
+/** @brief Parses the hand-written catalogue that carries one parameter of every type. */
+Catalogue hand_written_catalogue()
+{
+    return catalogue_from("all_types.json");
 }
 
 /** @brief Returns the command named @p name, or a default one when it is not there. */
@@ -101,9 +112,9 @@ TEST(CatalogueTest, MapsEveryParameterTypeTheContractAllows)
     EXPECT_FALSE(parse_parameter_type("colour", type));
 }
 
-TEST(CatalogueTest, TheRecordedCatalogueCarriesEveryParameterType)
+TEST(CatalogueTest, TheHandWrittenCatalogueCarriesEveryParameterType)
 {
-    const Catalogue catalogue = recorded_catalogue();
+    const Catalogue catalogue = hand_written_catalogue();
 
     std::set<ParameterType> seen;
     for (const Command& command : catalogue.commands)
@@ -122,7 +133,7 @@ TEST(CatalogueTest, TheRecordedCatalogueCarriesEveryParameterType)
 
 TEST(CatalogueTest, ReadsAnArgumentAndAnOptionOfTheSameCommand)
 {
-    const Command add = command_named(recorded_catalogue(), "add");
+    const Command add = command_named(hand_written_catalogue(), "add");
 
     const Parameter modules = parameter_named(add, "modules");
     EXPECT_TRUE(modules.is_argument);
@@ -141,7 +152,7 @@ TEST(CatalogueTest, ReadsAnArgumentAndAnOptionOfTheSameCommand)
 
 TEST(CatalogueTest, ReadsAChoiceWithItsValuesAndLeavesOthersEmpty)
 {
-    const Command install = command_named(recorded_catalogue(), "install");
+    const Command install = command_named(hand_written_catalogue(), "install");
 
     const Parameter profile = parameter_named(install, "profile");
     EXPECT_EQ(profile.type, ParameterType::choice);
@@ -157,10 +168,20 @@ TEST(CatalogueTest, ReadsAChoiceWithItsValuesAndLeavesOthersEmpty)
 
 TEST(CatalogueTest, ReadsACommandWithNoParameters)
 {
-    const Command status = command_named(recorded_catalogue(), "status");
+    const Command status = command_named(hand_written_catalogue(), "status");
 
     EXPECT_TRUE(status.parameters.empty());
     EXPECT_FALSE(status.applies_to.empty());
+}
+
+TEST(CatalogueTest, TheRecordedCatalogueOffersTheUpdateCheck)
+{
+    const Command status = command_named(recorded_catalogue(), "status");
+
+    const Parameter check = parameter_named(status, "check_updates");
+    EXPECT_EQ(check.type, ParameterType::boolean);
+    ASSERT_EQ(check.flags.size(), 1U);
+    EXPECT_EQ(check.flags[0], "--check-updates");
 }
 
 TEST(CatalogueTest, RefusesABadCatalogueWithAReasonInsteadOfThrowing)

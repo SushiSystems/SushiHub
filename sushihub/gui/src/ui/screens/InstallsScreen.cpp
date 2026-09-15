@@ -5,6 +5,7 @@
 
 #include "ui/screens/InstallsScreen.hpp"
 
+#include "model/InstallFacts.hpp"
 #include "ui/Theme.hpp"
 
 #include <imgui.h>
@@ -22,68 +23,40 @@ namespace
 /** @brief Holds the command this screen reads, which is also its key in the workspace. */
 constexpr const char* STATUS_SCREEN = "status";
 
-/** @brief Holds the key of the module array inside the status run's result payload. */
-constexpr const char* MODULES_KEY = "modules";
+/** @brief Holds the module whose card this screen draws first. */
+constexpr const char* ENGINE = "sushiengine";
 
-/** @brief Holds the key that names a module within its own entry. */
-constexpr const char* NAME_KEY = "name";
-
-/** @brief Holds the key that carries a module's presence within its own entry. */
-constexpr const char* PRESENCE_KEY = "presence";
-
-/** @brief Holds the presence a card whose path is a checkout reports. */
-constexpr const char* PRESENCE_CLONED = "cloned";
-
-/** @brief Holds the presence a card whose path is a release reports. */
-constexpr const char* PRESENCE_BINARY = "binary";
-
-/** @brief Holds the presence a card that has neither path yet reports. */
+/** @brief Holds the presence a module reports when neither a checkout nor a release is there. */
 constexpr const char* PRESENCE_ABSENT = "absent";
 
-/** @brief Holds the program that opens the engine's editor, started outside of `hub`. */
-constexpr const char* EDITOR_PROGRAM = "se";
+/** @brief Holds the presence a module reports when it is an unpacked release. */
+constexpr const char* PRESENCE_BINARY = "binary";
 
-/** @brief Returns the entry of @p payload's module array named @p name, or null when absent. */
-const nlohmann::json* find_module(const nlohmann::json& payload, const char* name)
-{
-    const auto modules = payload.find(MODULES_KEY);
-    if (modules == payload.end() || !modules->is_array())
-    {
-        return nullptr;
-    }
-    for (const nlohmann::json& entry : *modules)
-    {
-        if (entry.is_object() && entry.value(NAME_KEY, std::string()) == name)
-        {
-            return &entry;
-        }
-    }
-    return nullptr;
-}
+/** @brief Holds the presence a module reports when it is a checkout elsewhere on disk. */
+constexpr const char* PRESENCE_LINKED = "linked";
 
-/** @brief Returns @p module's string field @p key, or a dash when it is absent or not a string. */
-std::string field(const nlohmann::json& module, const char* key)
-{
-    const auto found = module.find(key);
-    if (found == module.end() || !found->is_string())
-    {
-        return "-";
-    }
-    return found->get<std::string>();
-}
-
-/** @brief Returns the colour @p presence's chip fills with. */
+/** @brief Returns the colour @p presence's chip fills with, the same as on the modules screen. */
 ImVec4 presence_colour(const std::string& presence)
 {
-    if (presence == PRESENCE_CLONED || presence == "linked")
-    {
-        return Theme::ok();
-    }
     if (presence == PRESENCE_BINARY)
     {
         return Theme::accent();
     }
-    return Theme::ink_faint();
+    if (presence == PRESENCE_LINKED)
+    {
+        return Theme::info();
+    }
+    if (presence == PRESENCE_ABSENT)
+    {
+        return Theme::ink_faint();
+    }
+    return Theme::ok();
+}
+
+/** @brief Returns the payload's `checked_updates`, false when it is missing. */
+bool was_checked(const nlohmann::json& payload)
+{
+    return payload.value("checked_updates", false);
 }
 
 }
@@ -101,21 +74,58 @@ const char* InstallsScreen::name() const
 
 void InstallsScreen::draw()
 {
-    CommandRun& run = workspace_.run_for(STATUS_SCREEN);
-    run.poll();
-    const RunState& state = run.state();
+    CommandRun& offline = workspace_.run_for(STATUS_SCREEN);
+    offline.poll();
+    advance_update_check(offline);
+
+    const nlohmann::json* payload = current_payload(offline);
+    const bool checked = payload != nullptr && was_checked(*payload);
 
     const nlohmann::json* engine = nullptr;
     const nlohmann::json* hub = nullptr;
-    if (state.result.has_value())
+    if (payload != nullptr)
     {
-        engine = find_module(state.result->payload, "sushiengine");
-        hub = find_module(state.result->payload, "sushihub");
+        engine = InstallFacts::find_module(*payload, ENGINE);
+        const auto found = payload->find("hub");
+        hub = found != payload->end() && found->is_object() ? &*found : nullptr;
     }
 
-    draw_engine_card(engine);
+    draw_engine_card(engine, checked);
     ImGui::Dummy(ImVec2(0.0F, ImGui::GetFontSize() * 0.5F));
-    draw_hub_card(hub);
+    draw_hub_card(hub, checked);
+}
+
+void InstallsScreen::advance_update_check(const CommandRun& offline)
+{
+    if (update_check_ == nullptr && offline.state().finished)
+    {
+        update_check_ = std::make_unique<CommandRun>(std::vector<std::string>{
+            workspace_.executable(), "--json", STATUS_SCREEN, "--check-updates"});
+        update_check_->start();
+        run_log_.adopt(*update_check_, "hub status --check-updates");
+    }
+    if (update_check_ != nullptr)
+    {
+        update_check_->poll();
+    }
+}
+
+const nlohmann::json* InstallsScreen::current_payload(const CommandRun& offline) const
+{
+    if (update_check_ != nullptr && update_check_->state().result.has_value())
+    {
+        return &update_check_->state().result->payload;
+    }
+    if (offline.state().result.has_value())
+    {
+        return &offline.state().result->payload;
+    }
+    return nullptr;
+}
+
+bool InstallsScreen::checking() const
+{
+    return update_check_ != nullptr && !update_check_->state().result.has_value();
 }
 
 void InstallsScreen::draw_title(const char* title, const std::string& presence)
@@ -132,7 +142,7 @@ void InstallsScreen::draw_title(const char* title, const std::string& presence)
     ImGui::SameLine();
     const float side = ImGui::GetFontSize() * 0.4F;
     const ImVec2 origin = ImGui::GetCursorScreenPos();
-    const float baseline = ImGui::GetFontSize() * 0.2F;
+    const float baseline = ImGui::GetFontSize() * 0.3F;
     ImGui::GetWindowDrawList()->AddRectFilled(
         ImVec2(origin.x, origin.y + baseline), ImVec2(origin.x + side, origin.y + baseline + side),
         ImGui::ColorConvertFloat4ToU32(presence_colour(presence)));
@@ -140,6 +150,13 @@ void InstallsScreen::draw_title(const char* title, const std::string& presence)
     ImGui::SameLine();
     ImGui::PushStyleColor(ImGuiCol_Text, Theme::ink_dim());
     ImGui::TextUnformatted(presence.c_str());
+    ImGui::PopStyleColor();
+}
+
+void InstallsScreen::draw_reading()
+{
+    ImGui::PushStyleColor(ImGuiCol_Text, Theme::ink_faint());
+    ImGui::TextUnformatted("reading...");
     ImGui::PopStyleColor();
 }
 
@@ -160,15 +177,14 @@ void InstallsScreen::draw_fields(const std::vector<std::pair<const char*, std::s
     ImGui::EndTable();
 }
 
-void InstallsScreen::draw_actions(
-    const std::vector<std::pair<std::string, std::vector<std::string>>>& actions)
+void InstallsScreen::draw_actions(const std::vector<Action>& actions)
 {
+    const ImGuiStyle& style = ImGui::GetStyle();
     float width = 0.0F;
-    const float spacing = ImGui::GetStyle().ItemSpacing.x;
-    for (const auto& action : actions)
+    for (const Action& action : actions)
     {
-        width += ImGui::CalcTextSize(action.first.c_str()).x + ImGui::GetFontSize() * 2.0F +
-                spacing;
+        width += ImGui::CalcTextSize(action.label).x + style.FramePadding.x * 2.0F +
+                 style.ItemSpacing.x;
     }
 
     const float available = ImGui::GetContentRegionAvail().x;
@@ -183,103 +199,122 @@ void InstallsScreen::draw_actions(
         {
             ImGui::SameLine();
         }
-        if (actions[index].first == "Open editor")
+        if (ImGui::Button(actions[index].label))
         {
-            if (ImGui::Button(actions[index].first.c_str()))
-            {
-                start_action({EDITOR_PROGRAM, "editor"}, "se editor");
-            }
-        }
-        else if (ImGui::Button(actions[index].first.c_str()))
-        {
-            start_action(actions[index].second, actions[index].first);
+            start_action(actions[index].argv);
         }
     }
 }
 
-void InstallsScreen::start_action(std::vector<std::string> argv, std::string label)
+void InstallsScreen::start_action(const std::vector<std::string>& argv)
 {
-    action_run_ = std::make_unique<CommandRun>(std::move(argv));
+    std::string label;
+    for (std::size_t index = 0; index < argv.size(); ++index)
+    {
+        if (argv[index] == "--json")
+        {
+            continue;
+        }
+        label += (label.empty() ? "" : " ") + (index == 0 && argv[0] == workspace_.executable()
+                                                   ? std::string("hub")
+                                                   : argv[index]);
+    }
+    action_run_ = std::make_unique<CommandRun>(argv);
     action_run_->start();
     run_log_.adopt(*action_run_, std::move(label));
 }
 
-void InstallsScreen::draw_engine_card(const nlohmann::json* module)
+void InstallsScreen::draw_engine_card(const nlohmann::json* module, bool checked)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, Theme::panel());
     ImGui::BeginChild("##sushihub_gui_installs_engine",
-                       ImVec2(0.0F, ImGui::GetFontSize() * 8.0F), ImGuiChildFlags_Borders);
+                      ImVec2(0.0F, ImGui::GetFontSize() * 9.0F), ImGuiChildFlags_Borders);
 
     if (module == nullptr)
     {
-        draw_title("sushiengine", std::string());
-        ImGui::PushStyleColor(ImGuiCol_Text, Theme::ink_faint());
-        ImGui::TextUnformatted("reading...");
-        ImGui::PopStyleColor();
+        draw_title(ENGINE, std::string());
+        draw_reading();
         ImGui::EndChild();
         ImGui::PopStyleColor();
         return;
     }
 
-    const std::string presence = field(*module, PRESENCE_KEY);
-    draw_title("sushiengine", presence);
+    const std::string presence = InstallFacts::text(*module, "presence", PRESENCE_ABSENT);
+    draw_title(ENGINE, presence);
 
-    const std::string& executable = workspace_.executable();
+    const std::string& hub = workspace_.executable();
+    const Action open_editor{"Open editor", {"se", "editor"}};
+    const std::string pending = checking() ? "checking..." : std::string();
 
     if (presence == PRESENCE_ABSENT)
     {
         ImGui::PushStyleColor(ImGuiCol_Text, Theme::ink_dim());
-        ImGui::TextUnformatted("Neither a checkout nor a release is present yet.");
+        ImGui::TextUnformatted("Neither a checkout nor a release is present. hub add clones the "
+                               "source with Git access, or installs the release with a licence.");
         ImGui::PopStyleColor();
-        draw_actions({{"Install", {executable, "--json", "add", "sushiengine"}}});
+        draw_actions({{"Install", {hub, "--json", "add", ENGINE}}});
     }
     else if (presence == PRESENCE_BINARY)
     {
-        draw_fields({{"Version", field(*module, "version")},
-                     {"Platform", field(*module, "platform")},
-                     {"Licence expiry", field(*module, "licence_expiry")},
-                     {"Newer release", field(*module, "latest_version")}});
-        draw_actions({{"Open editor", {}},
-                      {"Update", {executable, "--json", "update", "sushiengine"}},
-                      {"Licence", {executable, "--json", "license"}}});
+        const std::string newer = pending.empty()
+                                      ? InstallFacts::newer_release(*module, checked)
+                                      : pending;
+        draw_fields({{"Version", InstallFacts::text(*module, "version", "unknown")},
+                     {"Platform", module->contains("binary") && (*module)["binary"].is_object()
+                                      ? InstallFacts::text((*module)["binary"], "platform", "?")
+                                      : std::string("?")},
+                     {"Licence", InstallFacts::licence(*module)},
+                     {"Newer release", newer}});
+        draw_actions({open_editor,
+                      {"Update", {hub, "--json", "update", ENGINE}},
+                      {"Licence", {hub, "--json", "license"}}});
     }
     else
     {
-        draw_fields({{"Branch", field(*module, "branch")},
-                     {"Ahead/behind", field(*module, "ahead_behind")},
-                     {"Build", "se build, in the terminal"},
-                     {"Licence", "not needed"}});
-        draw_actions({{"Open editor", {}},
-                      {"Pull", {executable, "--json", "update", "sushiengine"}},
-                      {"Details", {executable, "--json", "status"}}});
+        static const nlohmann::json no_source = nlohmann::json::object();
+        const auto found = module->find("source");
+        const nlohmann::json& source = found != module->end() && found->is_object() ? *found
+                                                                                    : no_source;
+        const std::string fetched = pending.empty()
+                                        ? InstallFacts::last_fetch(source, InstallFacts::today_days())
+                                        : pending;
+        draw_fields({{"Branch", InstallFacts::text(source, "branch", "detached")},
+                     {"Upstream", InstallFacts::distance(source)},
+                     {"Fetched", fetched},
+                     {"Build", "se build, in the terminal"}});
+        draw_actions({open_editor,
+                      {"Pull", {hub, "--json", "update", ENGINE}},
+                      {"Details", {hub, "--json", STATUS_SCREEN}}});
     }
+
+    ImGui::PushStyleColor(ImGuiCol_Text, Theme::ink_faint());
+    ImGui::TextUnformatted("Open editor starts se editor, the one program besides hub this "
+                           "window runs.");
+    ImGui::PopStyleColor();
 
     ImGui::EndChild();
     ImGui::PopStyleColor();
 }
 
-void InstallsScreen::draw_hub_card(const nlohmann::json* module)
+void InstallsScreen::draw_hub_card(const nlohmann::json* hub, bool checked)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, Theme::panel());
     ImGui::BeginChild("##sushihub_gui_installs_hub", ImVec2(0.0F, ImGui::GetFontSize() * 6.0F),
-                       ImGuiChildFlags_Borders);
+                      ImGuiChildFlags_Borders);
 
-    if (module == nullptr)
+    draw_title("Sushi Hub", std::string());
+    if (hub == nullptr)
     {
-        draw_title("Sushi Hub", std::string());
-        ImGui::PushStyleColor(ImGuiCol_Text, Theme::ink_faint());
-        ImGui::TextUnformatted("reading...");
-        ImGui::PopStyleColor();
-        ImGui::EndChild();
-        ImGui::PopStyleColor();
-        return;
+        draw_reading();
     }
-
-    draw_title("Sushi Hub", field(*module, PRESENCE_KEY));
-    draw_fields({{"Command", field(*module, "command")},
-                 {"Alias", field(*module, "alias")},
-                 {"Channel", field(*module, "channel")},
-                 {"Current", field(*module, "current")}});
+    else
+    {
+        draw_fields({{"Command", InstallFacts::text(*hub, "command", "hub")},
+                     {"Alias", InstallFacts::alias(*hub)},
+                     {"Channel", InstallFacts::text(*hub, "channel", "unknown")},
+                     {"Current", checking() ? std::string("checking...")
+                                            : InstallFacts::hub_currency(*hub, checked)}});
+    }
 
     ImGui::EndChild();
     ImGui::PopStyleColor();

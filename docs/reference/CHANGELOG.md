@@ -3,6 +3,8 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-15 — Drew the install cards from the new status fields and split the GUI fixtures into recorded and hand-written (`sushihub/gui/src/model/InstallFacts.cpp`, `sushihub/gui/tests/fixtures/`).
+- 2026-09-15 — Added branch, licence expiry, alias and an online update check to `hub status` (`sushihub/cli/sushistack/services/status_report.py`, `sushihub/contract/status.schema.json`).
 - 2026-09-14 — Made the GPU toolkit a default `hub install` component with a silent Windows CUDA install (`setup/selection.py`, `setup/probe.py`, `gpu_backends/cuda.py`, `gpu_backends/windows_installer.py`).
 - 2026-09-14 — Wired the GPU backend registry's adapter build into `hub install` on Windows and Linux (`sushihub/cli/sushistack/setup/gpu_backends/provisioning.py`, `sushihub/cli/sushistack/setup/steps.py`).
 - 2026-09-14 — Moved CUDA, ROCm and Level Zero provisioning into one spec per vendor and shared apt helpers (`sushihub/cli/sushistack/setup/gpu_backends/{cuda,rocm,level_zero}.py`, `sushihub/cli/sushistack/setup/apt.py`).

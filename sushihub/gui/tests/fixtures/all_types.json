@@ -1,0 +1,49 @@
+{
+  "program": "hub",
+  "version": "1.0.0",
+  "contract": "1",
+  "commands": [
+    {
+      "name": "add",
+      "help": "Clone one or more stack modules into the workspace.",
+      "params": [
+        {"name": "modules", "kind": "argument", "type": "string", "multiple": true, "required": true,
+         "default": null, "choices": null, "flags": [], "help": "Modules to clone: sushiruntime, sushiblas, sushiai, sushidsp."},
+        {"name": "dry_run", "kind": "option", "type": "boolean", "multiple": false, "required": false,
+         "default": false, "choices": null, "flags": ["--dry-run"], "help": "Show, don't clone or install."}
+      ],
+      "applies_to": ["cloned", "linked", "binary"]
+    },
+    {
+      "name": "doctor",
+      "help": "Report every dependency the present modules declare.",
+      "params": [
+        {"name": "jobs", "kind": "option", "type": "integer", "multiple": false, "required": false,
+         "default": 4, "choices": null, "flags": ["--jobs", "-j"], "help": "How many checks to run at once."},
+        {"name": "timeout", "kind": "option", "type": "number", "multiple": false, "required": false,
+         "default": 30.0, "choices": null, "flags": ["--timeout"], "help": "Seconds one check may take."}
+      ],
+      "applies_to": ["cloned", "linked", "binary"]
+    },
+    {
+      "name": "install",
+      "help": "Provision the toolchains the present modules declare.",
+      "params": [
+        {"name": "prefix", "kind": "option", "type": "path", "multiple": false, "required": false,
+         "default": null, "choices": null, "flags": ["--prefix"], "help": "Where the dependency tree is written."},
+        {"name": "profile", "kind": "option", "type": "choice", "multiple": false, "required": false,
+         "default": "release", "choices": ["debug", "release", "relwithdebinfo"], "flags": ["--profile"],
+         "help": "Which build profile the toolchains are provisioned for."},
+        {"name": "yes", "kind": "option", "type": "boolean", "multiple": false, "required": false,
+         "default": false, "choices": null, "flags": ["--yes", "-y"], "help": "Answer every prompt with its default."}
+      ],
+      "applies_to": ["cloned", "linked", "binary"]
+    },
+    {
+      "name": "status",
+      "help": "Show every declared module, how it is present, and where it sits.",
+      "params": [],
+      "applies_to": ["cloned", "linked", "binary"]
+    }
+  ]
+}

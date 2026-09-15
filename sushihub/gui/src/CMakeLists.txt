@@ -22,6 +22,7 @@ target_link_libraries(sushihub_gui_contract
 
 add_library(sushihub_gui_model STATIC
     model/CommandRun.cpp
+    model/InstallFacts.cpp
     model/RunLog.cpp
     model/Workspace.cpp)
 target_include_directories(sushihub_gui_model PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

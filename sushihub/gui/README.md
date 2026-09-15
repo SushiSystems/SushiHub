@@ -36,7 +36,11 @@ as `std::unique_ptr<Screen>` and knows none of their types.
 
 `Installs` draws one card per install, sushiengine and Sushi Hub itself, each with a presence chip
 and its own actions; `Open editor` starts `se editor`, the one program other than `hub` this
-application spawns. `Modules` draws one row per module with its presence chip, a line of detail
+application spawns. It draws the offline `hub status` first, then runs `hub status --check-updates`
+once in the background and switches to that payload when it arrives. `model/InstallFacts` turns
+the payload into the card's sentences, such as "+2 / -0" or "fetched 3 days ago", without ImGui.
+
+`Modules` draws one row per module with its presence chip, a line of detail
 and a single action. `Settings` draws four setting rows and the table of `hub --json doctor`, and
 its Sign in button starts `login`, shows the user code at two and a half times the text size, and
 opens the verification link. `Commands` searches the catalogue and draws a generated form beside
@@ -64,7 +68,7 @@ the bare flag, then the positional arguments in the order the catalogue declares
 
 ## What the UI reads into `hub` output
 
-Two rules here are guesses at shape rather than schema, and both are worth knowing about when the
+One rule here is a guess at shape rather than schema, and it is worth knowing about when the
 CLI's wording changes.
 
 The event schema carries no field for a device code, so `read_device_grant` takes one out of the
@@ -73,11 +77,8 @@ hyphens, holding at least one capital and one digit, is the code, and the first 
 `http://` or `https://` is the verification link. A `result` payload carrying `user_code` or
 `verification_uri` outranks both.
 
-`hub status`'s result payload reports its dependency directory either as a path or as an object
-with `path` and `present`; the installs screen draws whichever arrives. That payload carries a
-module's name, location, state, presence and version and nothing more. The fields the installs
-card wants beyond those, a branch, how far ahead it is, a licence expiry, whether a newer release
-exists, draw as a dash until `hub status` reports them.
+`hub status`'s result payload is fixed by `../contract/status.schema.json`, so the installs card
+reads it rather than guessing at it.
 
 ## Building
 
@@ -123,10 +124,11 @@ other configuration.
 
 GoogleTest, one suite per layer, discovered by `gtest_discover_tests`. `bridge_test` spawns a
 Python one-liner and reads its output back. `event_test` and `catalogue_test` parse the fixtures
-in `tests/fixtures/`, which are hand-written until `hub --json` and `hub --describe` land; the
-README there says how to record the real thing. `model_test` feeds a scripted queue to a
-`CommandRun` and checks the fold, and pins `RunLog` to the run it was handed last. The `ui/`
-layer has no unit tests; it is checked by running the application.
+in `tests/fixtures/`: the recorded ones prove today's `hub` output parses, the hand-written ones
+cover every shape the contract allows, and the README there says which is which. `model_test`
+feeds a scripted queue to a `CommandRun` and checks the fold, and pins `RunLog` to the run it was
+handed last. `install_facts_test` checks the install card's sentences against the recorded status
+payload. The rest of `ui/` has no unit tests; it is checked by running the application.
 
 ## Talking to `hub`
 
