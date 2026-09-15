@@ -3,6 +3,7 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-15 — Set the hub's version to 0.1.0 and drew it in the title bar from `hub --describe` (`sushihub/cli/pyproject.toml`, `sushihub/gui/src/ui/chrome/TitleBar.cpp`).
 - 2026-09-15 — Drew the install cards from the new status fields and split the GUI fixtures into recorded and hand-written (`sushihub/gui/src/model/InstallFacts.cpp`, `sushihub/gui/tests/fixtures/`).
 - 2026-09-15 — Added branch, licence expiry, alias and an online update check to `hub status` (`sushihub/cli/sushistack/services/status_report.py`, `sushihub/contract/status.schema.json`).
 - 2026-09-14 — Made the GPU toolkit a default `hub install` component with a silent Windows CUDA install (`setup/selection.py`, `setup/probe.py`, `gpu_backends/cuda.py`, `gpu_backends/windows_installer.py`).

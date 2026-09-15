@@ -17,11 +17,13 @@ class TitleBar
 {
 public:
     /**
-     * @brief Draws one row carrying the name, @p workspace in a chip and @p account at the right.
+     * @brief Draws one row carrying the name, @p version, @p workspace in a chip and @p account.
+     * @param version The version `hub --describe` reports, or empty while it is being read.
      * @param workspace The path the window is open on, shown as it was given.
      * @param account The signed-in identity, or an empty string when nobody is signed in.
      */
-    void draw(const std::string& workspace, const std::string& account);
+    void draw(const std::string& version, const std::string& workspace,
+              const std::string& account);
 
     /** @brief Returns the row's height in pixels at the current font size. */
     static float height();

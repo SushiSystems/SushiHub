@@ -17,9 +17,6 @@ namespace Gui
 namespace
 {
 
-/** @brief Holds the release the window reports itself as. */
-constexpr const char* HUB_VERSION = "0.4.0-dev";
-
 /** @brief Holds the text shown when no account is signed in. */
 constexpr const char* NO_ACCOUNT = "Sign in";
 
@@ -70,7 +67,8 @@ float TitleBar::height()
     return ImGui::GetFontSize() * 2.4F;
 }
 
-void TitleBar::draw(const std::string& workspace, const std::string& account)
+void TitleBar::draw(const std::string& version, const std::string& workspace,
+                    const std::string& account)
 {
     ImGui::PushStyleColor(ImGuiCol_ChildBg, Theme::rail());
     ImGui::BeginChild("##sushihub_title_bar", ImVec2(0.0F, height()), ImGuiChildFlags_None,
@@ -82,8 +80,11 @@ void TitleBar::draw(const std::string& workspace, const std::string& account)
     draw_dot();
     ImGui::SameLine();
     draw_text("Sushi Hub", Theme::ink());
-    ImGui::SameLine();
-    draw_text(HUB_VERSION, Theme::ink_faint());
+    if (!version.empty())
+    {
+        ImGui::SameLine();
+        draw_text(version.c_str(), Theme::ink_faint());
+    }
 
     ImGui::SameLine(0.0F, ImGui::GetFontSize());
     ImGui::SetCursorPosY(ImGui::GetFontSize() * 0.4F);

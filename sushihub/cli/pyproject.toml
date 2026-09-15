@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sushistack-cli"
-version = "1.0.0"
+version = "0.1.0"
 description = "SushiStack CLI — shared dependency provisioning and module manager for the stack"
 authors = [{ name = "Mustafa Garip", email = "mustafagarip@sushisystems.io" }]
 requires-python = ">=3.10"
