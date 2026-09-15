@@ -558,68 +558,24 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     return 1 if failed else 0
 
 
-def _status_rows(root: Path, linked: dict[str, str]) -> list[dict]:
-    """Build one row per module for both the table and the JSON payload.
-
-    Args:
-        root: Workspace root.
-        linked: Module name to path, as ``hub link`` recorded it.
-
-    Returns:
-        A row per module carrying its name, where it lives, the state the table
-        prints, its :class:`~sushistack.services.presence.Presence` value, and
-        the version a binary install reports (None for every other form).
-    """
-    rows = []
-    for name in MODULES:
-        state = presence_of(root, name, linked)
-        location, text = describe(root, name, linked)
-        release = read_release(module_dest(root, name)) if state is Presence.BINARY else None
-        rows.append({"name": name, "location": location, "state": text,
-                     "presence": state.value,
-                     "version": release.version if release else None})
-
-    # The shared CLI presentation layer. Not a build module, but shown so a
-    # damaged checkout is visible: it ships in this repository, so the only two
-    # states are present and missing -- and it arrived with the clone of the
-    # workspace, which is the presence it reports.
-    cli_dir = sushicore_dir(root)
-    rows.append({"name": SUSHICORE_NAME,
-                 "location": SUSHICORE_NAME if cli_dir else "",
-                 "state": "in-repo" if cli_dir else "missing",
-                 "presence": (Presence.CLONED if cli_dir else Presence.ABSENT).value,
-                 "version": None})
-    return rows
-
-
-def status_payload() -> dict:
-    """Collect the workspace, its modules and the dependency tree as one structure.
-
-    Returns:
-        The ``result`` payload of ``hub status``: the workspace path, one entry per
-        module with its location, state, presence and version, and where the
-        dependencies live.
-    """
-    root = workspace_root()
-    deps = deps_dir()
-    return {
-        "workspace": str(root),
-        "modules": _status_rows(root, registered_modules()),
-        "dependencies": {
-            "path": str(deps),
-            "present": deps.is_dir() and any(deps.iterdir()),
-        },
-    }
+def _branch_cell(source: dict | None) -> str:
+    """Return a checkout's branch and its distance from upstream as one table cell."""
+    if not source or not source["branch"]:
+        return "—"
+    counts = [f"{sign}{source[key]}" for key, sign in (("ahead", "+"), ("behind", "-"))
+              if source[key]]
+    return " ".join([source["branch"], *counts])
 
 
 def status(payload: dict) -> int:
-    """Print the status *payload* built by :func:`status_payload`. Return exit code."""
+    """Print the status *payload* that :func:`~.status_report.build_status` built. Return exit code."""
     console.header("SushiStack Status")
     console.info(f"Workspace: {payload['workspace']}")
     console.table(
-        ["Module", "Location", "State"],
+        ["Module", "Location", "State", "Branch"],
         [[module["name"], module["location"] or "—",
-          "—" if module["state"] == "absent" else module["state"]]
+          "—" if module["state"] == "absent" else module["state"],
+          _branch_cell(module["source"])]
          for module in payload["modules"]],
         title="SushiStack Status",
     )

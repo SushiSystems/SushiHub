@@ -25,6 +25,7 @@ from .describe import catalogue
 from .services import gui as gui_svc
 from .services import modules as modules_svc
 from .services import setup as setup_svc
+from .services import status_report
 
 app = typer.Typer(
     name="hub",
@@ -99,12 +100,17 @@ def home():
 def status(
     json_output: bool = typer.Option(
         False, "--json", help="Print machine-readable JSON instead of a table."),
+    check_updates: bool = typer.Option(
+        False, "--check-updates",
+        help="Fetch every checkout and ask Sushi ID for newer releases first."),
 ):
     """Show which modules are cloned and whether dependencies are present."""
     if json_output:
         console.set_machine(True)
-    payload = modules_svc.status_payload()
-    _finish(modules_svc.status(payload), payload)
+    report = status_report.build_status(check_updates)
+    for warning in report.warnings:
+        console.warn(warning)
+    _finish(modules_svc.status(report.payload), report.payload)
 
 
 # --------------------------------------------------------------------------- #

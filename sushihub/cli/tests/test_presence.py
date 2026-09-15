@@ -4,7 +4,7 @@ import json
 
 import sushicore.profile
 
-from sushistack.services import modules, presence
+from sushistack.services import modules, presence, status_report
 from sushistack.services.presence import Presence
 from sushistack.setup import dependency_source, steps
 from sushistack.setup.pipeline import InstallContext
@@ -142,7 +142,7 @@ def test_status_rows_carry_the_presence_and_the_version(tmp_path, monkeypatch):
     root = workspace(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     checkout(root / "sushiruntime")
-    rows = {row["name"]: row for row in modules.status_payload()["modules"]}
+    rows = {row["name"]: row for row in status_report.build_status().payload["modules"]}
     assert rows["sushiengine"]["presence"] == "binary"
     assert rows["sushiengine"]["version"] == "1.4.2"
     assert rows["sushiengine"]["state"] == "binary 1.4.2"

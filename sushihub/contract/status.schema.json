@@ -1,0 +1,82 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sushisystems.io/contract/status.schema.json",
+  "title": "The payload of hub status",
+  "description": "The result payload hub status and hub status --check-updates send under --json.",
+  "type": "object",
+  "properties": {
+    "workspace": {"type": "string"},
+    "checked_updates": {"type": "boolean"},
+    "hub": {
+      "type": "object",
+      "properties": {
+        "command": {"type": "string"},
+        "alias": {
+          "type": ["object", "null"],
+          "properties": {
+            "name": {"type": "string"},
+            "defined_in": {"type": "string"}
+          },
+          "required": ["name", "defined_in"],
+          "additionalProperties": false
+        },
+        "channel": {"enum": ["editable", "frozen"]},
+        "source": {"$ref": "#/$defs/source"},
+        "latest_version": {"type": ["string", "null"]}
+      },
+      "required": ["command", "alias", "channel", "source", "latest_version"],
+      "additionalProperties": false
+    },
+    "modules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {"type": "string"},
+          "location": {"type": "string"},
+          "state": {"type": "string"},
+          "presence": {"enum": ["cloned", "linked", "binary", "absent"]},
+          "version": {"type": ["string", "null"]},
+          "source": {"$ref": "#/$defs/source"},
+          "binary": {
+            "type": ["object", "null"],
+            "properties": {
+              "platform": {"type": "string"},
+              "licence_expires_at": {"type": ["string", "null"]}
+            },
+            "required": ["platform", "licence_expires_at"],
+            "additionalProperties": false
+          },
+          "latest_version": {"type": ["string", "null"]}
+        },
+        "required": ["name", "location", "state", "presence", "version", "source", "binary",
+                     "latest_version"],
+        "additionalProperties": false
+      }
+    },
+    "dependencies": {
+      "type": "object",
+      "properties": {
+        "path": {"type": "string"},
+        "present": {"type": "boolean"}
+      },
+      "required": ["path", "present"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["workspace", "checked_updates", "hub", "modules", "dependencies"],
+  "additionalProperties": false,
+  "$defs": {
+    "source": {
+      "type": ["object", "null"],
+      "properties": {
+        "branch": {"type": ["string", "null"]},
+        "ahead": {"type": ["integer", "null"], "minimum": 0},
+        "behind": {"type": ["integer", "null"], "minimum": 0},
+        "last_fetch": {"type": ["string", "null"]}
+      },
+      "required": ["branch", "ahead", "behind", "last_fetch"],
+      "additionalProperties": false
+    }
+  }
+}
