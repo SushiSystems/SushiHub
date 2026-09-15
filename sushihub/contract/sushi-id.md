@@ -26,7 +26,7 @@ Bodies are JSON in both directions; every request carries `Content-Type: applica
 waits between two polls. `verification_uri` is the page a person opens to type `user_code`.
 
 The base URL comes from `sushihub/cli/config.toml`'s `[identity] url`, which ships as
-`https://id.sushisystems.io`, and `SUSHI_ID_URL` overrides it.
+`https://account.sushisystems.io`, and `SUSHI_ID_URL` overrides it.
 
 ## The device grant, step by step
 

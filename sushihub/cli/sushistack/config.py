@@ -88,7 +88,7 @@ def registered_modules() -> dict[str, str]:
 
 # Sushi ID's base URL when neither the environment nor the config names one. The
 # four endpoints under it are written down in sushihub/contract/sushi-id.md.
-DEFAULT_IDENTITY_URL = "https://id.sushisystems.io"
+DEFAULT_IDENTITY_URL = "https://account.sushisystems.io"
 
 
 def identity_url() -> str:
