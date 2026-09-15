@@ -94,7 +94,7 @@ void Shell::draw()
     ImGui::Begin("##sushihub_gui_frame", nullptr, FRAME_FLAGS);
     ImGui::PopStyleVar();
 
-    title_bar_.draw(workspace_path(), std::string());
+    title_bar_.draw(catalogue_.catalogue().version, workspace_path(), std::string());
     draw_body();
     strip_.draw(run_log_);
 
