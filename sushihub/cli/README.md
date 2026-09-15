@@ -82,7 +82,7 @@ service `sushistack` and username `sushi-id`. A later command that needs the acc
 access token when it is within 30 seconds of expiry; when the refresh is refused, the stored session
 is dropped and the command says nobody is signed in.
 
-Sushi ID lives at `https://id.sushisystems.io`, from `[identity] url` in `config.toml`.
+Sushi ID lives at `https://account.sushisystems.io`, from `[identity] url` in `config.toml`.
 `SUSHI_ID_URL` overrides it, which is how the tests point every Sushi ID call at a fake server on
 `127.0.0.1`. The six endpoints are written out in `../contract/sushi-id.md`; sushiweb has not built
 them yet.

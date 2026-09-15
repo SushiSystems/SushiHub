@@ -53,4 +53,4 @@ color = "auto"
 # Sushi ID: where `hub login`, `hub logout`, `hub whoami` and `hub license` send
 # their four requests. Override with SUSHI_ID_URL to point at a staging server
 # or at a fake one. The endpoints are in ../sushihub/contract/sushi-id.md.
-url = "https://id.sushisystems.io"
+url = "https://account.sushisystems.io"

@@ -22,7 +22,7 @@ the base fragment under `sushihub/cli/manifests/`; each module ships its own. `h
 installing through a package manager: intel/llvm, AdaptiveCpp, oneAPI. Each carries a stamp naming
 the release it came from.
 
-**Sushi ID** — the identity service at `id.sushisystems.io`, built in the sushiweb repository. It
+**Sushi ID** — the identity service at `account.sushisystems.io`, built in the sushiweb repository. It
 issues the access tokens and holds the licences the hub design relies on.
 
 **Hub** — the name for `hub` as the workspace's one experience: the terminal command and the
