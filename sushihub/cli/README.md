@@ -38,7 +38,7 @@ them. See "Machine-readable output".
 | `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `hub add`. |
 | `hub update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi ID for the latest release and downloads it when the version differs. No arguments means all. |
 | `hub sync [--dry-run]` | Install missing dependencies, then update every module. |
-| `hub status [--json]` | Which modules are present, in which form, and whether dependencies are installed. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
+| `hub status [--json] [--check-updates]` | Which modules are present, in which form, on which branch and how far from upstream, and whether dependencies are installed. It reads the disk only; `--check-updates` first fetches every checkout and asks Sushi ID for each binary install's latest release. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `hub doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `hub remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
 | `hub home` | Print the workspace root and the `dependencies/` path. |
@@ -60,6 +60,7 @@ a human would read instead — the setup progress bar, a config file rendered be
 goes to stderr, so a caller parses stdout line by line and never has to strip a table out of it.
 Every command ends with one `result` event carrying its exit status and whatever it computed:
 `hub --json status` puts the module list there, `hub --json home` the workspace and dependency paths.
+The status payload's shape is fixed by `../contract/status.schema.json`.
 A question becomes a `prompt` event answered by one line on stdin.
 
 `hub --describe` prints the command catalogue instead: every subcommand, its arguments and options

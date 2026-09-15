@@ -1,14 +1,15 @@
 # The `hub` JSON contract
 
-Two schemas in this directory describe everything a program needs to drive `hub` without parsing
-a terminal. `events.schema.json` covers one line of output; `describe.schema.json` covers the
-command catalogue. Both are JSON Schema draft 2020-12. The desktop application validates against
-them and so does `../cli/tests/test_json_streams.py`, so a stream that violates either is a defect
-on the `hub` side, not a case for the reader to tolerate.
+Three schemas in this directory describe everything a program needs to drive `hub` without parsing
+a terminal. `events.schema.json` covers one line of output, `describe.schema.json` the command
+catalogue, and `status.schema.json` the payload `hub status` ends with. All three are JSON Schema
+draft 2020-12. The desktop application validates against them and so does
+`../cli/tests/test_json_streams.py`, so a stream that violates one is a defect on the `hub` side,
+not a case for the reader to tolerate.
 
 The design behind them is `docs/agent/specs/2026-09-05-hub-design.md`, section 7.
 
-A third page in this directory, `sushi-id.md`, is the other half of the contract: the six Sushi ID
+A fourth file in this directory, `sushi-id.md`, is the other half of the contract: the six Sushi ID
 endpoints `hub` calls. Four of them sign a machine in and read the account, for `hub login`,
 `hub logout`, `hub whoami` and `hub license`. The other two serve `hub add sushiengine` and
 `hub update sushiengine`: `POST /api/licenses/token` issues the licence token `hub` writes beside a
@@ -34,6 +35,19 @@ One JSON object per line, UTF-8, in the order the command produced them. Keys ar
 Every command ends with exactly one `result`. Its `ok` mirrors the process exit code, and its
 `payload` carries whatever the command computed: `hub status` puts the module list there, `hub home`
 the workspace and dependency paths. A command with nothing to report sends an empty object.
+
+## The status payload
+
+`status.schema.json` fixes the payload of `hub status`, because the desktop application's Installs
+and Modules screens draw from it. Every key is always present. A fact `hub` could not read is
+`null`: a detached HEAD has no `branch`, a checkout without an upstream has no `ahead` or
+`behind`, one that was never fetched has no `last_fetch`.
+
+Plain `hub status` reads the disk and never the network, so `ahead` and `behind` count against
+the last fetch. `hub status --check-updates` is the one online form: it fetches every checkout
+first and asks Sushi ID for every binary install's latest release, sets `checked_updates` to
+true, and fills `latest_version`. A check that fails, because nobody is signed in or the network
+is down, leaves its field `null`, prints one `warn` line and keeps the exit code at 0.
 
 ## stdout and stderr
 
