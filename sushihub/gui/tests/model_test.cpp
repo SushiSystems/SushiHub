@@ -44,9 +44,9 @@ protected:
 
 }
 
-TEST_F(ScriptedRun, FoldsTheRecordedStreamIntoEveryProjection)
+TEST_F(ScriptedRun, FoldsTheHandWrittenStreamIntoEveryProjection)
 {
-    for (const std::string& line : fixture_lines("events/status.jsonl"))
+    for (const std::string& line : fixture_lines("events/all_kinds.jsonl"))
     {
         queue_.push(line);
     }
