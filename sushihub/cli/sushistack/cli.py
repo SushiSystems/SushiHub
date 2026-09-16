@@ -102,7 +102,7 @@ def status(
         False, "--json", help="Print machine-readable JSON instead of a table."),
     check_updates: bool = typer.Option(
         False, "--check-updates",
-        help="Fetch every checkout and ask Sushi ID for newer releases first."),
+        help="Fetch every checkout and ask Sushi Account for newer releases first."),
 ):
     """Show which modules are cloned and whether dependencies are present."""
     if json_output:
@@ -188,7 +188,7 @@ def update(
     """Bring the workspace and every present module up to date.
 
     A checkout, cloned or linked, is fast-forwarded with [cyan]git pull[/cyan]. A
-    binary install asks Sushi ID for the latest release and downloads it when the
+    binary install asks Sushi Account for the latest release and downloads it when the
     version differs from the installed one.
     """
     _finish(modules_svc.update(modules, dry_run=dry_run))
@@ -322,9 +322,9 @@ def gui_clean():
 
 @app.command("login")
 def login():
-    """Sign in to Sushi ID and keep the session in the credential store.
+    """Sign in to Sushi Account and keep the session in the credential store.
 
-    Prints a code, opens Sushi ID's device page in the browser, and waits there
+    Prints a code, opens Sushi Account's device page in the browser, and waits there
     until you approve it.
     """
     from .services import session as session_svc
@@ -333,21 +333,21 @@ def login():
 
 @app.command("logout")
 def logout():
-    """Forget the stored Sushi ID session on this machine."""
+    """Forget the stored Sushi Account session on this machine."""
     from .services import session as session_svc
     _finish(*session_svc.logout())
 
 
 @app.command("whoami")
 def whoami():
-    """Print the Sushi ID account this machine is signed in as."""
+    """Print the Sushi Account account this machine is signed in as."""
     from .services import session as session_svc
     _finish(*session_svc.whoami())
 
 
 @app.command("license")
 def license():
-    """Print the licences the signed-in Sushi ID account holds."""
+    """Print the licences the signed-in Sushi Account account holds."""
     from .services import session as session_svc
     _finish(*session_svc.license())
 

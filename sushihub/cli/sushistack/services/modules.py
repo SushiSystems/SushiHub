@@ -26,7 +26,7 @@ from ..config import (
 )
 from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import licence_file, releases, session
-from .identity import ReleaseInfo, SushiId, SushiIdError
+from .identity import ReleaseInfo, SushiAccount, SushiAccountError
 from .presence import Presence, describe, presence_of, read_release
 from .releases import ReleaseCorrupt
 
@@ -165,25 +165,25 @@ def _source_reachable(repo: str) -> bool:
         return False
 
 
-def _install_binary(name: str, dest: Path, client: SushiId,
+def _install_binary(name: str, dest: Path, client: SushiAccount,
                     info: ReleaseInfo | None = None) -> bool:
     """Unpack a release of *name* at *dest* and write its licence beside it.
 
     Args:
-        name: The module, which is also the product slug Sushi ID knows.
+        name: The module, which is also the product slug Sushi Account knows.
         dest: Where the module lives in the workspace.
-        client: A Sushi ID client with a live session.
+        client: A Sushi Account client with a live session.
         info: The release to install; the latest one when None.
 
     Returns:
-        Whether both landed. A refusal from Sushi ID, a download that does not
+        Whether both landed. A refusal from Sushi Account, a download that does not
         match what was declared and a directory that will not be written are all
         reported here and answered with False.
     """
     try:
         release = releases.install_release(name, dest, client, console, info=info)
         expires_at = licence_file.write_licence(dest, client, name)
-    except (SushiIdError, ReleaseCorrupt, OSError) as error:
+    except (SushiAccountError, ReleaseCorrupt, OSError) as error:
         console.error(f"{name}: {error}")
         return False
     console.success(f"{name}: installed binary {release.version} ({release.platform}) "
@@ -206,7 +206,7 @@ def _add_binary(name: str, dest: Path, requested: bool) -> bool:
     client = session.client()
     if client.access_token() is None:
         if requested:
-            console.error(f"{name}: a binary install needs a Sushi ID licence. "
+            console.error(f"{name}: a binary install needs a Sushi Account licence. "
                           "Run `hub login` first.")
         else:
             console.error(
@@ -218,7 +218,7 @@ def _add_binary(name: str, dest: Path, requested: bool) -> bool:
 
 
 def _update_binary(name: str, dest: Path) -> bool:
-    """Reinstall *name* when Sushi ID holds a release newer than the one at *dest*.
+    """Reinstall *name* when Sushi Account holds a release newer than the one at *dest*.
 
     Args:
         name: The module to refresh.
@@ -230,12 +230,12 @@ def _update_binary(name: str, dest: Path) -> bool:
     """
     client = session.client()
     if client.access_token() is None:
-        console.error(f"{name}: a binary install is refreshed through Sushi ID. "
+        console.error(f"{name}: a binary install is refreshed through Sushi Account. "
                       "Run `hub login` first.")
         return False
     try:
         info = client.resolve_release(name, releases.host_platform())
-    except SushiIdError as error:
+    except SushiAccountError as error:
         console.error(f"{name}: {error}")
         return False
     installed = read_release(dest)
@@ -510,7 +510,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     """Bring every present module up to date. Return exit code.
 
     A checkout, cloned or linked, is fast-forwarded with git. A binary install
-    asks Sushi ID for the latest release and downloads it when its version
+    asks Sushi Account for the latest release and downloads it when its version
     differs from the installed one, then writes the licence again.
     """
     console.header("SushiStack Update")
@@ -536,7 +536,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
         if state is Presence.BINARY:
             any_present = True
             if dry_run:
-                console.info(f"{name}: (dry-run) would ask Sushi ID for a newer release ({dest})")
+                console.info(f"{name}: (dry-run) would ask Sushi Account for a newer release ({dest})")
                 continue
             if not _update_binary(name, dest):
                 failed = True

@@ -1,4 +1,4 @@
-"""Turning a release Sushi ID resolved into an unpacked module directory.
+"""Turning a release Sushi Account resolved into an unpacked module directory.
 
 Four steps in order: resolve, download, verify, unpack. Each is a function of
 its own so a test can run it alone, and :func:`install_release` is the only one
@@ -6,7 +6,7 @@ that knows the order. The archive is unpacked into a temporary directory beside
 the module's own and moved over it last, so a download that fails leaves the
 install that was there untouched.
 
-The shapes this reads are in ``sushihub/contract/sushi-id.md``; the reason a
+The shapes this reads are in ``sushihub/contract/sushi-account.md``; the reason a
 binary install exists at all is docs/agent/specs/2026-09-05-hub-design.md, §5.
 """
 
@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Callable, Iterable
 from urllib.parse import urlparse
 
-from .identity import ReleaseInfo, SushiId
+from .identity import ReleaseInfo, SushiAccount
 from .presence import RELEASE_MANIFEST, Release, read_release
 
 # How much of the body is read at a time, and so how often progress is reported.
@@ -35,12 +35,12 @@ DOWNLOAD_LABEL = "download"
 # How long one read of the download may stall before it is abandoned, in seconds.
 TIMEOUT = 60.0
 
-# The machine names Sushi ID knows under another spelling.
+# The machine names Sushi Account knows under another spelling.
 _ARCHITECTURES = {"amd64": "x64", "x86_64": "x64", "aarch64": "arm64"}
 
 
 class ReleaseCorrupt(RuntimeError):
-    """A downloaded release is not the one Sushi ID described."""
+    """A downloaded release is not the one Sushi Account described."""
 
 
 def host_platform() -> str:
@@ -49,7 +49,7 @@ def host_platform() -> str:
     Returns:
         ``windows-x64`` or ``linux-x64`` on the two platforms sushiengine ships
         for, and the system and machine joined by a hyphen anywhere else, which
-        Sushi ID answers with ``no_release``.
+        Sushi Account answers with ``no_release``.
     """
     system = platform.system().lower()
     machine = platform.machine().lower()
@@ -84,7 +84,7 @@ def download(url: str, dest: Path, *,
 
 
 def verify(path: Path, sha256: str, size: int) -> None:
-    """Check the file at *path* against the size and digest Sushi ID declared.
+    """Check the file at *path* against the size and digest Sushi Account declared.
 
     Args:
         path: The downloaded archive.
@@ -97,7 +97,7 @@ def verify(path: Path, sha256: str, size: int) -> None:
     measured = path.stat().st_size
     if measured != size:
         raise ReleaseCorrupt(
-            f"{path.name}: the size is {measured} bytes, not the {size} Sushi ID declared.")
+            f"{path.name}: the size is {measured} bytes, not the {size} Sushi Account declared.")
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(CHUNK), b""):
@@ -105,7 +105,7 @@ def verify(path: Path, sha256: str, size: int) -> None:
     if digest.hexdigest() != sha256:
         raise ReleaseCorrupt(
             f"{path.name}: the sha256 is {digest.hexdigest()}, not the {sha256} "
-            "Sushi ID declared.")
+            "Sushi Account declared.")
 
 
 def unpack(archive: Path, into: Path) -> None:
@@ -136,15 +136,15 @@ def unpack(archive: Path, into: Path) -> None:
             f"{archive.name}: carries no {RELEASE_MANIFEST} at its top level.")
 
 
-def install_release(name: str, root: Path, client: SushiId, console, *,
+def install_release(name: str, root: Path, client: SushiAccount, console, *,
                     info: ReleaseInfo | None = None,
                     http: Callable = urllib.request.urlopen) -> Release:
     """Resolve, download, verify and unpack a release of *name* at *root*.
 
     Args:
-        name: The module, which is also the product slug Sushi ID knows.
+        name: The module, which is also the product slug Sushi Account knows.
         root: The directory the module occupies in the workspace.
-        client: A Sushi ID client with a live session.
+        client: A Sushi Account client with a live session.
         console: Where the download's progress events go.
         info: The release to install; the latest one, resolved through *client*,
             when None.
@@ -156,7 +156,7 @@ def install_release(name: str, root: Path, client: SushiId, console, *,
     Raises:
         ReleaseCorrupt: The download does not match what was declared, or the
             archive is not a release.
-        SushiIdError: Sushi ID refused to resolve a release for this account.
+        SushiAccountError: Sushi Account refused to resolve a release for this account.
     """
     info = info or client.resolve_release(name, host_platform())
     root.parent.mkdir(parents=True, exist_ok=True)

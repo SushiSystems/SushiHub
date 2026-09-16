@@ -1,7 +1,7 @@
-"""The Sushi ID client: the device grant, the account read, licences and releases.
+"""The Sushi Account client: the device grant, the account read, licences and releases.
 
 One class over the six endpoints written down in
-``sushihub/contract/sushi-id.md``. It prints nothing and asks nothing: the
+``sushihub/contract/sushi-account.md``. It prints nothing and asks nothing: the
 commands in ``sushistack.services.session`` own the terminal, and the credential
 store arrives as a :class:`~sushistack.services.token_store.TokenStore`. The
 clock, the sleep and the HTTP opener are constructor arguments so a test can run
@@ -78,11 +78,11 @@ class Account:
     licenses: tuple[Licence, ...]
 
 
-class SushiIdError(RuntimeError):
-    """A Sushi ID call this client could not carry through."""
+class SushiAccountError(RuntimeError):
+    """A Sushi Account call this client could not carry through."""
 
 
-class LoginError(SushiIdError):
+class LoginError(SushiAccountError):
     """The device grant ended without tokens."""
 
 
@@ -94,20 +94,20 @@ class LoginExpired(LoginError):
     """The grant ran out before the person completed it."""
 
 
-class NoLicence(SushiIdError):
+class NoLicence(SushiAccountError):
     """The account holds no live licence for the product that was asked for."""
 
 
-class NoRelease(SushiIdError):
+class NoRelease(SushiAccountError):
     """The product has no release for the platform that was asked for."""
 
 
-class UnknownProduct(SushiIdError):
-    """Sushi ID knows no product under that name."""
+class UnknownProduct(SushiAccountError):
+    """Sushi Account knows no product under that name."""
 
 
-class SushiId:
-    """Speaks the six Sushi ID endpoints and keeps one session in a store."""
+class SushiAccount:
+    """Speaks the six Sushi Account endpoints and keeps one session in a store."""
 
     def __init__(self, base_url: str, store: TokenStore, *,
                  http: Callable = urllib.request.urlopen,
@@ -128,7 +128,7 @@ class SushiId:
         """
         status, body = self._post("/api/device/code", {"client_id": CLIENT_ID})
         if status != 200:
-            raise LoginError(f"Sushi ID refused to start the login (HTTP {status}).")
+            raise LoginError(f"Sushi Account refused to start the login (HTTP {status}).")
         return DeviceCode(
             device_code=str(body["device_code"]),
             user_code=str(body["user_code"]),
@@ -170,7 +170,7 @@ class SushiId:
             if error == "slow_down":
                 interval *= 2
             elif error != "authorization_pending":
-                raise LoginError(f"Sushi ID answered '{error or status}' while polling.")
+                raise LoginError(f"Sushi Account answered '{error or status}' while polling.")
             if self._now() >= deadline:
                 raise LoginExpired("The sign-in code expired. Run `hub login` again.")
             self._sleep(interval)
@@ -219,8 +219,8 @@ class SushiId:
 
         Raises:
             NoLicence: The account holds no live licence for *product*.
-            UnknownProduct: Sushi ID knows no such product.
-            SushiIdError: Nobody is signed in, or the endpoint refused otherwise.
+            UnknownProduct: Sushi Account knows no such product.
+            SushiAccountError: Nobody is signed in, or the endpoint refused otherwise.
         """
         status, body = self._bearer_post("/api/licenses/token", {"product": product})
         if status != 200:
@@ -241,8 +241,8 @@ class SushiId:
         Raises:
             NoLicence: The account holds no live licence for *product*.
             NoRelease: The product has no release for *platform*.
-            UnknownProduct: Sushi ID knows no such product.
-            SushiIdError: Nobody is signed in, or the endpoint refused otherwise.
+            UnknownProduct: Sushi Account knows no such product.
+            SushiAccountError: Nobody is signed in, or the endpoint refused otherwise.
         """
         request = {"product": product, "platform": platform}
         if version is not None:
@@ -258,23 +258,23 @@ class SushiId:
                            expires_at=str(body.get("expires_at", "")))
 
     def logout(self) -> None:
-        """Forget the stored session. Sushi ID is not told."""
+        """Forget the stored session. Sushi Account is not told."""
         self._store.clear()
 
     def _bearer_post(self, path: str, body: dict) -> tuple[int, dict]:
         """POST *body* to *path* under a live access token.
 
         Raises:
-            SushiIdError: Nobody is signed in on this machine.
+            SushiAccountError: Nobody is signed in on this machine.
         """
         token = self.access_token()
         if token is None:
-            raise SushiIdError("Not signed in to Sushi ID. Run `hub login`.")
+            raise SushiAccountError("Not signed in to Sushi Account. Run `hub login`.")
         return self._post(path, body, token=token)
 
     @staticmethod
     def _refuse(status: int, body: dict, subject: str) -> None:
-        """Raise the error Sushi ID's refusal of *subject* names.
+        """Raise the error Sushi Account's refusal of *subject* names.
 
         Args:
             status: The status the endpoint answered.
@@ -282,19 +282,19 @@ class SushiId:
             subject: What was asked for, as the message says it.
 
         Raises:
-            NoLicence, NoRelease, UnknownProduct, SushiIdError: Always; which one
+            NoLicence, NoRelease, UnknownProduct, SushiAccountError: Always; which one
                 follows the ``error`` the body names, then the status.
         """
         error = str(body.get("error", ""))
         if error == "no_licence":
             raise NoLicence(f"This account holds no live licence for {subject}.")
         if error == "unknown_product":
-            raise UnknownProduct(f"Sushi ID knows no product called {subject}.")
+            raise UnknownProduct(f"Sushi Account knows no product called {subject}.")
         if error == "no_release":
-            raise NoRelease(f"Sushi ID has no release of {subject}.")
+            raise NoRelease(f"Sushi Account has no release of {subject}.")
         if status == 429:
-            raise SushiIdError("Sushi ID is rate-limiting this account. Try again later.")
-        raise SushiIdError(f"Sushi ID refused to serve {subject} (HTTP {status}).")
+            raise SushiAccountError("Sushi Account is rate-limiting this account. Try again later.")
+        raise SushiAccountError(f"Sushi Account refused to serve {subject} (HTTP {status}).")
 
     def _remember(self, body: dict, *, refresh_token: str) -> Tokens:
         """Store the access token in *body* against this clock, and return it."""
@@ -338,7 +338,7 @@ class SushiId:
         except urllib.error.HTTPError as error:
             return error.code, _parse(error.read())
         except urllib.error.URLError as error:
-            raise LoginError(f"Sushi ID at {self._base} is unreachable: {error.reason}") from error
+            raise LoginError(f"Sushi Account at {self._base} is unreachable: {error.reason}") from error
         with response:
             return getattr(response, "status", 200), _parse(response.read())
 

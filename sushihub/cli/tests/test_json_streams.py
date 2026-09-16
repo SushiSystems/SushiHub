@@ -14,10 +14,10 @@ from typer.testing import CliRunner
 from sushicore.workspace import WORKSPACE_CLI_DIR
 from sushistack.cli import app
 from sushistack.services import session
-from sushistack.services.identity import SushiId
+from sushistack.services.identity import SushiAccount
 from sushistack.services.token_store import MemoryStore, Tokens
 
-from .test_identity import fake_id  # noqa: F401  the fake Sushi ID server fixture
+from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 
 CONTRACT = Path(__file__).resolve().parents[2] / "contract"
 MANIFESTS = Path(__file__).resolve().parents[1] / "manifests"
@@ -158,9 +158,9 @@ def test_gui_clean_under_json_streams_valid_events(workspace):
 
 @pytest.fixture
 def signed_in(fake_id, monkeypatch):
-    """Point the four Sushi ID commands at the fake server with a live session."""
+    """Point the four Sushi Account commands at the fake server with a live session."""
     store = MemoryStore(Tokens("access-1", "refresh-1", 1e12))
-    client = SushiId(fake_id.url, store,
+    client = SushiAccount(fake_id.url, store,
                      sleep=lambda seconds: setattr(fake_id.state, "approved", True))
     monkeypatch.setattr(session, "client", lambda: client)
     monkeypatch.setattr(webbrowser, "open", lambda uri: True)

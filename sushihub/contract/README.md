@@ -9,7 +9,7 @@ not a case for the reader to tolerate.
 
 The design behind them is `docs/agent/specs/2026-09-05-hub-design.md`, section 7.
 
-A fourth file in this directory, `sushi-id.md`, is the other half of the contract: the six Sushi ID
+A fourth file in this directory, `sushi-account.md`, is the other half of the contract: the six Sushi Account
 endpoints `hub` calls. Four of them sign a machine in and read the account, for `hub login`,
 `hub logout`, `hub whoami` and `hub license`. The other two serve `hub add sushiengine` and
 `hub update sushiengine`: `POST /api/licenses/token` issues the licence token `hub` writes beside a
@@ -45,7 +45,7 @@ and Modules screens draw from it. Every key is always present. A fact `hub` coul
 
 Plain `hub status` reads the disk and never the network, so `ahead` and `behind` count against
 the last fetch. `hub status --check-updates` is the one online form: it fetches every checkout
-first and asks Sushi ID for every binary install's latest release, sets `checked_updates` to
+first and asks Sushi Account for every binary install's latest release, sets `checked_updates` to
 true, and fills `latest_version`. A check that fails, because nobody is signed in or the network
 is down, leaves its field `null`, prints one `warn` line and keeps the exit code at 0.
 

@@ -1,4 +1,4 @@
-"""Sushi ID: where the base URL comes from, the token store, the client, the commands."""
+"""Sushi Account: where the base URL comes from, the token store, the client, the commands."""
 
 from __future__ import annotations
 
@@ -25,8 +25,8 @@ from sushistack.services.identity import (
     NoLicence,
     NoRelease,
     ReleaseInfo,
-    SushiId,
-    SushiIdError,
+    SushiAccount,
+    SushiAccountError,
     UnknownProduct,
 )
 from sushistack.services.token_store import (
@@ -39,7 +39,7 @@ from sushistack.services.token_store import (
 
 
 def _workspace_with_identity(tmp_path, url: str):
-    """Write a throwaway workspace whose config.toml pins the Sushi ID url."""
+    """Write a throwaway workspace whose config.toml pins the Sushi Account url."""
     (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
     (tmp_path / WORKSPACE_CLI_DIR).mkdir(parents=True)
     (tmp_path / WORKSPACE_CLI_DIR / "config.toml").write_text(
@@ -50,20 +50,20 @@ def _workspace_with_identity(tmp_path, url: str):
 def test_identity_url_prefers_env(monkeypatch, tmp_path):
     _workspace_with_identity(tmp_path, "http://127.0.0.1:9001")
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    monkeypatch.setenv("SUSHI_ID_URL", "http://127.0.0.1:8123/")
+    monkeypatch.setenv("SUSHI_ACCOUNT_URL", "http://127.0.0.1:8123/")
     assert identity_url() == "http://127.0.0.1:8123"
 
 
 def test_identity_url_reads_the_config_key(monkeypatch, tmp_path):
     _workspace_with_identity(tmp_path, "http://127.0.0.1:9001/")
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    monkeypatch.delenv("SUSHI_ID_URL", raising=False)
+    monkeypatch.delenv("SUSHI_ACCOUNT_URL", raising=False)
     assert identity_url() == "http://127.0.0.1:9001"
 
 
 def test_identity_url_defaults_when_no_workspace_and_no_key(monkeypatch, tmp_path):
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    monkeypatch.delenv("SUSHI_ID_URL", raising=False)
+    monkeypatch.delenv("SUSHI_ACCOUNT_URL", raising=False)
     assert identity_url() == DEFAULT_IDENTITY_URL
 
 
@@ -135,7 +135,7 @@ def test_keyring_store_clear_is_quiet_when_nothing_is_stored(backend):
 
 
 class FakeIdState:
-    """What the fake Sushi ID remembers between two requests."""
+    """What the fake Sushi Account remembers between two requests."""
 
     def __init__(self) -> None:
         """Start with a grant nobody has approved yet and one licensed release."""
@@ -165,7 +165,7 @@ def _handler_for(state: FakeIdState):
     """Build a request handler answering the six endpoints out of *state*."""
 
     class Handler(BaseHTTPRequestHandler):
-        """The six routes of sushihub/contract/sushi-id.md, served from memory."""
+        """The six routes of sushihub/contract/sushi-account.md, served from memory."""
 
         def log_message(self, fmt, *args):
             """Say nothing; the assertions are the test's output, not an access log."""
@@ -298,7 +298,7 @@ def fake_id():
 
 
 def test_start_device_login_returns_the_code_and_the_uri(fake_id):
-    code = SushiId(fake_id.url, MemoryStore()).start_device_login()
+    code = SushiAccount(fake_id.url, MemoryStore()).start_device_login()
     assert code.user_code == "WXYZ-1234"
     assert code.verification_uri == "http://127.0.0.1/activate"
     assert code.interval == 1
@@ -312,7 +312,7 @@ def test_wait_for_token_polls_until_the_grant_is_approved(fake_id):
         sleeps.append(seconds)
         fake_id.state.approved = True
 
-    client = SushiId(fake_id.url, store, sleep=sleep, now=lambda: 100.0)
+    client = SushiAccount(fake_id.url, store, sleep=sleep, now=lambda: 100.0)
     tokens = client.wait_for_token(client.start_device_login())
     assert tokens.access_token == "access-1" and tokens.refresh_token == "refresh-1"
     assert tokens.expires_at == 100.0 + 3600
@@ -329,14 +329,14 @@ def test_slow_down_doubles_the_interval_once(fake_id):
         if len(sleeps) == 2:
             fake_id.state.approved = True
 
-    client = SushiId(fake_id.url, MemoryStore(), sleep=sleep)
+    client = SushiAccount(fake_id.url, MemoryStore(), sleep=sleep)
     client.wait_for_token(client.start_device_login())
     assert sleeps == [2, 2]
 
 
 def test_wait_for_token_reports_each_poll(fake_id):
     polls: list[int] = []
-    client = SushiId(fake_id.url, MemoryStore(),
+    client = SushiAccount(fake_id.url, MemoryStore(),
                      sleep=lambda seconds: setattr(fake_id.state, "approved", True))
     client.wait_for_token(client.start_device_login(), on_poll=polls.append)
     assert polls == [1, 2]
@@ -344,28 +344,28 @@ def test_wait_for_token_reports_each_poll(fake_id):
 
 def test_access_denied_ends_the_login(fake_id):
     fake_id.state.denied = True
-    client = SushiId(fake_id.url, MemoryStore(), sleep=lambda seconds: None)
+    client = SushiAccount(fake_id.url, MemoryStore(), sleep=lambda seconds: None)
     with pytest.raises(LoginDenied):
         client.wait_for_token(client.start_device_login())
 
 
 def test_expired_token_ends_the_login(fake_id):
     fake_id.state.expired = True
-    client = SushiId(fake_id.url, MemoryStore(), sleep=lambda seconds: None)
+    client = SushiAccount(fake_id.url, MemoryStore(), sleep=lambda seconds: None)
     with pytest.raises(LoginExpired):
         client.wait_for_token(client.start_device_login())
 
 
 def test_access_token_is_returned_untouched_while_it_lives(fake_id):
     store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
-    client = SushiId(fake_id.url, store, now=lambda: 900.0)
+    client = SushiAccount(fake_id.url, store, now=lambda: 900.0)
     assert client.access_token() == "access-1"
     assert fake_id.state.refreshes == 0
 
 
 def test_access_token_refreshes_inside_the_thirty_second_margin(fake_id):
     store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
-    client = SushiId(fake_id.url, store, now=lambda: 980.0)
+    client = SushiAccount(fake_id.url, store, now=lambda: 980.0)
     assert client.access_token() == "access-2"
     assert fake_id.state.refreshes == 1
     assert store.load() == Tokens("access-2", "refresh-1", 980.0 + 3600)
@@ -374,19 +374,19 @@ def test_access_token_refreshes_inside_the_thirty_second_margin(fake_id):
 def test_a_refused_refresh_clears_the_store(fake_id):
     fake_id.state.refresh_ok = False
     store = MemoryStore(Tokens("access-1", "", 1000.0))
-    client = SushiId(fake_id.url, store, now=lambda: 980.0)
+    client = SushiAccount(fake_id.url, store, now=lambda: 980.0)
     assert client.access_token() is None
     assert store.load() is None
 
 
 def test_me_is_none_with_an_empty_store(fake_id):
-    assert SushiId(fake_id.url, MemoryStore()).me() is None
+    assert SushiAccount(fake_id.url, MemoryStore()).me() is None
     assert fake_id.state.bearers == []
 
 
 def test_me_reads_the_account_and_its_licences(fake_id):
     store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
-    account = SushiId(fake_id.url, store, now=lambda: 900.0).me()
+    account = SushiAccount(fake_id.url, store, now=lambda: 900.0).me()
     assert account == Account("acc-1", "dev@sushisystems.io", (
         Licence("sushiengine", "account", "2027-03-01"),
         Licence("sushiai", "org", None)))
@@ -395,13 +395,13 @@ def test_me_reads_the_account_and_its_licences(fake_id):
 
 def test_logout_forgets_the_session(fake_id):
     store = MemoryStore(Tokens("access-1", "refresh-1", 1000.0))
-    SushiId(fake_id.url, store).logout()
+    SushiAccount(fake_id.url, store).logout()
     assert store.load() is None
 
 
-def _signed_in(fake_id) -> SushiId:
+def _signed_in(fake_id) -> SushiAccount:
     """Build a client whose store already holds a live session."""
-    return SushiId(fake_id.url, MemoryStore(Tokens("access-1", "refresh-1", 1e12)),
+    return SushiAccount(fake_id.url, MemoryStore(Tokens("access-1", "refresh-1", 1e12)),
                    now=lambda: 0.0)
 
 
@@ -446,14 +446,14 @@ def test_resolve_release_reports_an_unknown_product(fake_id):
 
 
 def test_a_licence_token_without_a_session_is_refused_before_the_request(fake_id):
-    with pytest.raises(SushiIdError):
-        SushiId(fake_id.url, MemoryStore()).licence_token("sushiengine")
+    with pytest.raises(SushiAccountError):
+        SushiAccount(fake_id.url, MemoryStore()).licence_token("sushiengine")
     assert fake_id.state.bearers == []
 
 
 def _bind(monkeypatch, fake_id, store, **kwargs):
     """Point the four commands at *fake_id* with *store* as their credential store."""
-    client = SushiId(fake_id.url, store, **kwargs)
+    client = SushiAccount(fake_id.url, store, **kwargs)
     monkeypatch.setattr(session, "client", lambda: client)
     return client
 

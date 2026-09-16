@@ -230,7 +230,7 @@ void SettingsScreen::draw_account_row()
                               : (run.state().finished ? std::string("Not signed in")
                                                       : std::string());
 
-    draw_row("Sushi ID", "The account this machine holds its licences under.", value,
+    draw_row("Sushi Account", "The account this machine holds its licences under.", value,
              [this, signed_in]()
              {
                  if (signed_in)

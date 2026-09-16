@@ -86,19 +86,19 @@ def registered_modules() -> dict[str, str]:
     mods = doc.get("modules", {})
     return {k: str(v) for k, v in mods.items() if isinstance(v, str)}
 
-# Sushi ID's base URL when neither the environment nor the config names one. The
-# four endpoints under it are written down in sushihub/contract/sushi-id.md.
+# Sushi Account's base URL when neither the environment nor the config names one. The
+# four endpoints under it are written down in sushihub/contract/sushi-account.md.
 DEFAULT_IDENTITY_URL = "https://account.sushisystems.io"
 
 
 def identity_url() -> str:
-    """Return the Sushi ID base URL, without its trailing slash.
+    """Return the Sushi Account base URL, without its trailing slash.
 
-    Reads ``SUSHI_ID_URL`` first, then ``[identity] url`` from config.local.toml
+    Reads ``SUSHI_ACCOUNT_URL`` first, then ``[identity] url`` from config.local.toml
     and config.toml, then :data:`DEFAULT_IDENTITY_URL`. Outside a workspace only
     the environment and the default are available.
     """
-    override = os.environ.get("SUSHI_ID_URL")
+    override = os.environ.get("SUSHI_ACCOUNT_URL")
     if override:
         return override.rstrip("/")
     try:
