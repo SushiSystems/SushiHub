@@ -1,10 +1,10 @@
-"""The four Sushi ID commands: what `hub login`, `logout`, `whoami` and `license` do.
+"""The four Sushi Account commands: what `hub login`, `logout`, `whoami` and `license` do.
 
-Each function drives :class:`~sushistack.services.identity.SushiId` and writes to
+Each function drives :class:`~sushistack.services.identity.SushiAccount` and writes to
 the console, and returns the exit code and the payload the ``result`` event
 carries. One factory, :func:`client`, decides which server and which credential
-store every Sushi ID call in `hub` talks to, so a test replaces the pair in one
-place. The endpoints are in ``sushihub/contract/sushi-id.md``.
+store every Sushi Account call in `hub` talks to, so a test replaces the pair in one
+place. The endpoints are in ``sushihub/contract/sushi-account.md``.
 """
 
 from __future__ import annotations
@@ -14,7 +14,7 @@ from typing import Callable, NamedTuple
 
 from .. import console
 from ..config import identity_url
-from .identity import Account, LoginError, SushiId
+from .identity import Account, LoginError, SushiAccount
 from .token_store import KeyringStore
 
 # The label every progress event of the login carries.
@@ -28,16 +28,16 @@ class Outcome(NamedTuple):
     payload: dict
 
 
-def client() -> SushiId:
-    """Build the client every Sushi ID call uses: the configured server, the keyring."""
-    return SushiId(identity_url(), KeyringStore())
+def client() -> SushiAccount:
+    """Build the client every Sushi Account call uses: the configured server, the keyring."""
+    return SushiAccount(identity_url(), KeyringStore())
 
 
 def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
     """Run the device grant to its end and store the session.
 
     Prints the user code and the verification URI, opens that URI in the
-    browser, then reports one progress event per poll until Sushi ID answers.
+    browser, then reports one progress event per poll until Sushi Account answers.
 
     Args:
         open_browser: What opens the verification URI; :func:`webbrowser.open`
@@ -50,7 +50,7 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
         console.error(str(error))
         return Outcome(1, {})
 
-    console.info(f"Your Sushi ID code is {code.user_code}.")
+    console.info(f"Your Sushi Account code is {code.user_code}.")
     console.info(f"Open {code.verification_uri} and enter it.")
     (open_browser or webbrowser.open)(code.verification_uri)
 
@@ -63,14 +63,14 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
 
     account = id_client.me()
     email = account.email if account else ""
-    console.success(f"Signed in to Sushi ID as {email}." if email else "Signed in to Sushi ID.")
+    console.success(f"Signed in to Sushi Account as {email}." if email else "Signed in to Sushi Account.")
     return Outcome(0, {"email": email})
 
 
 def logout() -> Outcome:
     """Forget the stored session, whether or not there was one."""
     client().logout()
-    console.success("Signed out of Sushi ID.")
+    console.success("Signed out of Sushi Account.")
     return Outcome(0, {})
 
 
@@ -85,7 +85,7 @@ def whoami() -> Outcome:
         [["Account", account.account_id],
          ["Email", account.email],
          ["Licences", str(len(account.licenses))]],
-        title="Sushi ID",
+        title="Sushi Account",
     )
     return Outcome(0, _payload(account))
 
@@ -103,7 +103,7 @@ def license() -> Outcome:
         ["Product", "Holder", "Expires"],
         [[item.product, item.holder, item.expires_at or "never"]
          for item in account.licenses],
-        title="Sushi ID Licences",
+        title="Sushi Account Licences",
     )
     return Outcome(0, {"licenses": _payload(account)["licenses"]})
 

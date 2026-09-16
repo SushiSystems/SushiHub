@@ -3,6 +3,8 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-16 — Renamed Sushi ID to Sushi Account, which is what sushiweb calls it (`sushihub/contract/sushi-account.md`, `sushihub/cli/sushistack/services/identity.py`).
+- 2026-09-16 — Renamed the identity override to `SUSHI_ACCOUNT_URL` and the credential store's username to `sushi-account` (`sushihub/cli/sushistack/config.py`, `sushihub/cli/sushistack/services/token_store.py`).
 - 2026-09-16 — Pointed the hub's Sushi ID address at `account.sushisystems.io`, where sushiweb serves it (`sushihub/cli/config.toml`, `sushihub/cli/sushistack/config.py`).
 - 2026-09-15 — Set the hub's version to 0.1.0 and drew it in the title bar from `hub --describe` (`sushihub/cli/pyproject.toml`, `sushihub/gui/src/ui/chrome/TitleBar.cpp`).
 - 2026-09-15 — Drew the install cards from the new status fields and split the GUI fixtures into recorded and hand-written (`sushihub/gui/src/model/InstallFacts.cpp`, `sushihub/gui/tests/fixtures/`).

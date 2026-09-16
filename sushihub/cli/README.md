@@ -14,7 +14,7 @@ sushihub/cli/
     config.py            workspace root, config dir, the registered-modules file
     gui_config.py        the desktop application's profile, config and root
     gui_env.py           its build environment, vcvars snapshot included
-    services/            module lifecycle, Sushi ID, releases, the licence file, the gui build policy
+    services/            module lifecycle, Sushi Account, releases, the licence file, the gui build policy
     setup/               the dependency engine: manifests, package managers, toolchains, the pipeline
   manifests/             dependency fragments this repository ships (*.deps.toml)
   config.toml            defaults for the [tool], [cli] and [identity] tables
@@ -36,9 +36,9 @@ them. See "Machine-readable output".
 | `hub add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|sushidsp\|all> [--dry-run] [--skip-install] [--binary]` | Bring one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `hub install`. `--binary` installs sushiengine from its release rather than its source; see "Binary installs". Aliases: `sr`, `se`, `sa`, `sb`, `sd`. |
 | `hub link <module> <path> [--dry-run] [--skip-install]` | Register an existing checkout outside the workspace as a module, without cloning, then provision what it declares. `--skip-install` leaves that to a later `hub install`. Same names and aliases as `hub add`. |
 | `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `hub add`. |
-| `hub update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi ID for the latest release and downloads it when the version differs. No arguments means all. |
+| `hub update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi Account for the latest release and downloads it when the version differs. No arguments means all. |
 | `hub sync [--dry-run]` | Install missing dependencies, then update every module. |
-| `hub status [--json] [--check-updates]` | Which modules are present, in which form, on which branch and how far from upstream, and whether dependencies are installed. It reads the disk only; `--check-updates` first fetches every checkout and asks Sushi ID for each binary install's latest release. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
+| `hub status [--json] [--check-updates]` | Which modules are present, in which form, on which branch and how far from upstream, and whether dependencies are installed. It reads the disk only; `--check-updates` first fetches every checkout and asks Sushi Account for each binary install's latest release. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `hub doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `hub remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
 | `hub home` | Print the workspace root and the `dependencies/` path. |
@@ -46,8 +46,8 @@ them. See "Machine-readable output".
 | `hub gui test [--filter <pattern>] [--repeat <n>]` | Run the application's CTest suites. `--filter` selects by test name, `--repeat` re-runs each until it fails. |
 | `hub gui run [target] [-- args…]` | Launch a program from the application's build tree; the application itself when no target is named. |
 | `hub gui clean` | Remove `sushihub/gui/build/hub`. The presets' own build trees are untouched. |
-| `hub login` | Sign in to Sushi ID: print a code, open the browser at the device page, wait for the grant, and store the session in this machine's credential store. |
-| `hub logout` | Forget the stored Sushi ID session. Sushi ID is not told. |
+| `hub login` | Sign in to Sushi Account: print a code, open the browser at the device page, wait for the grant, and store the session in this machine's credential store. |
+| `hub logout` | Forget the stored Sushi Account session. Sushi Account is not told. |
 | `hub whoami` | Print the signed-in account: its id, its email and how many licences it holds. |
 | `hub license` | Print one row per licence on the account: product, holder (`account` or `org`), expiry. |
 
@@ -75,16 +75,16 @@ shapes, the stdout rule and the prompt rule for whoever is on the other end.
 sushiengine is sold; the other four modules are not. `hub login` is how a machine proves a licence,
 and nothing else in `hub` needs it: cloning an open-source module asks only for a Git identity.
 
-`hub login` asks Sushi ID for a device code, prints it with the page to type it into, opens that page
+`hub login` asks Sushi Account for a device code, prints it with the page to type it into, opens that page
 in the browser, and polls until you approve it there. What comes back — an access token, a refresh
 token and an expiry — goes into the operating system's credential store through `keyring`, under
-service `sushistack` and username `sushi-id`. A later command that needs the account refreshes the
+service `sushistack` and username `sushi-account`. A later command that needs the account refreshes the
 access token when it is within 30 seconds of expiry; when the refresh is refused, the stored session
 is dropped and the command says nobody is signed in.
 
-Sushi ID lives at `https://account.sushisystems.io`, from `[identity] url` in `config.toml`.
-`SUSHI_ID_URL` overrides it, which is how the tests point every Sushi ID call at a fake server on
-`127.0.0.1`. The six endpoints are written out in `../contract/sushi-id.md`; sushiweb has not built
+Sushi Account lives at `https://account.sushisystems.io`, from `[identity] url` in `config.toml`.
+`SUSHI_ACCOUNT_URL` overrides it, which is how the tests point every Sushi Account call at a fake server on
+`127.0.0.1`. The six endpoints are written out in `../contract/sushi-account.md`; sushiweb has not built
 them yet.
 
 ## Binary installs
@@ -92,17 +92,17 @@ them yet.
 `hub add sushiengine` decides between the two forms rather than being told. It asks the private
 repository whether this machine's Git identity reaches it, with `git ls-remote --exit-code` under a
 15-second timeout. If it does, the module is cloned like any other. If it does not, `hub` needs a
-Sushi ID session: with one it downloads the release, without one it names both ways in and stops.
+Sushi Account session: with one it downloads the release, without one it names both ways in and stops.
 `--binary` skips the question and goes straight to the release. The other four modules are open
 source and have one path; `--binary` on any of them is refused.
 
 The download is what `sushiweb` signed a URL for. `hub` streams it, refuses to unpack it when either
-the size or the sha256 differs from what Sushi ID declared, unpacks it into a directory beside
+the size or the sha256 differs from what Sushi Account declared, unpacks it into a directory beside
 `<workspace>/sushiengine`, and renames that over the module last, so a download that fails leaves
 the install that was there untouched. The release carries `sushi-release.json` at its top level:
 that file is what makes the directory a binary install, and `hub status` reads the version out of it
-("binary 1.4.2"). Beside it `hub` writes `sushi-licence.jwt`, the licence token Sushi ID issued,
-which the engine reads at start-up and verifies offline against Sushi ID's JWKS.
+("binary 1.4.2"). Beside it `hub` writes `sushi-licence.jwt`, the licence token Sushi Account issued,
+which the engine reads at start-up and verifies offline against Sushi Account's JWKS.
 
 A release brings its own sushiruntime and sushiblas, so it declares no dependency fragment and
 nothing provisions after it: a licensed user never downloads a SYCL toolchain. It also installs no
@@ -141,7 +141,7 @@ fragment declares a dependency of that name, so an empty workspace gets the base
 | `<workspace>/sushiengine/sushi-release.json` | the release | Product, version, platform and what the package bundles. Its presence is what makes the directory a binary install. |
 | `<workspace>/sushiengine/sushi-licence.jwt` | `hub add`, `hub update` | The licence token the engine reads at start-up. Nothing but the token. |
 | `<workspace>/dependencies/` | `hub install`, `hub remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |
-| OS credential store, `sushistack` / `sushi-id` | `hub login`, `hub logout` | The Sushi ID session as one JSON document: both tokens and the access token's expiry. |
+| OS credential store, `sushistack` / `sushi-account` | `hub login`, `hub logout` | The Sushi Account session as one JSON document: both tokens and the access token's expiry. |
 
 ## Where sushicore comes from
 

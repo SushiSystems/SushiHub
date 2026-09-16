@@ -8,12 +8,12 @@ import json
 import pytest
 
 from sushistack.services import licence_file, modules, session
-from sushistack.services.identity import SushiId
+from sushistack.services.identity import SushiAccount
 from sushistack.services.licence_file import LICENCE_FILE
 from sushistack.services.presence import RELEASE_MANIFEST
 from sushistack.services.token_store import MemoryStore, Tokens
 
-from .test_identity import fake_id  # noqa: F401  the fake Sushi ID server fixture
+from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_presence import Recorder
 from .test_releases import release_members, zip_bytes
 
@@ -40,8 +40,8 @@ def recorder(monkeypatch):
 
 
 def sign_in(fake_id, monkeypatch, tokens=Tokens("access-1", "refresh-1", 1e12)):
-    """Point every Sushi ID call in `hub` at the fake server with *tokens* stored."""
-    client = SushiId(fake_id.url, MemoryStore(tokens), now=lambda: 0.0)
+    """Point every Sushi Account call in `hub` at the fake server with *tokens* stored."""
+    client = SushiAccount(fake_id.url, MemoryStore(tokens), now=lambda: 0.0)
     monkeypatch.setattr(session, "client", lambda: client)
     return client
 

@@ -1,4 +1,4 @@
-# Sushi ID: the six endpoints `hub` calls
+# Sushi Account: the six endpoints `hub` calls
 
 `hub login`, `hub logout`, `hub whoami` and `hub license` sign a machine in and read the account;
 `hub add sushiengine` and `hub update sushiengine` ask for a licence token and a release. None of the
@@ -26,7 +26,7 @@ Bodies are JSON in both directions; every request carries `Content-Type: applica
 waits between two polls. `verification_uri` is the page a person opens to type `user_code`.
 
 The base URL comes from `sushihub/cli/config.toml`'s `[identity] url`, which ships as
-`https://account.sushisystems.io`, and `SUSHI_ID_URL` overrides it.
+`https://account.sushisystems.io`, and `SUSHI_ACCOUNT_URL` overrides it.
 
 ## The device grant, step by step
 
@@ -40,7 +40,7 @@ The base URL comes from `sushihub/cli/config.toml`'s `[identity] url`, which shi
    with a message.
 4. On the first `200`, `hub` stores the access token, the refresh token and the expiry in the
    operating system's credential store through `keyring`, under service `sushistack` and username
-   `sushi-id`.
+   `sushi-account`.
 5. Every later command reads the store. Within 30 seconds of the access token's expiry it posts
    the refresh token to `/api/token/refresh` and stores the new access token. A `401` there means
    the session is gone and the command reports that nobody is signed in.
@@ -51,7 +51,7 @@ The base URL comes from `sushihub/cli/config.toml`'s `[identity] url`, which shi
 
 `hub whoami` and `hub license` both read `/api/me`. `holder` is `account` when the licence belongs to
 the person and `org` when it comes from an organization seat. `expires_at` is null for a licence
-that does not expire. `hub` decides nothing about a licence: it asks for a download URL and Sushi ID
+that does not expire. `hub` decides nothing about a licence: it asks for a download URL and Sushi Account
 answers or refuses.
 
 ## Releases and the licence file

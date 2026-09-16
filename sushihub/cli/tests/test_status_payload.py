@@ -11,10 +11,10 @@ import pytest
 
 from sushistack.services import status_report
 from sushistack.services.hub_install import ALIAS_MARKER
-from sushistack.services.identity import SushiId
+from sushistack.services.identity import SushiAccount
 from sushistack.services.token_store import MemoryStore
 
-from .test_identity import fake_id  # noqa: F401  the fake Sushi ID server fixture
+from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_identity import _signed_in
 from .test_presence import binary_install, workspace
 
@@ -38,9 +38,9 @@ def _real_checkout(path: Path) -> None:
     _git(path, "commit", "-q", "-m", "first")
 
 
-def _never_called() -> SushiId:
-    """Fail the test: the offline form must not build a Sushi ID client."""
-    pytest.fail("the offline status built a Sushi ID client")
+def _never_called() -> SushiAccount:
+    """Fail the test: the offline form must not build a Sushi Account client."""
+    pytest.fail("the offline status built a Sushi Account client")
 
 
 def test_the_offline_payload_matches_the_schema(tmp_path, monkeypatch):
@@ -110,7 +110,7 @@ def test_a_refused_check_leaves_null_and_one_warning(tmp_path, monkeypatch, fake
     binary_install(root / "sushiengine")
 
     report = status_report.build_status(
-        True, home=tmp_path, client_factory=lambda: SushiId(fake_id.url, MemoryStore()))
+        True, home=tmp_path, client_factory=lambda: SushiAccount(fake_id.url, MemoryStore()))
 
     row = next(r for r in report.payload["modules"] if r["name"] == "sushiengine")
     assert row["latest_version"] is None

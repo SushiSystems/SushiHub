@@ -4,7 +4,7 @@ Each fact has one reader: presence and the release manifest in
 :mod:`.presence`, the licence file in :mod:`.licence_file`, a checkout in
 :mod:`.git_state`, `hub` itself in :mod:`.hub_install`. This module only puts
 their answers where ``sushihub/contract/status.schema.json`` says they go.
-With ``check_updates`` it fetches every checkout and asks Sushi ID about every
+With ``check_updates`` it fetches every checkout and asks Sushi Account about every
 binary install first, through :mod:`.git_state` and :mod:`.update_check`, and
 collects what failed as warnings instead of printing them.
 """
@@ -18,7 +18,7 @@ from typing import Callable
 from ..config import deps_dir, registered_modules, workspace_root
 from . import git_state, licence_file, session
 from .hub_install import read_hub_install
-from .identity import SushiId
+from .identity import SushiAccount
 from .modules import MODULES, SUSHICORE_NAME, module_dest, sushicore_dir
 from .presence import Presence, describe, presence_of, read_release
 from .update_check import latest_release
@@ -47,14 +47,14 @@ def _source(path: Path, check_updates: bool, warnings: list[str], label: str) ->
 
 
 class _LazyClient:
-    """Builds the Sushi ID client the first time a binary install asks for it."""
+    """Builds the Sushi Account client the first time a binary install asks for it."""
 
-    def __init__(self, factory: Callable[[], SushiId]) -> None:
+    def __init__(self, factory: Callable[[], SushiAccount]) -> None:
         """Remember *factory* without calling it."""
         self._factory = factory
-        self._client: SushiId | None = None
+        self._client: SushiAccount | None = None
 
-    def get(self) -> SushiId:
+    def get(self) -> SushiAccount:
         """Return the client, building it on the first call."""
         if self._client is None:
             self._client = self._factory()
@@ -96,15 +96,15 @@ def _sushicore_row(root: Path) -> dict:
 
 
 def build_status(check_updates: bool = False, *, home: Path | None = None,
-                 client_factory: Callable[[], SushiId] = session.client) -> StatusReport:
+                 client_factory: Callable[[], SushiAccount] = session.client) -> StatusReport:
     """Collect the workspace, `hub`, every module and the dependency tree.
 
     Args:
-        check_updates: Fetch every checkout and ask Sushi ID about every binary
+        check_updates: Fetch every checkout and ask Sushi Account about every binary
             install before reading; the only form that touches the network.
         home: The home directory the alias is searched under; the user's own
             when None.
-        client_factory: Builds the Sushi ID client, called at most once and
+        client_factory: Builds the Sushi Account client, called at most once and
             only when an update check meets a binary install.
 
     Returns:

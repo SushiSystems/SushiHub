@@ -41,7 +41,7 @@ private:
     void draw_row(const char* title, const char* sentence, const std::string& value,
                   const Control& control);
 
-    /** @brief Draws the Sushi ID row and the sign-in or sign-out it offers. */
+    /** @brief Draws the Sushi Account row and the sign-in or sign-out it offers. */
     void draw_account_row();
 
     /** @brief Draws the workspace row and the change that only `hub`'s own start makes. */
