@@ -1,9 +1,9 @@
 """SushiStack developer CLI (`hub`).
 
 The umbrella that provisions one shared dependency tree for the whole stack and
-manages the module checkouts (sushiruntime, sushiengine, sushiai, sushiblas, sushidsp)
-that live inside the workspace. Each module keeps its own CLI — `sr`, `se`,
-`sa`, `sb`, `sd` — for building and testing; `hub` only owns downloading, installing,
+manages the module checkouts (sushiruntime, sushiengine, sushiai, sushiblas, sushidsp,
+sushitrack) that live inside the workspace. Each module keeps its own CLI — `sr`, `se`,
+`sa`, `sb`, `sd`, `st` — for building and testing; `hub` only owns downloading, installing,
 and module lifecycle.
 
 Thin Typer layer: commands parse arguments and delegate to the service layer in
@@ -119,7 +119,7 @@ def status(
 @app.command("add")
 def add(
     modules: List[str] = typer.Argument(
-        ..., help="Modules to bring in: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp | all."),
+        ..., help="Modules to bring in: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp | sushitrack | all."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't clone or install."),
     skip_install: bool = typer.Option(
         False, "--skip-install", help="Do not run the dependency install afterwards."),
@@ -129,7 +129,7 @@ def add(
 ):
     """Bring one or more stack modules into the workspace, with what they need.
 
-    Four of the five are cloned. sushiengine is cloned when this machine's Git
+    Five of the six are cloned. sushiengine is cloned when this machine's Git
     identity reaches its repository, and downloaded as a compiled release, with
     its licence file, when it does not or when [bold]--binary[/bold] is given.
     Each module that arrives by clone brings its own dependencies; they are
@@ -142,7 +142,7 @@ def add(
 @app.command("link")
 def link(
     module: str = typer.Argument(
-        ..., help="Module name: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp."),
+        ..., help="Module name: sushiruntime | sushiengine | sushiai | sushiblas | sushidsp | sushitrack."),
     path: str = typer.Argument(..., help="Path to an existing checkout of that module."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't write the link."),
     skip_install: bool = typer.Option(
@@ -162,10 +162,10 @@ def link(
 def install_cli(
     modules: List[str] = typer.Argument(
         ..., help="Modules whose CLI to install: sushiruntime | sushiengine | "
-                  "sushiai | sushiblas | sushidsp | all."),
+                  "sushiai | sushiblas | sushidsp | sushitrack | all."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't install."),
 ):
-    """Install a module's developer CLI (`sr`, `se`, `sa`, `sb`, `sd`) into an isolated pipx venv.
+    """Install a module's developer CLI (`sr`, `se`, `sa`, `sb`, `sd`, `st`) into an isolated pipx venv.
 
     The single install seam for the stack: no module ships its own bootstrap
     script. This installs the module's [cyan]cli/[/cyan] package and injects the

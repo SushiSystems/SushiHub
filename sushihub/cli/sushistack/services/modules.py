@@ -52,6 +52,7 @@ MODULES: dict[str, Module] = {
     "sushiai":      Module("sushiai",      "https://github.com/sushisystems/sushiai.git",      "sushiai"),
     "sushiblas":    Module("sushiblas",    "https://github.com/sushisystems/sushiblas.git",    "sushiblas"),
     "sushidsp":     Module("sushidsp",     "https://github.com/sushisystems/sushidsp.git",     "sushidsp"),
+    "sushitrack":   Module("sushitrack",   "https://github.com/sushisystems/sushitrack.git",   "sushitrack"),
 }
 
 # sushicore is the shared CLI presentation layer, not a stack build module: it
@@ -63,7 +64,7 @@ SUSHICORE_NAME = "sushicore"
 
 # The one module sold rather than published: it is cloned by whoever has access
 # to its repository and downloaded as a compiled release by everyone else. The
-# other four are open source and have a single path, the clone. See
+# other five are open source and have a single path, the clone. See
 # docs/agent/specs/2026-09-05-hub-design.md, §3.
 BINARY_MODULE = "sushiengine"
 
@@ -81,6 +82,7 @@ _ALIASES: dict[str, str] = {
     "sa": "sushiai",
     "sb": "sushiblas",
     "sd": "sushidsp",
+    "st": "sushitrack",
 }
 
 # Lines `hub init` ensures are present in the workspace .gitignore: the shared
