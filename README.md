@@ -18,7 +18,7 @@ The repository carries three things of its own:
 |---|---|---|
 | `sushihub/cli/` | The `hub` command: dependency provisioning and module lifecycle. | `sushihub/cli/README.md` |
 | `sushihub/gui/` | The desktop application: a screen for every `hub` command, over `hub --json`. | `sushihub/gui/README.md` |
-| `sushicore/` | The engine under every Sushi CLI (`hub`, `sr`, `se`, `sa`, `sb`, `sd`): console, config, workspace resolution, the cmake driver. | `sushicore/docs/README.md` |
+| `sushicore/` | The engine under every Sushi CLI (`hub`, `sr`, `se`, `sa`, `sb`, `sd`, `st`): console, config, workspace resolution, the cmake driver. | `sushicore/docs/README.md` |
 
 Everything else under the workspace root is a module checkout `hub add` produces, or the
 `dependencies/` tree `hub install` fills. Neither is tracked here.

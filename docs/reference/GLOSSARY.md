@@ -6,7 +6,7 @@ Words this repository uses in a specific sense.
 checkouts directly under it and one `dependencies/` tree beside them. `docs/architecture/WORKSPACE.md`.
 
 **Module** — one of the stack's buildable repositories: sushiruntime, sushiblas, sushiai, sushidsp,
-sushiengine. Each has a CLI (`sr`, `sb`, `sa`, `sd`, `se`) and a dependency fragment
+sushiengine, sushitrack. Each has a CLI (`sr`, `sb`, `sa`, `sd`, `se`, `st`) and a dependency fragment
 `cli/sushistack.deps.toml`. `sushicore` is not a module: it is never built and ships inside this
 repository.
 
