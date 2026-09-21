@@ -198,6 +198,12 @@ def _parse_manifest(path: Path, owner: str) -> tuple[list[Dependency], list[str]
     The reserved ``[module]`` table carries module metadata (currently the
     ``depends_on`` list) rather than a dependency, so it is pulled out here and
     never becomes a :class:`Dependency`.
+
+    Raises:
+        ValueError: A top-level key holds something other than a table. Skipping
+            it is how sushidsp's whole fragment went unread; a fragment shape
+            this function does not understand is a defect to report, not to
+            ignore.
     """
     with path.open("rb") as fh:
         doc = tomllib.load(fh)
@@ -205,7 +211,11 @@ def _parse_manifest(path: Path, owner: str) -> tuple[list[Dependency], list[str]
     deps: list[Dependency] = []
     for name, table in doc.items():
         if not isinstance(table, dict):
-            continue
+            raise ValueError(
+                f"{path}: '{name}' is a {type(table).__name__}, and a fragment declares one "
+                f"table per dependency. An array of [[{name}]] tables reads as a list here and "
+                f"was skipped in silence until 2026-09-22, which lost every dependency the file "
+                f"declared.")
         if name == MODULE_META_TABLE:
             depends_on = [str(m) for m in table.get("depends_on", [])]
             continue

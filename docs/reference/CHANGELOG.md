@@ -3,6 +3,7 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Refused a dependency fragment shape the reader cannot read, which used to be skipped in silence (`sushihub/cli/sushistack/setup/dependency_source.py`).
 - 2026-09-22 — Stopped reporting `sushicore` as a module in `hub status` (`sushihub/cli/sushistack/services/status_report.py`).
 - 2026-09-22 — Stopped pointing Linux builds at `~/vcpkg`, which Linux never uses (`sushihub/cli/sushistack/defaults.toml`).
 - 2026-09-22 — Re-recorded the desktop application's fixtures from a live `hub` (`sushihub/gui/tests/fixtures/`).
