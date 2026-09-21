@@ -19,7 +19,8 @@
 # only to override that (e.g. a custom clang path).
 generator = "Ninja"
 use_vcpkg = false
-vcpkg_root = "~/vcpkg"
+# No vcpkg_root here: Linux takes its libraries from apt -- every manifest entry says so --
+# and an explicit root would win over the provisioned tree for every build.
 oneapi_root = "/opt/intel/oneapi"
 
 [tool.windows]
