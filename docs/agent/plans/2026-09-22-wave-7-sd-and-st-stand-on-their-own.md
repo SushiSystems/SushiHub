@@ -178,7 +178,24 @@ git commit -m "refactor(cli): read dependency fragments through sushicore"
 
 ---
 
-### Task 3: `st setup`, the conda environment
+### Task 3: `st setup`, the conda environment — DEFERRED 2026-09-22
+
+**Deferred by the owner, and not because of conda.** `sushitrack`'s CLI carries no Python test
+at all: no `cli/tests/`, no pytest configuration, no `test` extra. Writing `st setup` there would
+either arrive untested, or arrive together with a test suite for a repository that has never had
+one — and which commands that suite should cover, and how CI would run it, is its own piece of
+work rather than a step inside this wave.
+
+Two things wait with it, both already decided and neither worth doing half:
+
+- `st setup` itself, in the shape below.
+- Deleting `cli/sushistack.deps.toml`. The reason holds — `environment.yml` carries `gtest` and
+  everything else — but removing a repository's only declaration while the command that replaces
+  it does not exist would leave the story true only in this plan.
+
+Wave 7 continues at task 4. The steps below stand as written for whoever picks it up.
+
+### Task 3 (deferred): `st setup`, the conda environment
 
 **Files** (repository `D:/Projects/sushitrack`):
 - Modify: `cli/sushitrack_cli/cli.py` and a new service module beside its siblings
@@ -350,11 +367,11 @@ git commit -m "docs: record that sd and st provision themselves"
 ## Order
 
 ```
-Task 1 (sushicore brick)  ->  Task 2 (hub delegates)  ->  Task 3 (st)  ->  Task 4 (sd)  ->  Task 5 (docs)
+Task 1 (sushicore brick)  ->  Task 2 (hub delegates)  ->  Task 4 (sd)  ->  Task 5 (docs)
+                              Task 3 (st) deferred, waits on a test suite for sushitrack's CLI
 ```
 
-Strictly serial. Task 1 is partly an owner step: publishing 0.3.0. Task 4 needs wave 6, because
-a manifest is only useful once `hub` reads one.
+Strictly serial. Task 1 was partly an owner step: `sushicore` 0.3.0 published 2026-09-22.
 
 ## What this wave does not do
 

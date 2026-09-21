@@ -46,6 +46,11 @@ read from one place. Waves 0 through 6 landed on 2026-09-22; waves 7 and 8 are o
 
 ## Outside the programme
 
+- **`sushitrack`'s CLI has no tests, so `st setup` waits.** The command that creates its conda
+  environment from `environment.yml` is designed and deferred: `cli/sushitrack_cli/` carries no
+  pytest suite, no configuration and no `test` extra, and deciding what such a suite covers is
+  its own task. Deleting its `cli/sushistack.deps.toml` waits with it. Plan:
+  `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md`, task 3.
 - **`hub add <git-url>` is unwritten.** A module can describe itself once its checkout exists,
   but a repository nobody has cloned is still reachable only through the catalog. Wave 6 left
   this out on purpose; whether the catalog should ever open is a separate decision.
