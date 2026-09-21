@@ -19,9 +19,9 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - name: Install the hub CLI
-        run: pip install -e "./sushihub/cli[test]"
+        run: pip install -e "./cli[test]"
       - name: Test
-        run: python -m pytest sushihub/cli/tests -q
+        run: python -m pytest cli/tests -q
       - name: Test the argv recorder
         # tools/record_cli_argv.py is this repository's evidence mechanism for a
         # CLI change, so its own tests run here rather than nowhere.

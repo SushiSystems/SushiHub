@@ -10,8 +10,8 @@ a workspace the moment `hub init` runs in it.
 sushistack/
   .sushistack/             the workspace's own data, written by `hub init`; git-ignored
     workspace.toml         [workspace] version, [modules] links, [tool] paths
-  sushihub/cli/            the `hub` command's source
-  sushihub/gui/            the desktop application
+  cli/            the `hub` command's source
+  gui/            the desktop application
   dependencies/            toolchains, vcpkg, cmake and ninja; git-ignored, filled by `hub install`
   sushiruntime/            added by `hub add sushiruntime`
   sushiblas/               added by `hub add sushiblas`
@@ -46,12 +46,12 @@ machinery through `sushicore` and keeps its own build policy. The line between t
 
 A module under the root is *cloned* when it holds `.git`, *binary* when it holds `sushi-release.json`,
 and *linked* when `[modules]` in `.sushistack/workspace.toml` points at a checkout elsewhere. Every `hub` command asks
-one place, `sushihub/cli/sushistack/services/presence.py`. A binary install contributes no dependency
+one place, `cli/sushihub/services/presence.py`. A binary install contributes no dependency
 fragment and is never pulled; `hub add` fetches its next release. A module CLI finds either kind of
 root through `sushicore`'s `ModuleProfile.markers()`.
 
 ## What is coming
 
 The workspace is to gain a second face: a desktop application with a screen for every `hub`
-command, under `../../sushihub/gui/`. The design is `../agent/specs/2026-09-05-hub-design.md`; the
+command, under `../../gui/`. The design is `../agent/specs/2026-09-05-hub-design.md`; the
 order of work is `../design/REMAINING_WORK.md`.

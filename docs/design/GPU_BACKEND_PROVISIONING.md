@@ -2,8 +2,8 @@
 
 **Status:** P1 through P4 built. `backend.py`, `registry.py`, `compiler_identity.py`,
 `adapter_builder.py` and `provisioning.py` exist under
-`sushihub/cli/sushistack/setup/gpu_backends/`, alongside the vendor specs `cuda.py`, `rocm.py`
-and `level_zero.py`, each importing shared apt helpers from `sushihub/cli/sushistack/setup/apt.py`.
+`cli/sushihub/setup/gpu_backends/`, alongside the vendor specs `cuda.py`, `rocm.py`
+and `level_zero.py`, each importing shared apt helpers from `cli/sushihub/setup/apt.py`.
 `setup/steps.py` calls `provision_gpu_adapters` after the SYCL toolchains on both Windows and
 Linux. The GPU component is on by default and provisions the vendor `probe.detect_gpu_vendor` reports on
 Windows and Linux; on Windows, `cuda.py` installs CUDA 12.6.3 through NVIDIA's network installer
@@ -41,7 +41,7 @@ backends treats "not provided on this platform" as an ordinary outcome, not an e
 
 ## 3. SushiStack
 
-A package `sushihub/cli/sushistack/setup/gpu_backends/`, one responsibility per file.
+A package `cli/sushihub/setup/gpu_backends/`, one responsibility per file.
 
 | File | Holds |
 | --- | --- |

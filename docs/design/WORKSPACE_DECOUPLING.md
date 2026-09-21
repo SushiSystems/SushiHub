@@ -23,11 +23,11 @@ Four things hold the coupling in place.
 
 - `services/modules.py:47` names six modules in code. Each entry carries the name, the clone URL
   and the directory. `_ALIASES` repeats the six.
-- `sushicore/workspace.py` fixes `WORKSPACE_CLI_DIR` at `sushihub/cli`, and `config.py:61`
+- `sushicore/workspace.py` fixes `WORKSPACE_CLI_DIR` at `cli`, and `config.py:61`
   resolves `config.toml`, `config.local.toml`, `modules.local.toml` and `manifests/` under it.
   The workspace's data therefore lives inside the hub's source tree, so a directory that is not
   a SushiStack clone has nowhere to put it. `workspace_root` even accepts
-  `sushihub/cli/manifests` as a marker, which is the repository's own signature.
+  `cli/manifests` as a marker, which is the repository's own signature.
 - `services/modules.py` injects `sushicore` into the pipx venv from the fixed path
   `<workspace>/sushicore`, so the CLI cannot be installed without the clone.
 - `install.sh:130` and `install.ps1:184` clone the repository before anything else runs.
@@ -107,7 +107,7 @@ tool rather than to the workspace, so `config.toml`, `manifests/base.deps.toml` 
 `sushicore`, and `workspace_root` stops accepting the manifests tree as a marker.
 
 `hub init` upgrades a marker file it finds: it creates the directory, copies
-`sushihub/cli/config.local.toml` and `sushihub/cli/modules.local.toml` into it, and leaves the
+`cli/config.local.toml` and `cli/modules.local.toml` into it, and leaves the
 originals in place so the step can be undone by deleting the directory.
 
 This changes a persistent layout that existing workspaces depend on. `file-formats` and
@@ -167,7 +167,7 @@ over the binary and the source build is never displaced.
 Hierarchy first: `sushicore` sits under every CLI and moves first; the catalog is fixed before
 anything reading it changes.
 
-Measured on 2026-09-21: `sushihub/cli/tests` holds 24 files and 297 passing tests, and
+Measured on 2026-09-21: `cli/tests` holds 24 files and 297 passing tests, and
 `.github/workflows/ci.yml:43` runs them. The source-or-binary decision is the best covered part
 of the code, with 18 tests in `tests/test_add_binary.py`.
 
@@ -192,7 +192,7 @@ Waves 6 and 7 run beside the 3-4-5 chain; their file sets are disjoint from it.
 
 ## 6. Risks
 
-**Migration.** `sushihub/cli/config.local.toml` holds machine-specific compiler, vcpkg and
+**Migration.** `cli/config.local.toml` holds machine-specific compiler, vcpkg and
 oneAPI paths. Wave 3 moves it, so the upgrade leaves the original in place and the new directory
 is removable.
 
