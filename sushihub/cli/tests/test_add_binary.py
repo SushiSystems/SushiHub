@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from sushistack.services import git_ops, licence_file, links, modules, session
+from sushistack.services import binary, git_ops, licence_file, links, modules, session
 from sushistack.services.identity import SushiAccount
 from sushistack.services.licence_file import LICENCE_FILE
 from sushistack.services.presence import RELEASE_MANIFEST
@@ -33,9 +33,15 @@ def workspace(tmp_path, monkeypatch):
 
 @pytest.fixture
 def recorder(monkeypatch):
-    """Capture every line `hub add` and `hub update` print."""
+    """Capture every line `hub add` and `hub update` print.
+
+    The binary install policy prints through its own `console` reference
+    (:mod:`sushistack.services.binary`), so both it and `modules` are patched
+    to the same spy; otherwise a message ``binary`` prints would go unseen.
+    """
     spy = Recorder()
     monkeypatch.setattr(modules, "console", spy)
+    monkeypatch.setattr(binary, "console", spy)
     return spy
 
 
@@ -177,7 +183,7 @@ def test_update_says_a_binary_install_is_already_the_latest(
         encoding="utf-8")
     sign_in(fake_id, monkeypatch)
     serve_release(fake_id)
-    monkeypatch.setattr(modules.releases, "host_platform", lambda: "windows-x64")
+    monkeypatch.setattr(binary.releases, "host_platform", lambda: "windows-x64")
     assert modules.update(["sushiengine"]) == 0
     assert recorder.said("binary 1.4.2 is the latest release.")
     assert not (root / LICENCE_FILE).exists()
@@ -192,7 +198,7 @@ def test_update_downloads_a_newer_release_and_writes_the_licence_again(
         encoding="utf-8")
     sign_in(fake_id, monkeypatch)
     serve_release(fake_id, version="1.5.0")
-    monkeypatch.setattr(modules.releases, "host_platform", lambda: "windows-x64")
+    monkeypatch.setattr(binary.releases, "host_platform", lambda: "windows-x64")
     assert modules.update(["sushiengine"]) == 0
     assert installed_version(root) == "1.5.0"
     assert (root / LICENCE_FILE).read_text(encoding="utf-8") == "licence-jwt"

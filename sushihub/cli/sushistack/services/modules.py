@@ -14,11 +14,10 @@ from pathlib import Path
 from .. import console
 from ..config import WORKSPACE_MARKER, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
-from . import git_ops, licence_file, links, pipx, releases, session
+from . import binary as binary_svc
+from . import git_ops, links, pipx
 from .catalog import CATALOG
-from .identity import ReleaseInfo, SushiAccount, SushiAccountError
-from .presence import Presence, describe, presence_of, read_release
-from .releases import ReleaseCorrupt
+from .presence import Presence, describe, presence_of
 
 # sushicore is the shared CLI presentation layer, not a stack build module: it
 # ships no dependency fragment, is never built, and stays out of CATALOG so it is
@@ -62,88 +61,6 @@ def sushicore_dir(root: Path) -> Path | None:
     """
     pkg = root / SUSHICORE_NAME
     return pkg if (pkg / "pyproject.toml").is_file() else None
-
-
-def _install_binary(name: str, dest: Path, client: SushiAccount,
-                    info: ReleaseInfo | None = None) -> bool:
-    """Unpack a release of *name* at *dest* and write its licence beside it.
-
-    Args:
-        name: The module, which is also the product slug Sushi Account knows.
-        dest: Where the module lives in the workspace.
-        client: A Sushi Account client with a live session.
-        info: The release to install; the latest one when None.
-
-    Returns:
-        Whether both landed. A refusal from Sushi Account, a download that does not
-        match what was declared and a directory that will not be written are all
-        reported here and answered with False.
-    """
-    try:
-        release = releases.install_release(name, dest, client, console, info=info)
-        expires_at = licence_file.write_licence(dest, client, name)
-    except (SushiAccountError, ReleaseCorrupt, OSError) as error:
-        console.error(f"{name}: {error}")
-        return False
-    console.success(f"{name}: installed binary {release.version} ({release.platform}) "
-                    f"at {dest}; licence valid to {expires_at}.")
-    return True
-
-
-def _add_binary(name: str, dest: Path, requested: bool) -> bool:
-    """Install *name* from its release, having found no other way to bring it in.
-
-    Args:
-        name: The module to install.
-        dest: Where the module lives in the workspace.
-        requested: Whether the binary form was asked for with ``--binary``
-            rather than chosen because the source is out of reach.
-
-    Returns:
-        Whether the module is installed afterwards.
-    """
-    client = session.client()
-    if client.access_token() is None:
-        if requested:
-            console.error(f"{name}: a binary install needs a Sushi Account licence. "
-                          "Run `hub login` first.")
-        else:
-            console.error(
-                f"{name}: neither way in is open. The source needs a Git identity with "
-                f"access to {CATALOG[name].repo}; the binary needs a licence, which "
-                "`hub login` signs you in for.")
-        return False
-    return _install_binary(name, dest, client)
-
-
-def _update_binary(name: str, dest: Path) -> bool:
-    """Reinstall *name* when Sushi Account holds a release newer than the one at *dest*.
-
-    Args:
-        name: The module to refresh.
-        dest: The unpacked install.
-
-    Returns:
-        Whether the install is the latest release afterwards. One that already
-        was counts as success and downloads nothing.
-    """
-    client = session.client()
-    if client.access_token() is None:
-        console.error(f"{name}: a binary install is refreshed through Sushi Account. "
-                      "Run `hub login` first.")
-        return False
-    try:
-        info = client.resolve_release(name, releases.host_platform())
-    except SushiAccountError as error:
-        console.error(f"{name}: {error}")
-        return False
-    installed = read_release(dest)
-    if installed is not None and installed.version == info.version:
-        console.info(f"{name}: binary {installed.version} is the latest release.")
-        return True
-    was = installed.version if installed else "an unreadable install"
-    console.info(f"{name}: {was} -> {info.version}; downloading.")
-    return _install_binary(name, dest, client, info=info)
 
 
 def _install_module_cli(name: str, dest: Path) -> bool:
@@ -273,7 +190,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             if dry_run:
                 console.info(f"{name}: (dry-run) would install its release -> {dest}")
                 continue
-            if not _add_binary(name, dest, requested=binary):
+            if not binary_svc.add(name, dest, requested=binary):
                 failed = True
             continue
         if binary:
@@ -390,7 +307,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
             if dry_run:
                 console.info(f"{name}: (dry-run) would ask Sushi Account for a newer release ({dest})")
                 continue
-            if not _update_binary(name, dest):
+            if not binary_svc.update(name, dest):
                 failed = True
             continue
         if state is Presence.ABSENT:
