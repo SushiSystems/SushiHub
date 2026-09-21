@@ -36,4 +36,4 @@ include = ["sushistack*"]
 # marker), so they are not shipped inside the wheel.
 
 [tool.setuptools.package-data]
-sushistack = ["py.typed"]
+sushistack = ["py.typed", "catalog.toml"]

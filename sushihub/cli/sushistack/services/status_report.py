@@ -17,9 +17,10 @@ from typing import Callable
 
 from ..config import deps_dir, registered_modules, workspace_root
 from . import git_state, licence_file, session
+from .catalog import CATALOG
 from .hub_install import read_hub_install
 from .identity import SushiAccount
-from .modules import MODULES, SUSHICORE_NAME, module_dest, sushicore_dir
+from .modules import SUSHICORE_NAME, module_dest, sushicore_dir
 from .presence import Presence, describe, presence_of, read_release
 from .update_check import latest_release
 
@@ -122,7 +123,7 @@ def build_status(check_updates: bool = False, *, home: Path | None = None,
     hub["latest_version"] = None
 
     rows = [_module_row(root, name, linked, check_updates, client, warnings)
-            for name in MODULES]
+            for name in CATALOG]
     rows.append(_sushicore_row(root))
 
     payload = {

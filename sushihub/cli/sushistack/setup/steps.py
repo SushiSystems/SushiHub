@@ -366,7 +366,8 @@ class DetectStep(Step):
         present. A binary install builds nothing, so it needs nothing.
         """
         from ..config import registered_modules, workspace_root
-        from ..services.modules import MODULES, module_dest
+        from ..services.catalog import CATALOG
+        from ..services.modules import module_dest
         from ..services.presence import Presence, describe, presence_of
 
         try:
@@ -376,7 +377,7 @@ class DetectStep(Step):
 
         linked = registered_modules()
         console.info("Module readiness:")
-        for name in owner_order(self._source, MODULES):
+        for name in owner_order(self._source, CATALOG):
             dest = module_dest(root, name)
             state = presence_of(root, name, linked)
             if state is Presence.BINARY:
