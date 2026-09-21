@@ -12,9 +12,7 @@ sushistack/
   sushiruntime/            added by `hub add sushiruntime`
   sushiblas/               added by `hub add sushiblas`
   sushiai/                 added by `hub add sushiai`
-  sushidsp/                added by `hub add sushidsp`
   sushiengine/             added by `hub add sushiengine`
-  sushitrack/              added by `hub add sushitrack`
 ```
 
 ## Why the layout is flat
