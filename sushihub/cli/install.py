@@ -12,6 +12,7 @@ Strategy:
     same checkout) -- a non-editable install would silently freeze `hub` at whatever
     revision was on disk when it was first installed, so every later fix would need
     a manual reinstall to take effect. There is no non-editable mode to opt into.
+  * `sushicore` is an ordinary dependency, resolved from PyPI by the same pipx install.
 
 The CLI package directory is located automatically (the folder holding
 pyproject.toml), so renaming the `cli/` folder later does not break this script.
@@ -26,24 +27,6 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PACKAGE_NAME = "sushistack-cli"
-
-
-def find_sushicore_dir() -> Path:
-	"""Return the in-repo sushicore package directory.
-
-	sushicore ships inside this repository, so there is nothing to look up and
-	nothing to fetch: cloning SushiStack has already produced it. It is still a
-	separate distribution (its own pyproject.toml) because pipx installs it as
-	one -- it is not published to any index, so pipx's isolated venv cannot
-	resolve it as a normal dependency and it is injected from this path instead.
-	"""
-	pkg = REPO_ROOT / "sushicore"
-	if not (pkg / "pyproject.toml").is_file():
-		sys.exit(
-			f"[ERROR] {pkg} is missing its pyproject.toml. This is part of the "
-			"SushiStack repository; re-clone or `git checkout -- sushicore`."
-		)
-	return pkg
 
 
 def find_package_dir() -> Path:
@@ -104,15 +87,9 @@ def remove_legacy_shim(pipx: list[str]) -> None:
 
 def install() -> int:
 	pkg_dir = find_package_dir()
-	sushicore_dir = find_sushicore_dir()
 
 	pipx = ensure_pipx().split()
 	rc = run([*pipx, "install", "--force", "--editable", str(pkg_dir)])
-	if rc == 0:
-		# sushicore isn't a resolvable pip dependency (see pyproject.toml); inject
-		# it into the venv pipx just created, always editable so future sushicore
-		# edits apply without reinstalling this CLI.
-		rc = run([*pipx, "inject", PACKAGE_NAME, "--editable", str(sushicore_dir)])
 
 	if rc == 0:
 		remove_legacy_shim(pipx)

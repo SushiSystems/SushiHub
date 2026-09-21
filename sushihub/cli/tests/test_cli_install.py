@@ -1,4 +1,4 @@
-"""How a module's own CLI is installed and where sushicore is injected from."""
+"""How a module's own CLI is installed, and where the in-repo sushicore checkout resolves."""
 
 from __future__ import annotations
 
@@ -42,7 +42,7 @@ def checkout(tmp_path):
 
 @pytest.fixture
 def root(tmp_path):
-    """Build a workspace root carrying a sushicore distribution to inject."""
+    """Build a workspace root carrying an in-repo sushicore checkout."""
     core = tmp_path / modules.SUSHICORE_NAME
     core.mkdir()
     (core / "pyproject.toml").write_text("", encoding="utf-8")
@@ -60,44 +60,34 @@ def test_sushicore_is_none_when_the_checkout_is_partial(tmp_path):
     assert modules.sushicore_dir(tmp_path) is None
 
 
-def test_a_module_without_a_cli_package_is_skipped(tmp_path, recorder, root, monkeypatch):
+def test_a_module_without_a_cli_package_is_skipped(tmp_path, recorder, monkeypatch):
     """Skips pipx and succeeds when the checkout carries no cli/pyproject.toml."""
     monkeypatch.setattr(modules, "_pipx_cmd",
                         lambda: pytest.fail("pipx was looked for"))
-    assert modules._install_module_cli("sushiai", tmp_path / "sushiai", root) is True
+    assert modules._install_module_cli("sushiai", tmp_path / "sushiai") is True
     assert recorder.said("sushiai: no cli/ package to install; skipping CLI install.")
 
 
-def test_a_missing_pipx_is_a_warning(checkout, root, recorder, monkeypatch):
+def test_a_missing_pipx_is_a_warning(checkout, recorder, monkeypatch):
     """Reports failure and names the command to run later when pipx is missing."""
     monkeypatch.setattr(modules, "_pipx_cmd", lambda: None)
-    assert modules._install_module_cli("sushiruntime", checkout, root) is False
+    assert modules._install_module_cli("sushiruntime", checkout) is False
     assert recorder.said("sushiruntime: pipx not found; skipping CLI install. Install "
                          f"it later with `pipx install {checkout / 'cli'}`.")
 
 
-def test_a_missing_sushicore_stops_after_the_install(checkout, tmp_path, recorder,
-                                                     monkeypatch):
-    """Installs the CLI with pipx, then reports the absent sushicore and injects nothing."""
+def test_the_happy_path_installs_the_module_cli_alone(checkout, recorder, monkeypatch):
+    """Installs the module's cli/ with pipx and runs no second command."""
     runs = _Runs()
     monkeypatch.setattr(modules, "_pipx_cmd", lambda: ["pipx"])
     monkeypatch.setattr(modules, "subprocess", type("S", (), {"run": runs}))
-    assert modules._install_module_cli("sushiruntime", checkout, tmp_path) is False
-    assert len(runs.commands) == 1
-    assert runs.commands[0][:2] == ["pipx", "install"]
-    assert recorder.said(f"sushiruntime: sushicore is missing from "
-                         f"{tmp_path / modules.SUSHICORE_NAME}; the CLI may fail to "
-                         "start. It ships with this repository -- `git checkout -- "
-                         "sushicore` to restore it.")
+    assert modules._install_module_cli("sushiruntime", checkout) is True
+    assert runs.commands == [["pipx", "install", "--force", str(checkout / "cli")]]
 
 
-def test_the_happy_path_installs_then_injects(checkout, root, recorder, monkeypatch):
-    """Installs the module's cli/ with pipx and injects sushicore as an editable distribution."""
-    runs = _Runs()
+def test_a_failed_pipx_install_is_reported(checkout, recorder, monkeypatch):
+    """Reports failure when pipx cannot install the module's CLI."""
     monkeypatch.setattr(modules, "_pipx_cmd", lambda: ["pipx"])
-    monkeypatch.setattr(modules, "subprocess", type("S", (), {"run": runs}))
-    monkeypatch.setattr(modules, "_cli_package_name", lambda cli_dir, name: "sushiruntime-cli")
-    assert modules._install_module_cli("sushiruntime", checkout, root) is True
-    assert runs.commands[0] == ["pipx", "install", "--force", str(checkout / "cli")]
-    assert runs.commands[1] == ["pipx", "inject", "sushiruntime-cli", "--editable",
-                                str(root / modules.SUSHICORE_NAME)]
+    monkeypatch.setattr(modules, "subprocess", type("S", (), {"run": _Runs(code=1)}))
+    assert modules._install_module_cli("sushiruntime", checkout) is False
+    assert recorder.said("sushiruntime: CLI install failed.")
