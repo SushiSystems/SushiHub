@@ -15,7 +15,7 @@ from .. import DISTRIBUTION, console
 from ..config import WORKSPACE_MARKER, create_workspace_file, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import binary as binary_svc
-from . import git_ops, links, pipx
+from . import git_ops, links, module_manifest, pipx
 from .catalog import CATALOG
 from .presence import Presence, describe, module_dir, presence_of
 
@@ -215,16 +215,31 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
                       "Sushi CLI installs from PyPI. To work on it, install your "
                       "checkout over the release with `pip install -e <path>`.")
         return 1
-    if resolved is None:
-        console.error(f"Unknown module '{name}'. Choose from: "
-                      f"{', '.join(CATALOG.names())} (or their aliases: "
-                      f"{', '.join(CATALOG.aliases())}).")
-        return 1
-    name = resolved
     target = Path(path).expanduser().resolve()
     if not target.is_dir():
         console.error(f"Path does not exist: {target}")
         return 1
+    if resolved is None:
+        try:
+            described = module_manifest.read(target)
+        except ValueError as refused:
+            console.error(str(refused))
+            return 1
+        if described is None:
+            console.error(
+                f"Unknown module '{name}'. Choose from: "
+                f"{', '.join(CATALOG.names())} (or their aliases: "
+                f"{', '.join(CATALOG.aliases())}). A checkout outside that list is linkable "
+                f"when it carries a {module_manifest.MANIFEST_FILE} naming itself; see "
+                f"docs/reference/MODULE_MANIFEST.md.")
+            return 1
+        if described.name != name and described.alias != name:
+            console.error(f"{target} describes itself as '{described.name}', not '{name}'.")
+            return 1
+        resolved = described.name
+        console.info(f"{described.name}: linking a checkout that describes itself; "
+                     f"the catalog does not list it.")
+    name = resolved
     if not (target / ".git").is_dir():
         console.warn(f"{target} is not a git checkout; linking anyway.")
     already_linked = links.registered().get(name) == str(target)

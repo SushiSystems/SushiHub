@@ -41,6 +41,12 @@ module up. The four modules adopt the file last, once the reader that would use 
 - `presence.module_dir` already falls back to `root/name` for a name the catalog does not list,
   which is why a stale `sushidsp` link does not crash `hub status`. That fallback is the seam
   this wave replaces with something that can answer properly.
+- **Corrected 2026-09-22, mid-wave:** `setup/dependency_source.manifest_sources` never consulted
+  the catalog. It walks every directory under the workspace root and every linked checkout and
+  takes whatever fragment it finds, so dependency aggregation was already catalog-independent.
+  `sushidsp`'s fragment was missing from `hub doctor` only because of the reader bug fixed the
+  same morning. **Task 3 therefore has nothing to do for fragments.** What the catalog still
+  gates is `hub status`'s rows, `hub add`, `hub link`, `hub install-cli` and the help strings.
 - The dependency fragment lives at `<module>/cli/sushistack.deps.toml` in all six repositories.
   The manifest is a **second** file with a different job: the fragment says what to install,
   the manifest says what the module *is*. Do not merge them.
