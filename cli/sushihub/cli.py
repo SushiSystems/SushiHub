@@ -326,7 +326,7 @@ def doctor():
 def remove(
     all: bool = typer.Option(
         False, "--all",
-        help="[bold][error]Wipe everything[/error][/bold]: vcpkg ports, downloaded "
+        help="[error]Wipe everything[/error]: vcpkg ports, downloaded "
              "toolchains (intel/llvm + AdaptiveCpp + oneAPI, several GB), and the "
              "portable cmake/ninja — the whole dependencies/ tree."),
     gpu: bool = typer.Option(False, "--gpu", help="Include GPU-only deps in removal."),
