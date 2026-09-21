@@ -9,6 +9,10 @@ description = "SushiStack CLI — shared dependency provisioning and module mana
 authors = [{ name = "Mustafa Garip", email = "mustafagarip@sushisystems.io" }]
 requires-python = ">=3.10"
 dependencies = [
+    # click is imported directly by describe.py, which walks a Typer app's click
+    # objects to build the --describe contract. Typer no longer pins it, so it is
+    # declared here rather than relied on transitively.
+    "click>=8.0",
     "typer>=0.12",
     "rich>=13.0",
     "keyring>=24",

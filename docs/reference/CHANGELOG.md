@@ -3,6 +3,8 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Declared `click`, which `describe.py` imports and Typer no longer pins (`sushihub/cli/pyproject.toml`).
+- 2026-09-22 — Gave the discovery test's fake executables an execute bit, which Linux requires (`sushicore/tests/test_discovery.py`).
 - 2026-09-22 — Covered the workspace, catalog, init, link and sushicore-injection seams with 37 tests (`sushihub/cli/tests/`).
 - 2026-09-21 — Designed the decoupling of `hub` from the SushiStack checkout (`docs/design/WORKSPACE_DECOUPLING.md`).
 - 2026-09-17 — Registered sushitrack as the stack's sixth module with alias `st` (`sushihub/cli/sushistack/services/modules.py`).
