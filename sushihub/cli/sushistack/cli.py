@@ -110,7 +110,7 @@ def status(
     report = status_report.build_status(check_updates)
     for warning in report.warnings:
         console.warn(warning)
-    _finish(modules_svc.status(report.payload), report.payload)
+    _finish(status_report.render(report.payload), report.payload)
 
 
 # --------------------------------------------------------------------------- #
