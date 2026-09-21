@@ -19,7 +19,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Mapping
 
-from .catalog import CATALOG
+from .catalog import CATALOG, Module
+from . import module_manifest
 
 #: File the release build writes at the root of an unpacked binary install.
 #: The same name as :data:`sushicore.profile.RELEASE_MANIFEST`, which is how a
@@ -144,3 +145,55 @@ def describe(root: Path, name: str, linked: Mapping[str, str]) -> tuple[str, str
     if release is None:
         return name, "binary"
     return name, f"binary {release.version}"
+
+
+def workspace_modules(
+    root: Path, linked: Mapping[str, str] | None = None,
+) -> tuple[dict[str, Module], list[str]]:
+    """Every module this workspace knows, and what could not be read.
+
+    The catalog is what `hub` ships; a checkout carrying ``sushi-module.toml``
+    describes itself and is known whether or not the catalog lists it. A checkout
+    that does both wins, because it is the thing on disk: its CLI is installed
+    from it, so its own statement of its alias is the one that came true.
+
+    Args:
+        root: Workspace root.
+        linked: Module name to path, as ``hub link`` recorded it.
+
+    Returns:
+        The modules in catalog order followed by the self-describing ones in name
+        order, and one message per manifest that would not read. A caller that
+        must not fail on a neighbour's broken file reports those and carries on;
+        one acting on a single module reads that module's manifest directly and
+        lets it raise.
+    """
+    found: dict[str, Module] = {name: CATALOG[name] for name in CATALOG}
+    problems: list[str] = []
+    extra: dict[str, Module] = {}
+    for checkout in _self_describing(root, linked or {}):
+        try:
+            module = module_manifest.read(checkout)
+        except ValueError as refused:
+            problems.append(str(refused))
+            continue
+        if module is None:
+            continue
+        (found if module.name in found else extra)[module.name] = module
+    found.update({name: extra[name] for name in sorted(extra)})
+    return found, problems
+
+
+def _self_describing(root: Path, linked: Mapping[str, str]) -> list[Path]:
+    """Directories that may carry a manifest: the workspace's own and the linked ones."""
+    candidates: list[Path] = []
+    if root.is_dir():
+        candidates.extend(sorted(p for p in root.iterdir() if p.is_dir()))
+    candidates.extend(Path(path) for path in linked.values())
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for candidate in candidates:
+        if candidate not in seen:
+            seen.add(candidate)
+            unique.append(candidate)
+    return unique

@@ -41,7 +41,7 @@ read from one place. Waves 0 through 5 landed on 2026-09-22; waves 6, 7 and 8 ar
 | 4 | The installers drop the clone and take `sushihub` from PyPI. The module CLIs do not publish; they stay editable from a checkout. Landed 2026-09-22. | 3 |
 | 5 | `sushicore` left the status table, the fixtures were re-recorded, Linux stopped being pointed at `~/vcpkg`. Landed 2026-09-22. | 4 |
 | 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. Plan: `../agent/plans/2026-09-22-wave-6-a-module-describes-itself.md`. | 2 |
-| 7 | `sd setup` and `st setup` provision their repositories, with `hub` or without it; the fragment reader moves into `sushicore`. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md`. | 2, 6 |
+| 7 | `sd setup` and `st setup` provision their repositories, with `hub` or without it; the fragment reader moves into `sushicore`. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md`. | 2 |
 | 8 | The desktop application ships as `sushihub-gui`, reached as `pipx install "sushihub[gui]"`. | 5 |
 
 ## Outside the programme

@@ -18,10 +18,9 @@ from typing import Callable
 from .. import console
 from ..config import deps_dir, workspace_root
 from . import git_state, licence_file, links, session
-from .catalog import CATALOG
 from .hub_install import read_hub_install
 from .identity import SushiAccount
-from .presence import Presence, describe, module_dir, presence_of, read_release
+from .presence import Presence, describe, module_dir, presence_of, read_release, workspace_modules
 from .update_check import latest_release
 
 
@@ -108,8 +107,10 @@ def build_status(check_updates: bool = False, *, home: Path | None = None,
     hub["source"] = _source(root, check_updates, warnings, "hub")
     hub["latest_version"] = None
 
+    known, unreadable = workspace_modules(root, linked)
+    warnings.extend(unreadable)
     rows = [_module_row(root, name, linked, check_updates, client, warnings)
-            for name in CATALOG]
+            for name in known]
 
     payload = {
         "workspace": str(root),

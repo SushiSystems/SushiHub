@@ -51,6 +51,17 @@ a word. A section a reader silently drops is a section nobody knows is missing.
 
 `hub` reads this file and never writes it. A module owns its own manifest.
 
+## When both a manifest and a catalog entry exist
+
+The checkout wins. A module's CLI is installed from the checkout, so the alias the checkout
+declares is the one that came true on the machine; the catalog is `hub`'s own copy and can be
+older than what is on disk. `hub status` lists the catalog's modules in catalog order, then the
+self-describing ones in name order, so two commands list them the same way twice.
+
+A manifest that will not read is reported rather than obeyed. A command acting on one module
+says so and stops; `hub status`, which describes the whole workspace, names the file as a warning
+and describes everything else.
+
 ## What the manifest does not do
 
 It does not open the catalog. `hub add <name>` clones from a repo URL it must know *before* any
