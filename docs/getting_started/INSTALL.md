@@ -29,7 +29,7 @@ git clone https://github.com/sushisystems/sushistack.git
 cd sushistack
 python sushihub/cli/install.py       # install `hub` via pipx
 
-hub init                              # write the .sushistack marker and .gitignore entries
+hub init                              # write the .sushistack directory and .gitignore entries
 hub install                           # download what the present modules declare
 hub add all                           # clone every module with its toolchains, or name them
 
@@ -72,9 +72,22 @@ A hit means that environment still points at the deleted directory; no such file
 
 They share no dependency with `sushiruntime`, `sushiblas`, `sushiai` and `sushiengine`, and are
 their own products with their own CLIs, `sd` and `st`. `hub` no longer knows them: `hub add
-sushidsp` reports an unknown module, and a `sushidsp` line left in
-`sushihub/cli/modules.local.toml` is ignored rather than honoured. Delete the line by hand; the
+sushidsp` reports an unknown module, and a `sushidsp` line left in `[modules]` in
+`.sushistack/workspace.toml` is ignored rather than honoured. Delete the line by hand; the
 checkout itself is untouched and `sd` keeps working.
+
+### The workspace moved its data on 2026-09-22
+
+`.sushistack` used to be an empty marker file, with the workspace's data in the checkout at
+`sushihub/cli/config.local.toml` and `sushihub/cli/modules.local.toml`. It is a directory now, and
+both tables live in `.sushistack/workspace.toml`.
+
+Nothing is asked of you: the first `hub` command run in an old workspace converts it and says so.
+The two old files are left where they are, so deleting `.sushistack/` puts you back.
+
+The tool's own defaults and its dependency manifests moved the other way, out of the checkout and
+into the `hub` package. A workspace no longer has to be a clone of this repository: `hub init` in
+an empty folder is enough.
 
 ## What `hub install` downloads
 

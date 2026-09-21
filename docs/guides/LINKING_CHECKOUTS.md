@@ -8,7 +8,8 @@ hub link sushiruntime D:/Projects/sushiruntime
 hub install-cli sushiruntime            # point `sr` at that checkout
 ```
 
-`hub link` writes the name and path to `sushihub/cli/modules.local.toml`, which is git-ignored. From then on
+`hub link` writes the name and path into `[modules]` in `.sushistack/workspace.toml`, which is
+git-ignored. From then on
 `hub status`, `hub update`, `hub sync` and the dependency aggregation treat the linked checkout like a
 cloned one: its `cli/sushistack.deps.toml` contributes to what `hub install` provisions, and
 `hub update` pulls it.
@@ -30,5 +31,5 @@ published version back.
 
 ## Undoing a link
 
-There is no `hub unlink` yet. Remove the line from `sushihub/cli/modules.local.toml` and run
+There is no `hub unlink` yet. Remove the line from `[modules]` in `.sushistack/workspace.toml` and run
 `hub install-cli <module>` again so the CLI points back at the workspace copy.
