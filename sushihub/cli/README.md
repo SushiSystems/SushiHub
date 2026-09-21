@@ -3,7 +3,7 @@
 `hub` provisions the shared dependency tree and manages the module checkouts of a SushiStack
 workspace. The one thing it builds is the desktop application in `sushihub/gui`, which belongs
 to the workspace rather than to a module. Every module has its own CLI: `sr` (sushiruntime),
-`se` (sushiengine), `sa` (sushiai), `sb` (sushiblas), `sd` (sushidsp), `st` (sushitrack).
+`se` (sushiengine), `sa` (sushiai), `sb` (sushiblas).
 
 ## Layout
 
@@ -33,7 +33,7 @@ them. See "Machine-readable output".
 |---|---|
 | `hub init` | Write the `.sushistack` workspace marker and add `dependencies/` to `.gitignore`. |
 | `hub install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker over the toolchains and the GPU toolkit, which is on by default. `--yes` answers the LLVM-download prompt for unattended runs. `--refresh-toolchains` re-downloads an installed SYCL toolchain, which is otherwise reused forever; reused installs report the release they came from and say when they carry no sanitizer runtime. |
-| `hub add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|sushidsp\|sushitrack\|all> [--dry-run] [--skip-install] [--binary]` | Bring one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `hub install`. `--binary` installs sushiengine from its release rather than its source; see "Binary installs". Aliases: `sr`, `se`, `sa`, `sb`, `sd`, `st`. |
+| `hub add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|all> [--dry-run] [--skip-install] [--binary]` | Bring one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `hub install`. `--binary` installs sushiengine from its release rather than its source; see "Binary installs". Aliases: `sr`, `se`, `sa`, `sb`. |
 | `hub link <module> <path> [--dry-run] [--skip-install]` | Register an existing checkout outside the workspace as a module, without cloning, then provision what it declares. `--skip-install` leaves that to a later `hub install`. Same names and aliases as `hub add`. |
 | `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `hub add`. |
 | `hub update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi Account for the latest release and downloads it when the version differs. No arguments means all. |
