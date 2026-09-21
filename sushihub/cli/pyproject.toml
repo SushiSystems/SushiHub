@@ -13,6 +13,7 @@ dependencies = [
     # objects to build the --describe contract. Typer no longer pins it, so it is
     # declared here rather than relied on transitively.
     "click>=8.0",
+    "sushicore>=0.1.0",
     "typer>=0.12",
     "rich>=13.0",
     "keyring>=24",
@@ -21,13 +22,6 @@ dependencies = [
 
 [project.optional-dependencies]
 test = ["pytest>=7.0", "jsonschema>=4.0"]
-
-# sushicore (the shared CLI presentation layer, in this repository at `sushicore/`)
-# is intentionally NOT listed above: it isn't published to any index, so a bare
-# "sushicore>=0.1.0" dependency can't be resolved by pip/pipx from a clean
-# environment. `pip install -e cli` expects it already installed once in the
-# same environment (`pip install -e ./sushicore`); `python cli/install.py`
-# (pipx, isolated venv) injects it automatically from that directory.
 
 [project.scripts]
 hub = "sushistack.cli:app"

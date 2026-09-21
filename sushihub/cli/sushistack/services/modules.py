@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -110,13 +109,12 @@ def module_dest(root: Path, name: str) -> Path:
 
 
 def sushicore_dir(root: Path) -> Path | None:
-    """Resolve the in-repo sushicore package to inject, or None if it is missing.
+    """Resolve the in-repo sushicore package, or None if it is missing.
 
-    sushicore ships inside this repository, so this is a fixed path, not a search:
-    ``<workspace>/sushicore``. It stays a function (and stays nullable) because it
-    is still injected as a separate distribution -- it is published to no index,
-    so pipx cannot resolve it as an ordinary dependency -- and a corrupt or
-    partial checkout should be reported rather than crash the caller.
+    sushicore ships inside this repository, so this is a fixed path, not a
+    search: ``<workspace>/sushicore``. :mod:`.status_report` uses it to report
+    whether the checkout is present; it is no longer used to locate anything to
+    inject, since ``sushicore`` is now an ordinary PyPI dependency.
     """
     pkg = root / SUSHICORE_NAME
     return pkg if (pkg / "pyproject.toml").is_file() else None
@@ -268,29 +266,12 @@ def _pipx_cmd() -> list[str] | None:
     return None
 
 
-def _cli_package_name(cli_dir: Path, module: str) -> str:
-    """Read the CLI's distribution name from pyproject, else fall back to <name>-cli."""
-    try:
-        if sys.version_info >= (3, 11):
-            import tomllib as toml
-        else:
-            import tomli as toml  # type: ignore[no-redirect]
-        with (cli_dir / "pyproject.toml").open("rb") as fh:
-            name = toml.load(fh).get("project", {}).get("name")
-        if name:
-            return str(name)
-    except Exception:
-        pass
-    return f"{module}-cli"
-
-
-def _install_module_cli(name: str, dest: Path, root: Path) -> bool:
+def _install_module_cli(name: str, dest: Path) -> bool:
     """Install a cloned module's own CLI (`sr`, `se`, …) so it is ready to use.
 
     Mirrors how the umbrella installs its own `hub` CLI: pipx-install the module's
-    `cli/` package, then inject the shared sushicore presentation layer (which is
-    not a resolvable pip dependency). Best-effort — a module without a `cli/`
-    package, or a pipx we can't locate, is a warning, not a hard failure.
+    `cli/` package. Best-effort — a module without a `cli/` package, or a pipx we
+    can't locate, is a warning, not a hard failure.
     """
     cli_dir = dest / "cli"
     if not (cli_dir / "pyproject.toml").is_file():
@@ -306,21 +287,6 @@ def _install_module_cli(name: str, dest: Path, root: Path) -> bool:
     console.info(f"{name}: installing its CLI with pipx ({cli_dir}).")
     if subprocess.run([*pipx, "install", "--force", str(cli_dir)]).returncode != 0:
         console.error(f"{name}: CLI install failed.")
-        return False
-
-    # sushicore isn't published to any index, so pipx can't resolve it as a normal
-    # dependency; inject it (editable) into the venv pipx just created.
-    cli_shared = sushicore_dir(root)
-    if cli_shared is None:
-        console.warn(f"{name}: sushicore is missing from "
-                     f"{root / SUSHICORE_NAME}; the CLI may fail to start. It ships "
-                     "with this repository -- `git checkout -- sushicore` to restore it.")
-        return False
-    pkg = _cli_package_name(cli_dir, name)
-    if subprocess.run(
-        [*pipx, "inject", pkg, "--editable", str(cli_shared)]
-    ).returncode != 0:
-        console.warn(f"{name}: failed to inject sushicore into {pkg}.")
         return False
     return True
 
@@ -409,7 +375,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
         if name in linked:
             console.info(f"{name}: linked to {linked[name]} (use `hub link` to change); skipping clone.")
             if not dry_run:
-                _install_module_cli(name, module_dest(root, name), root)
+                _install_module_cli(name, module_dest(root, name))
             continue
         mod = MODULES[name]
         dest = root / mod.directory
@@ -421,7 +387,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
         if state is Presence.CLONED:
             console.info(f"{name}: already cloned at {dest}")
             if not dry_run:
-                _install_module_cli(name, dest, root)
+                _install_module_cli(name, dest)
             continue
         if name == BINARY_MODULE and (binary or not _source_reachable(mod.repo)):
             if dry_run:
@@ -446,7 +412,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             continue
         brought_in = True
         # Install the module's own CLI (sr/se/…) so it's usable right after add.
-        _install_module_cli(name, dest, root)
+        _install_module_cli(name, dest)
     if failed:
         return 1
     if brought_in and skip_install:
