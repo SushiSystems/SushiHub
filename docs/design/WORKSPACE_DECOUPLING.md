@@ -3,9 +3,12 @@
 **Status:** designed 2026-09-21. Waves 0 through 6 landed 2026-09-22, and wave 7 all but its
 `st setup` task; wave 8 is open.
 Each wave's plan is linked from its row in section 5, and the waves are mirrored into
-`REMAINING_WORK.md` so the order can be read from one place. Two breaking changes have shipped:
-wave 2 took `sushidsp` and `sushitrack` out of `hub add`, `hub link` and `hub install-cli`, and
-wave 3 moved the workspace's data into `.sushistack/workspace.toml`.
+`REMAINING_WORK.md` so the order can be read from one place. Three breaking changes have shipped:
+wave 2 took `sushidsp` and `sushitrack` out of `hub add`, `hub link` and `hub install-cli`;
+wave 3 moved the workspace's data into `.sushistack/workspace.toml`; and the third was the
+tool's own name. The import package became `sushihub` and the CLI, the
+application and the contract moved to the repository root, which is why `hub` is version 1.0.0.
+See `docs/agent/plans/2026-09-22-rename-to-sushihub.md`.
 
 ## 1. The problem
 

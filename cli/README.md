@@ -117,7 +117,7 @@ module's own
 `cli/sushistack.deps.toml`, keeps the entries that name a package for the current platform, and
 installs the ones that are missing. No dependency name lives in the installer code. The SYCL
 toolchains are sushiruntime's entries, not this repository's; the GPU toolkit is on for every
-workspace and follows the detected GPU vendor (`sushistack/setup/selection.py`); the base fragment carries
+workspace and follows the detected GPU vendor (`sushihub/setup/selection.py`); the base fragment carries
 only cmake, ninja, gtest, opencl and pkgconf.
 
 A shipped fragment is owned by the name in its filename, with `base.deps.toml` the exception

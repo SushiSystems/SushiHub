@@ -24,7 +24,7 @@ One JSON object per line, UTF-8, in the order the command produced them. Keys ar
 ```json
 {"event": "line",     "level": "info",   "message": "..."}          level ∈ info|success|warn|error
 {"event": "command",  "command": "cmake -S . -B build"}
-{"event": "header",   "title": "SushiStack Install"}
+{"event": "header",   "title": "SushiHub Install"}
 {"event": "panel",    "title": "...", "body": "..."}
 {"event": "table",    "title": "...", "columns": ["A","B"], "rows": [["a1","b1"]]}
 {"event": "progress", "label": "install-deps", "index": 2, "count": 4, "fraction": 0.5}   fraction may be null
