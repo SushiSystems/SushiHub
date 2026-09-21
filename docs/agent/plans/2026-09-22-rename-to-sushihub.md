@@ -3,7 +3,7 @@
 **Status:** done 2026-09-22. All four tasks landed; CI is green on `main` and the remote is
 `SushiSystems/SushiHub`. The checkout on disk keeps its old name on purpose: every sibling
 module's `config.local.toml` stores absolute paths into `D:/Projects/sushistack/dependencies`,
-and ten of them were checked to still resolve after the move. Publishing `sushihub` 1.0.0 to
+and ten of them were checked to still resolve after the move. Publishing `sushihub` 0.2.0 to
 PyPI is the one step left, and it is a release, not part of this plan.
 
 **Goal:** the tool is called `sushihub` at every layer that names the tool, and
@@ -123,7 +123,9 @@ package changes underneath a distribution that keeps its name. A workspace insta
 from PyPI cannot upgrade across that; `install.ps1` and `install.sh` already uninstall
 an existing venv before installing, which is what makes the upgrade path work.
 
-This is a breaking release. It is `sushihub` 1.0.0.
+This is a breaking release, and below 1.0 that is a minor bump: `sushihub` 0.2.0. Calling it
+1.0.0 would declare the public interface settled, which is the owner's call and not a
+consequence of breaking something.
 
 ## Open
 

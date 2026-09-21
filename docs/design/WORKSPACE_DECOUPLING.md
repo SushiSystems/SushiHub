@@ -7,7 +7,8 @@ Each wave's plan is linked from its row in section 5, and the waves are mirrored
 wave 2 took `sushidsp` and `sushitrack` out of `hub add`, `hub link` and `hub install-cli`;
 wave 3 moved the workspace's data into `.sushistack/workspace.toml`; and the third was the
 tool's own name. The import package became `sushihub` and the CLI, the
-application and the contract moved to the repository root, which is why `hub` is version 1.0.0.
+application and the contract moved to the repository root. `hub` went to 0.2.0: below 1.0 a
+breaking change is a minor bump, and 1.0.0 would declare the interface settled, which it is not.
 See `docs/agent/plans/2026-09-22-rename-to-sushihub.md`.
 
 ## 1. The problem

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sushihub"
-version = "1.0.0"
+version = "0.2.0"
 description = "SushiHub CLI — shared dependency provisioning and module manager for the stack"
 readme = "README.md"
 authors = [{ name = "Mustafa Garip", email = "mustafagarip@sushisystems.io" }]
