@@ -108,8 +108,8 @@ def _finish(rc: int, payload: dict | None = None) -> None:
 def init():
     """Turn the current directory into a SushiStack workspace.
 
-    Writes the [cyan].sushistack[/cyan] marker, ensures [cyan].gitignore[/cyan]
-    excludes the shared [cyan]dependencies/[/cyan] tree and module checkouts, and
+    Writes the [cmd].sushistack[/cmd] marker, ensures [cmd].gitignore[/cmd]
+    excludes the shared [cmd]dependencies/[/cmd] tree and module checkouts, and
     creates the dependency directory. Run this once after cloning sushihub.
     """
     _finish(modules_svc.init())
@@ -224,8 +224,8 @@ def install_cli(
     """Install a module's developer CLI into an isolated pipx venv.
 
     The single install seam for the stack: no module ships its own bootstrap
-    script. This installs the module's [cyan]cli/[/cyan] package and injects the
-    shared [cyan]sushicore[/cyan] presentation layer that ships in this repository.
+    script. This installs the module's [cmd]cli/[/cmd] package and injects the
+    shared [cmd]sushicore[/cmd] presentation layer that ships in this repository.
 
     Always installed editable, against the checkout it was invoked from -- a
     non-editable install would freeze the CLI at whatever revision existed at
@@ -248,7 +248,7 @@ def update(
 ):
     """Bring the workspace and every present module up to date.
 
-    A checkout, cloned or linked, is fast-forwarded with [cyan]git pull[/cyan]. A
+    A checkout, cloned or linked, is fast-forwarded with [cmd]git pull[/cmd]. A
     binary install asks Sushi Account for the latest release and downloads it when the
     version differs from the installed one.
     """
@@ -326,7 +326,7 @@ def doctor():
 def remove(
     all: bool = typer.Option(
         False, "--all",
-        help="[bold red]Wipe everything[/bold red]: vcpkg ports, downloaded "
+        help="[bold][error]Wipe everything[/error][/bold]: vcpkg ports, downloaded "
              "toolchains (intel/llvm + AdaptiveCpp + oneAPI, several GB), and the "
              "portable cmake/ninja — the whole dependencies/ tree."),
     gpu: bool = typer.Option(False, "--gpu", help="Include GPU-only deps in removal."),
@@ -365,7 +365,7 @@ def gui_build(
 ):
     """Configure and compile the desktop application.
 
-    Builds into [cyan]gui/build/hub[/cyan] under the Visual Studio
+    Builds into [cmd]gui/build/hub[/cmd] under the Visual Studio
     environment on Windows, against the vcpkg tree `hub install` provisions.
     """
     _finish(gui_svc.build(build_type, clean=clean, defines=define))
@@ -398,7 +398,7 @@ def gui_run(
 ):
     """Launch a program the desktop application's build tree holds.
 
-    Arguments after [cyan]--[/cyan] go to that program.
+    Arguments after [cmd]--[/cmd] go to that program.
     """
     _finish(gui_svc.run(target, ctx.args))
 

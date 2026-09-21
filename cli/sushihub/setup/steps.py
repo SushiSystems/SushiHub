@@ -434,20 +434,20 @@ class DetectStep(Step):
             if state is Presence.BINARY:
                 _, text = describe(root, name, linked)
                 console.console.print(
-                    f"  [green]{name}: {text}, nothing to build[/green]")
+                    f"  [success]{name}: {text}, nothing to build[/success]")
                 continue
             if state is Presence.ABSENT:
                 verb = "linked but missing at" if name in linked else "not cloned yet"
                 hint = f" ({dest})" if name in linked else f" (hub add {name})"
-                console.console.print(f"  [dim]{name}: {verb}{hint}[/dim]")
+                console.console.print(f"  [muted]{name}: {verb}{hint}[/muted]")
                 continue
             missing = self._missing_requirements(
                 ctx, self._effective_required(name, all_deps))
             if missing:
                 console.console.print(
-                    f"  [yellow]{name}: needs {', '.join(missing)}[/yellow]")
+                    f"  [warn]{name}: needs {', '.join(missing)}[/warn]")
             else:
-                console.console.print(f"  [green]{name}: ready to build[/green]")
+                console.console.print(f"  [success]{name}: ready to build[/success]")
 
 
 class InstallDepsStep(Step):
