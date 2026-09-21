@@ -39,6 +39,41 @@ PyPI trusted publishing.
 - Do not touch `sushicore_dir` or `_sushicore_row`: the `hub status` `sushicore` row is deferred
   to wave 5 by the owner's decision.
 
+## Amendment, 2026-09-22, after the cleanup landed
+
+Task 1 is done: `sushicore` 0.2.0 is on PyPI (`v0.2.0`, commit `e9a27ee`). It dropped
+`WORKSPACE_CLI_DIR` and split the writer, so `write_toml_document(target, tables, header_lines)`
+now renders a whole document and `write_tool_section` is its `[tool]`-merging caller. Only step 5,
+the dependency bump in SushiStack, is left, and it belongs with task 2.
+
+The service decomposition changed the names task 2 works with. What this plan calls
+`config.registered_modules` and `modules._write_link` is now `services/links.py`: `registered()`
+reads the registry and `write(name, path)` writes it, and that file is the only place either
+happens. Task 2 therefore repoints `links.py` rather than `config.py` and `modules.py`.
+
+`links.write` renders the whole file itself, which is safe today because
+`modules.local.toml` holds nothing else. Once `[modules]` shares a file with `[tool]` it is a
+second whole-file rewriter, exactly what step 4 forbids. It must call `write_toml_document`.
+
+`config_dir` has six callers outside `config.py`, not the two the file list names. Every one of
+them is task 2's:
+
+| Caller | What it does with the directory |
+| --- | --- |
+| `console.py:22,33` | `LazyConsole(config_dir)` reads the `[cli]` theme |
+| `gui_config.py:111` | loads `config.toml` then `config.local.toml` |
+| `services/links.py:38` | writes the link registry |
+| `setup/steps.py:758` | writes the probed `[tool]` paths |
+| `setup/steps.py:944` | **deletes** `config.local.toml` under `hub remove` |
+| `setup/dependency_source.py:148` | finds the manifests; task 3 moves this one |
+
+`setup/steps.py:944` is a hazard of the same family as the writer. `hub remove` unlinks the
+whole config file today, which costs a developer their tool paths and nothing else. Pointed at
+`workspace.toml` unchanged, it would take the link registry with it. It must delete the `[tool]`
+table and leave the file, or refuse; decide which and say why.
+
+---
+
 ## The hazard that shapes this wave
 
 `sushicore.config_base.write_tool_section` rewrites its target file from scratch. It reads the
@@ -55,7 +90,7 @@ the order wrong loses a developer's link registry the first time `hub install` p
 
 ---
 
-### Task 1: sushicore 0.2.0
+### Task 1: sushicore 0.2.0 — DONE 2026-09-22, published as v0.2.0
 
 **Files** (repository `D:/Projects/sushicore`):
 - Modify: `sushicore/workspace.py`
@@ -210,9 +245,15 @@ import, so commit this together with task 2 rather than on its own.
 **Files:**
 - Modify: `sushihub/cli/sushistack/config.py`
 - Modify: `sushihub/cli/sushistack/services/modules.py`
+- Modify: `sushihub/cli/sushistack/services/links.py`
+- Modify: `sushihub/cli/sushistack/console.py`
+- Modify: `sushihub/cli/sushistack/gui_config.py`
+- Modify: `sushihub/cli/sushistack/cli.py`
+- Modify: `sushihub/cli/sushistack/setup/steps.py`
 - Modify: `sushihub/cli/pyproject.toml`
 - Modify: `sushihub/cli/tests/test_workspace_resolution.py`
 - Modify: `sushihub/cli/tests/test_init.py`
+- Modify: any test the greps in the amendment turn up
 - Create: `sushihub/cli/tests/test_workspace_upgrade.py`
 
 **Interfaces:**
