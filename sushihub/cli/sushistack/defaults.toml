@@ -1,20 +1,22 @@
-# SushiStack CLI configuration.
+# SushiStack CLI defaults, shipped inside the `sushistack` package.
 #
 # Layering (lowest -> highest precedence):
-#   built-in defaults  ->  this file  ->  config.local.toml  ->  SUSHI_* env vars  ->  CLI flags
+#   built-in defaults  ->  this file  ->  .sushistack/workspace.toml
+#   ->  SUSHI_* env vars  ->  CLI flags
 #
-# This file is committed and holds shared / portable defaults. Machine-specific
-# absolute paths (compiler locations, oneAPI/VS roots, vcpkg) belong in a
-# gitignored `config.local.toml` next to this file, using the SAME section
-# layout. The active platform's `[tool.<platform>]` section is merged over the
-# common `[tool]` section automatically.
+# This file is the tool's own portable defaults and is read out of the installed
+# package, never edited in place. Machine-specific absolute paths (compiler
+# locations, oneAPI/VS roots, vcpkg) belong in the workspace's own
+# `.sushistack/workspace.toml`, which `hub install` writes, using the SAME
+# section layout. The active platform's `[tool.<platform>]` section is merged
+# over the common `[tool]` section automatically.
 
 [tool]
 
 [tool.linux]
 # cc/cxx are intentionally unset: the compiler is derived from the selected
-# toolchain (acpp / clang++ / icpx). Pin them in config.local.toml only to
-# override that (e.g. a custom clang path).
+# toolchain (acpp / clang++ / icpx). Pin them in .sushistack/workspace.toml
+# only to override that (e.g. a custom clang path).
 generator = "Ninja"
 use_vcpkg = false
 vcpkg_root = "~/vcpkg"
@@ -24,7 +26,7 @@ oneapi_root = "/opt/intel/oneapi"
 generator = "Ninja"
 use_vcpkg = true
 vcpkg_triplet = "x64-windows"
-# The following are machine-specific; override in config.local.toml.
+# The following are machine-specific; override in .sushistack/workspace.toml.
 # vs_vcvars    = "C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Auxiliary/Build/vcvars64.bat"
 # oneapi_root  = "C:/Program Files (x86)/Intel/oneAPI"
 # ninja_exe    = "ninja"
@@ -41,8 +43,7 @@ vcpkg_triplet = "x64-windows"
 
 [cli]
 # CLI appearance, resolved by the shared `sushicore` package (same schema for
-# sr/se/hub). Override in config.local.toml or with SUSHI_CLI_THEME /
-# SUSHI_CLI_ICONS / SUSHI_CLI_COLOR — no rebuild needed. See sushicore's README
+# sr/se/hub). Override with SUSHI_CLI_THEME / SUSHI_CLI_ICONS / SUSHI_CLI_COLOR — no rebuild needed. See sushicore's README
 # for the full list of presets and the [cli.colors] / [cli.icon_overrides]
 # tables for one-off overrides.
 theme = "default"
@@ -52,5 +53,5 @@ color = "auto"
 [identity]
 # Sushi Account: where `hub login`, `hub logout`, `hub whoami` and `hub license` send
 # their four requests. Override with SUSHI_ACCOUNT_URL to point at a staging server
-# or at a fake one. The endpoints are in ../sushihub/contract/sushi-account.md.
+# or at a fake one. The endpoints are in sushihub/contract/sushi-account.md.
 url = "https://account.sushisystems.io"

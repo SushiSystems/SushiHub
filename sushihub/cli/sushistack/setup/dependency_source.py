@@ -6,8 +6,8 @@ The installer must not hard-code package names. Instead it asks an
 SushiStack owns no single manifest. Each module declares what it needs, and the
 installer aggregates those fragments into one shared dependency set:
 
-  * ``sushihub/cli/manifests/*.deps.toml`` — base fragments shipped with the workspace
-    (the module-independent build/toolchain infrastructure).
+  * ``sushistack/manifests/*.deps.toml`` — base fragments shipped inside this
+    package (the module-independent build/toolchain infrastructure).
   * ``<module>/cli/sushistack.deps.toml`` — a fragment a module contributes from
     its own repo (kept under cli/, not the repo root).
 
@@ -19,8 +19,11 @@ in-memory source.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from contextlib import contextmanager
 from dataclasses import dataclass
+from importlib.resources import as_file, files
 from pathlib import Path
+from typing import Iterator
 
 try:
     import tomllib  # Python 3.11+
@@ -28,16 +31,19 @@ except ModuleNotFoundError:  # Python 3.10 fallback
     import tomli as tomllib
 
 from .. import console
-from ..config import config_dir, workspace_root
+from ..config import workspace_root
 from ..services import links
 from ..services.presence import is_binary
 
 #: Path, relative to a module's repo root, of the fragment it contributes.
 MODULE_MANIFEST_REL = Path("cli") / "sushistack.deps.toml"
 
-#: Owner label for the base fragments under sushihub/cli/manifests/ — the build/toolchain
+#: Owner label for the base fragments this package ships — the build/toolchain
 #: infrastructure every module shares, owned by no single module.
 SHARED_OWNER = "shared"
+
+#: The package directory holding the dependency fragments every workspace shares.
+MANIFESTS_DIR = "manifests"
 
 #: Suffix every shipped fragment's filename carries; what precedes it names the owner.
 SHIPPED_MANIFEST_SUFFIX = ".deps.toml"
@@ -121,7 +127,7 @@ def _owner_for_shipped(path: Path) -> str:
     of the shared set that decides which toolchains get provisioned.
 
     Args:
-        path: A fragment under ``sushihub/cli/manifests/``.
+        path: A fragment under the package's ``manifests/`` directory.
 
     Returns:
         The owner label the dependencies read from *path* carry.
@@ -131,11 +137,22 @@ def _owner_for_shipped(path: Path) -> str:
     return SHARED_OWNER if stem == SHARED_MANIFEST_STEM else stem
 
 
+@contextmanager
+def packaged_manifests() -> Iterator[Path]:
+    """Yield a real filesystem path to the ``manifests/`` directory this package ships.
+
+    @pre The path is valid only inside the ``with`` block, because
+        ``importlib.resources`` may have extracted it.
+    """
+    with as_file(files("sushistack") / MANIFESTS_DIR) as path:
+        yield path
+
+
 def manifest_sources() -> list[tuple[Path, str]]:
     """Every dependency fragment plus the module that owns it.
 
-    Each entry is ``(path, owner)``: a shipped fragment under
-    ``sushihub/cli/manifests/`` is owned as :func:`_owner_for_shipped` says;
+    Each entry is ``(path, owner)``: a fragment this package ships is owned as
+    :func:`_owner_for_shipped` says;
     a module's ``cli/sushistack.deps.toml`` is owned by the module's directory
     name. Shipped fragments come first (sorted, stable order), then modules in
     the workspace, then linked external checkouts.
@@ -145,8 +162,7 @@ def manifest_sources() -> list[tuple[Path, str]]:
     to provision.
     """
     sources: list[tuple[Path, str]] = []
-    manifests_dir = config_dir() / "manifests"
-    if manifests_dir.is_dir():
+    with packaged_manifests() as manifests_dir:
         sources.extend((p, _owner_for_shipped(p))
                        for p in sorted(manifests_dir.glob("*" + SHIPPED_MANIFEST_SUFFIX)))
     try:
@@ -228,7 +244,7 @@ class TomlDependencySource(IDependencySource):
         if not self._sources:
             raise FileNotFoundError(
                 "No dependency manifests found. Expected at least "
-                "sushihub/cli/manifests/*.deps.toml in the SushiStack workspace."
+                "manifests/*.deps.toml inside the installed sushistack package."
             )
         merged: dict[str, Dependency] = {}
         for path, owner in self._sources:

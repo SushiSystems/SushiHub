@@ -74,15 +74,20 @@ def test_a_name_outside_the_catalog_is_refused(recorder):
     assert recorder.said("sushiruntime")
 
 
-def test_the_gitignore_lines_cover_every_module_and_the_local_files():
-    """`hub init` ignores the dependency tree, every module directory and both local files."""
+def test_the_gitignore_lines_cover_every_module_and_the_workspace_directory():
+    """`hub init` ignores the dependency tree, every module directory and .sushistack/."""
     lines = modules._GITIGNORE_LINES
     assert "/dependencies/" in lines
     for name in CATALOG:
         assert f"/{name}/" in lines
     assert "/.sushistack/" in lines
-    assert "/sushihub/cli/config.local.toml" in lines
-    assert "/sushihub/cli/modules.local.toml" in lines
+
+
+def test_the_gitignore_lines_name_no_file_a_new_workspace_never_writes():
+    """The pre-2026-09-22 local files are not written any more, so they are not ignored."""
+    lines = modules._GITIGNORE_LINES
+    assert "/sushihub/cli/config.local.toml" not in lines
+    assert "/sushihub/cli/modules.local.toml" not in lines
 
 
 def test_sushidsp_and_sushitrack_are_not_stack_modules():

@@ -11,15 +11,13 @@ to the workspace rather than to a module. Every module has its own CLI: `sr` (su
 sushihub/cli/
   sushistack/            the Python package behind `hub`
     cli.py               the Typer application: one function per subcommand
-    config.py            workspace root, config dir, the registered-modules file
+    config.py            workspace root, the workspace file, the packaged defaults
     gui_config.py        the desktop application's profile, config and root
     gui_env.py           its build environment, vcvars snapshot included
     services/            module lifecycle, Sushi Account, releases, the licence file, the gui build policy
     setup/               the dependency engine: manifests, package managers, toolchains, the pipeline
-  manifests/             dependency fragments this repository ships (*.deps.toml)
-  config.toml            defaults for the [tool], [cli] and [identity] tables
-  config.local.toml      machine-local overrides written by `hub install`; git-ignored
-  modules.local.toml     checkouts registered with `hub link`; git-ignored
+    defaults.toml        defaults for the [tool], [cli] and [identity] tables
+    manifests/           dependency fragments this package ships (*.deps.toml)
   install.py             installs `hub` into a pipx venv and injects sushicore
   pyproject.toml
 ```
@@ -114,7 +112,8 @@ the versions match, and downloads the new one and writes the licence file again 
 
 ## How dependencies are chosen
 
-`hub install` merges every `sushihub/cli/manifests/*.deps.toml` fragment with each present module's own
+`hub install` merges every `*.deps.toml` fragment the `sushistack` package ships with each present
+module's own
 `cli/sushistack.deps.toml`, keeps the entries that name a package for the current platform, and
 installs the ones that are missing. No dependency name lives in the installer code. The SYCL
 toolchains are sushiruntime's entries, not this repository's; the GPU toolkit is on for every
@@ -135,9 +134,8 @@ fragment declares a dependency of that name, so an empty workspace gets the base
 
 | File | Owner | Purpose |
 |---|---|---|
-| `<workspace>/.sushistack` | `hub init` | Marks the workspace root; every `hub` and module CLI walks up to it. |
-| `sushihub/cli/config.local.toml` | `hub install` | Resolved toolchain paths for this machine, read by every module CLI through `sushicore`. |
-| `sushihub/cli/modules.local.toml` | `hub link` | Modules that live outside the workspace tree, by name and path. |
+| `<workspace>/.sushistack/` | `hub init` | Marks the workspace root; every `hub` and module CLI walks up to it. |
+| `<workspace>/.sushistack/workspace.toml` | `hub init`, `hub install`, `hub link` | Everything the workspace owns: its format version, the resolved toolchain paths for this machine, and the modules linked from outside the tree. |
 | `<workspace>/sushiengine/sushi-release.json` | the release | Product, version, platform and what the package bundles. Its presence is what makes the directory a binary install. |
 | `<workspace>/sushiengine/sushi-licence.jwt` | `hub add`, `hub update` | The licence token the engine reads at start-up. Nothing but the token. |
 | `<workspace>/dependencies/` | `hub install`, `hub remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |

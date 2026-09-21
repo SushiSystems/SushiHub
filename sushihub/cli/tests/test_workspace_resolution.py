@@ -1,16 +1,15 @@
-"""Where `hub` decides the workspace, its config directory and its dependency tree are."""
+"""Where `hub` decides the workspace, its own file, its defaults and its dependency tree."""
 
 from __future__ import annotations
-
-from pathlib import Path
 
 import pytest
 
 from sushistack.config import (
     CHECKOUT_CLI_DIR,
+    DEFAULTS_FILE,
     WORKSPACE_MARKER,
-    config_dir,
     deps_dir,
+    packaged_defaults,
     workspace_file,
     workspace_root,
 )
@@ -66,10 +65,12 @@ def test_the_workspace_file_sits_inside_the_marker_directory(unpinned):
     assert workspace_file(unpinned) == unpinned / WORKSPACE_MARKER / "workspace.toml"
 
 
-def test_the_checkout_directory_still_holds_the_committed_defaults(unpinned):
-    """config_dir resolves to <root>/sushihub/cli, where the defaults are committed."""
-    assert config_dir(unpinned) == unpinned / CHECKOUT_CLI_DIR
-    assert config_dir(unpinned) == unpinned / Path("sushihub") / "cli"
+def test_the_defaults_come_from_the_package_not_the_workspace(unpinned):
+    """packaged_defaults resolves outside any workspace and names a readable file."""
+    with packaged_defaults() as defaults:
+        assert defaults.name == DEFAULTS_FILE
+        assert "[identity]" in defaults.read_text(encoding="utf-8")
+        assert unpinned not in defaults.parents
 
 
 def test_dependencies_default_to_one_tree_under_the_root(unpinned, monkeypatch):

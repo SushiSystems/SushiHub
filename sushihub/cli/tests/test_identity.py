@@ -13,7 +13,12 @@ import keyring.backend
 import keyring.errors
 import pytest
 
-from sushistack.config import CHECKOUT_CLI_DIR, DEFAULT_IDENTITY_URL, identity_url
+from sushistack.config import (
+    DEFAULT_IDENTITY_URL,
+    WORKSPACE_MARKER,
+    identity_url,
+    workspace_file,
+)
 from sushistack.services import session
 from sushistack.services.identity import (
     Account,
@@ -38,11 +43,9 @@ from sushistack.services.token_store import (
 
 
 def _workspace_with_identity(tmp_path, url: str):
-    """Write a throwaway workspace whose config.toml pins the Sushi Account url."""
-    (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
-    (tmp_path / CHECKOUT_CLI_DIR).mkdir(parents=True)
-    (tmp_path / CHECKOUT_CLI_DIR / "config.toml").write_text(
-        f'[identity]\nurl = "{url}"\n', encoding="utf-8")
+    """Write a throwaway workspace whose workspace.toml pins the Sushi Account url."""
+    (tmp_path / WORKSPACE_MARKER).mkdir()
+    workspace_file(tmp_path).write_text(f'[identity]\nurl = "{url}"\n', encoding="utf-8")
     return tmp_path
 
 
@@ -60,8 +63,16 @@ def test_identity_url_reads_the_config_key(monkeypatch, tmp_path):
     assert identity_url() == "http://127.0.0.1:9001"
 
 
-def test_identity_url_defaults_when_no_workspace_and_no_key(monkeypatch, tmp_path):
+def test_identity_url_falls_back_to_the_packaged_defaults(monkeypatch, tmp_path):
+    """An empty workspace still answers, because defaults.toml ships with the tool."""
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
+    monkeypatch.delenv("SUSHI_ACCOUNT_URL", raising=False)
+    assert identity_url() == DEFAULT_IDENTITY_URL
+
+
+def test_identity_url_answers_outside_any_workspace(monkeypatch):
+    """Resolution never needs a workspace: the packaged defaults carry the url."""
+    monkeypatch.delenv("SUSHISTACK_HOME", raising=False)
     monkeypatch.delenv("SUSHI_ACCOUNT_URL", raising=False)
     assert identity_url() == DEFAULT_IDENTITY_URL
 

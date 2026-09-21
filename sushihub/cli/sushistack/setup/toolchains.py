@@ -13,7 +13,7 @@ opt-in (``--oneapi``) and heavy.
 
 Each installer returns the resolved path the CLI config needs (the bundle root
 for intel-llvm, the ``acpp`` executable for adaptivecpp) or ``None`` on failure,
-so the caller can record it in ``config.local.toml`` and degrade gracefully —
+so the caller can record it in ``workspace.toml`` and degrade gracefully —
 the intel-llvm path is enough to build, so an acpp build failure is non-fatal.
 """
 

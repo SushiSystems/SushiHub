@@ -4,7 +4,7 @@ Kept separate from the steps so ``ConfigureStep`` stays a thin orchestrator: thi
 module knows *where tools live*, the step knows *when to write them out*.
 
 The values produced here mirror the fields the CLI's ``Config`` already reads
-(see ``config.py``), so the generated ``config.local.toml`` plugs straight into
+(see ``config.py``), so the probed ``[tool]`` table plugs straight into
 the existing layered-config + env-snapshot machinery with no other changes.
 """
 
