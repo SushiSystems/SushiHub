@@ -1,10 +1,10 @@
 # Decoupling the hub from the SushiStack checkout
 
-**Status:** designed 2026-09-21. Waves 0, 1 and 2 landed 2026-09-22
-(`../agent/plans/2026-09-21-wave-0-uncovered-seams.md`); waves 1 through 7 are open. The waves are
-mirrored into `REMAINING_WORK.md` so the order can be read from one place. The catalog work in
-wave 2 removes `sushidsp` and `sushitrack` from the stack, which is a breaking change to
-`hub add`, `hub link` and `hub install-cli`.
+**Status:** designed 2026-09-21. Waves 0 through 3 landed 2026-09-22; waves 4 through 7 are open.
+Each wave's plan is linked from its row in section 5, and the waves are mirrored into
+`REMAINING_WORK.md` so the order can be read from one place. Two breaking changes have shipped:
+wave 2 took `sushidsp` and `sushitrack` out of `hub add`, `hub link` and `hub install-cli`, and
+wave 3 moved the workspace's data into `.sushistack/workspace.toml`.
 
 ## 1. The problem
 
@@ -136,7 +136,7 @@ those five and nothing else.
 | 0 | Tests for the five uncovered seams: `workspace_root` and `config_dir` resolution, the `MODULES` catalog and its aliases, `hub init`'s marker and `.gitignore` lines, `hub link`'s write to `modules.local.toml`, and the `sushicore` injection in `_install_module_cli`. | nothing | Landed 2026-09-22: 37 tests across five modules, the suite at 334 |
 | 1 | `sushicore` moves to its own repository and publishes to PyPI. All seven consumer CLIs depend on the published package; the path injection is deleted. | 0 | Landed 2026-09-22: `sushicore==0.1.0` on PyPI, installed from the index by `hub` and by all six consumer repositories |
 | 2 | `ModuleCatalog` and `catalog.toml` inside the package, four entries. `BINARY_MODULE` becomes the `distribution` field. `sushidsp` and `sushitrack` leave the catalog. | 1 | Landed 2026-09-22: `hub add all` names four modules, `hub add sushidsp` reports an unknown module, and the suite is at 337 |
-| 3 | `.sushistack` becomes a directory holding `workspace.toml`, `modules.toml` and `config.local.toml`. `config.toml` and `manifests/` move into the package. `hub init` upgrades an old marker. | 2 | `hub init` then `hub install` works in an empty directory, and an upgraded existing workspace prints the same `hub status` table as before |
+| 3 | **Landed 2026-09-22.** `.sushistack` became a directory holding one `workspace.toml` with `[workspace]`, `[modules]` and `[tool]`; the owner chose one file rather than three. `defaults.toml` and `manifests/` moved into the package. Every `hub` command upgrades an old marker silently. Plan: `../agent/plans/2026-09-22-wave-3-workspace-directory.md` | 2 | Met: `hub init` then `hub install --dry-run` ran to completion in an empty directory with no `sushihub/` anywhere, and this workspace upgraded in place, keeping all five `[modules]` entries and eleven probed tool paths |
 | 4 | The installers drop the clone: pipx from PyPI, then `hub init`. `sushihub` publishes to PyPI. | 3 | One line on a clean Windows machine, then `hub add sushiengine` downloads the release |
 | 5 | The desktop application draws the new fields, and `tests/fixtures/` is re-recorded from a real `hub --json status` and `hub --describe`. | 4 | `hub gui build` and `hub gui test` pass and the Installs screen draws the new workspace |
 | 6 | A reader for `sushi-module.toml` and the file in each of the four modules. The catalog becomes the fallback. | 2 | A checkout carrying a manifest is recognised with no catalog entry |

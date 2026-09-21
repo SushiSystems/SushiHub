@@ -2,7 +2,7 @@
 
 Words this repository uses in a specific sense.
 
-**Workspace** — a clone of this repository with the `.sushistack` marker at its root, module
+**Workspace** — a directory with the `.sushistack` marker directory at its root, module
 checkouts directly under it and one `dependencies/` tree beside them. `docs/architecture/WORKSPACE.md`.
 
 **Module** — one of the stack's buildable repositories, named in `sushihub/cli/sushistack/catalog.toml`:
@@ -11,7 +11,7 @@ sushiruntime, sushiblas, sushiai, sushiengine. Each has a CLI (`sr`, `sb`, `sa`,
 repository.
 
 **Presence** — the form in which a module exists in a workspace, read from disk: *cloned* (a checkout
-under the workspace root), *linked* (a checkout elsewhere, registered in `sushihub/cli/modules.local.toml`),
+under the workspace root), *linked* (a checkout elsewhere, registered in `[modules]` in `.sushistack/workspace.toml`),
 *binary* (a downloaded release whose root holds `sushi-release.json`), or *absent*.
 `sushihub/cli/sushistack/services/presence.py` answers it; `hub status` shows it.
 

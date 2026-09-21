@@ -30,14 +30,14 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 ## The decoupling programme
 
 Designed in `WORKSPACE_DECOUPLING.md`; the waves below are its §5, kept here so the order can be
-read from one place. Waves 0, 1 and 2 landed on 2026-09-22; waves 3 through 7 are open.
+read from one place. Waves 0 through 3 landed on 2026-09-22; waves 4 through 7 are open.
 
 | Wave | Work | Waits on |
 |---|---|---|
 | 0 | Tests for the five seams the later waves rewrite and today's suite leaves uncovered. Landed 2026-09-22. | nothing |
 | 1 | `sushicore` moves to its own repository and publishes to PyPI; the path injection goes. Landed 2026-09-22. | 0 |
 | 2 | `ModuleCatalog` and a packaged `catalog.toml`; `sushidsp` and `sushitrack` leave the catalog. Landed 2026-09-22. | 1 |
-| 3 | `.sushistack` becomes a directory holding the workspace's own data; the defaults move into the package. | 2 |
+| 3 | `.sushistack` became a directory holding the workspace's own data in one `workspace.toml`; the defaults and the dependency manifests moved into the package. Landed 2026-09-22. | 2 |
 | 4 | The installers drop the clone and take `sushihub` from PyPI. | 3 |
 | 5 | The desktop application draws the new fields and its fixtures are re-recorded. | 4 |
 | 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. | 2 |
@@ -45,6 +45,14 @@ read from one place. Waves 0, 1 and 2 landed on 2026-09-22; waves 3 through 7 ar
 
 ## Outside the programme
 
+- **A `[cli]` theme in `workspace.toml` is not read.** `console.py` hands sushicore's
+  `LazyConsole` a directory, and `LazyConsole` appends `config.toml` and `config.local.toml`
+  itself. The override still works from its old location; reaching the new file needs sushicore
+  to take a file rather than a directory.
+- **The packaged manifests assume an unzipped install.** `dependency_source.manifest_sources`
+  returns paths out of an `importlib.resources.as_file` block that the parser opens later. pip
+  and pipx install unzipped, so this holds; a zipimported install would not. The fix is to
+  return each fragment's text, which changes `IDependencySource`'s shape.
 - **`hub status` reports sushicore as a module.** `sushicore` is a PyPI dependency, not a linked
   module, yet it still takes a row in the status table and shows as missing. Wave 5 decides what a
   non-module row should say; until then the row lies.

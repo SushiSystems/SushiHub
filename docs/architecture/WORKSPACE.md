@@ -1,12 +1,16 @@
 # The workspace
 
-A SushiStack workspace is a clone of this repository with module checkouts placed directly under
-its root and one shared dependency tree beside them.
+A SushiStack workspace is any directory `hub init` has marked, with module checkouts placed
+directly under its root and one shared dependency tree beside them. It is usually a clone of this
+repository, because that is where the desktop application's source lives, but nothing requires it:
+`hub` carries its own defaults and dependency manifests inside its package, so an empty folder is
+a workspace the moment `hub init` runs in it.
 
 ```
 sushistack/
-  .sushistack              workspace marker, written by `hub init`
-  sushihub/cli/            the `hub` command and its dependency manifests
+  .sushistack/             the workspace's own data, written by `hub init`; git-ignored
+    workspace.toml         [workspace] version, [modules] links, [tool] paths
+  sushihub/cli/            the `hub` command's source
   sushihub/gui/            the desktop application
   dependencies/            toolchains, vcpkg, cmake and ninja; git-ignored, filled by `hub install`
   sushiruntime/            added by `hub add sushiruntime`
@@ -32,7 +36,8 @@ moving it.
 
 ## What `hub` owns and what it does not
 
-`hub` owns the marker, the dependency tree, the module checkouts and the module CLIs' installation.
+`hub` owns the marker directory and what it holds, the dependency tree, the module checkouts and
+the module CLIs' installation.
 It does not build. Building, testing and running belong to each module's CLI, which shares its
 machinery through `sushicore` and keeps its own build policy. The line between the two is drawn in
 `../agent/specs/2026-08-25-cmake-driver-design.md`.
@@ -40,7 +45,7 @@ machinery through `sushicore` and keeps its own build policy. The line between t
 ## Three forms of presence
 
 A module under the root is *cloned* when it holds `.git`, *binary* when it holds `sushi-release.json`,
-and *linked* when `sushihub/cli/modules.local.toml` points at a checkout elsewhere. Every `hub` command asks
+and *linked* when `[modules]` in `.sushistack/workspace.toml` points at a checkout elsewhere. Every `hub` command asks
 one place, `sushihub/cli/sushistack/services/presence.py`. A binary install contributes no dependency
 fragment and is never pulled; `hub add` fetches its next release. A module CLI finds either kind of
 root through `sushicore`'s `ModuleProfile.markers()`.

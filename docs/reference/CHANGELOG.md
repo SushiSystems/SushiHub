@@ -3,6 +3,9 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Moved the workspace's own data into `.sushistack/workspace.toml` (`sushihub/cli/sushistack/config.py`).
+- 2026-09-22 — Shipped the tool's defaults and dependency manifests inside the package (`sushihub/cli/sushistack/defaults.toml`, `sushihub/cli/sushistack/manifests/`).
+- 2026-09-22 — Emptied `[tool]` rather than deleting the file under `hub remove`, which now shares it (`sushihub/cli/sushistack/setup/steps.py`).
 - 2026-09-22 — Split the module service into bricks: links, git, pipx and the licensed install (`sushihub/cli/sushistack/services/`).
 - 2026-09-22 — Installed a module's CLI the same way from `hub add` and `hub install-cli` (`sushihub/cli/sushistack/services/pipx.py`).
 - 2026-09-22 — Resolved a module's directory in one place, through the catalog (`sushihub/cli/sushistack/services/presence.py`).

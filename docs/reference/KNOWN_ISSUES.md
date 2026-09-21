@@ -41,7 +41,7 @@ in `sushihub/cli/sushistack/setup/package_managers.py` runs a plain `vcpkg insta
 no way to add that flag, and no `hub install` option exposes it.
 
 **Rule.** After a feature-set change, run the install once by hand with the workspace's vcpkg
-(`hub home` prints the `dependencies/` path; the root is `vcpkg_root` in `cli/config.toml` when
+(`hub home` prints the `dependencies/` path; the root is `vcpkg_root` in `.sushistack/workspace.toml` when
 set):
 
 ```
