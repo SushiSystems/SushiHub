@@ -31,9 +31,16 @@ publishing, pipx.
 - All six consumers move in this wave: `sushiruntime`, `sushiengine`, `sushiai`, `sushiblas`,
   `sushidsp`, `sushitrack`. `sushidsp` and `sushitrack` leave the stack in wave 7, but they use
   `sushicore` today and are not left on a path injection that no longer exists.
-- Tasks 2, 3 and 4 create a GitHub repository, configure a PyPI publisher and push a tag. An
-  agent cannot do any of those. Each such step is marked **owner step** and carries the exact
-  command or the exact page to open; an agent executing this plan stops there and reports.
+- Tasks 2, 3 and 4 change a GitHub repository's visibility, force-push to it, configure a PyPI
+  publisher and push a tag. An agent cannot do any of those. Each such step is marked **owner
+  step** and carries the exact command or the exact page to open; an agent executing this plan
+  stops there and reports.
+- **Tasks 3 and 4 are blocked until GitHub Actions runs again.** Every job in this organisation
+  has failed to start since 2026-09-15 with "The job was not started because recent account
+  payments have failed or your spending limit needs to be increased"
+  (`../reports/2026-09-22-ci-red-diagnosis.md`). Making SushiCore public in task 2 gives it free
+  Actions minutes, which is expected to clear the block for that repository; if it does not, the
+  organisation's billing settings must be fixed before task 3's workflows can prove anything.
 - `api-stability` and `versioning-and-release` govern this wave: the path injection is a public
   installation interface and it is being removed.
 - Python style follows `python-code-style`; comments and docstrings follow `source-comments`.
@@ -194,23 +201,39 @@ git ls-tree --name-only sushicore-split
 Expected, exactly: `.gitignore`, `CLAUDE.md`, `LICENSE`, `README.md`, `docs`, `pyproject.toml`,
 `sushicore`, `tests`.
 
-- [ ] **Step 2: Create the repository** — owner step
+- [ ] **Step 2: Make the existing repository public and describe it** — owner step
 
-Open https://github.com/organizations/SushiSystems/repositories/new and create `SushiCore`,
-public, with no README, no `.gitignore` and no licence: the split branch brings all three.
+`SushiSystems/SushiCore` already exists. Checked on 2026-09-22: it is private, its default branch
+is `main`, and it holds one file, `README.md`, from a single commit `7a104ff` dated 2026-09-21.
+There is nothing to create.
 
-Or, with the CLI:
+It goes public. The package is about to be readable by anyone who runs `pip download sushicore`,
+and a public repository's Actions minutes are free, which matters because the organisation's
+Actions are currently stopped for billing (see `../reports/2026-09-22-ci-red-diagnosis.md`) and
+tasks 3 and 4 cannot run until that is true.
 
 ```bash
-gh repo create SushiSystems/SushiCore --public --description "The shared core of the Sushi developer CLIs."
+gh repo edit SushiSystems/SushiCore --visibility public --accept-visibility-change-consequences   --description "The shared core of the Sushi developer CLIs."
 ```
 
-- [ ] **Step 3: Push the split branch as main** — owner step
+- [ ] **Step 3: Force the split branch onto main** — owner step
+
+The placeholder commit and the split share no ancestor, so this overwrites it. That is the
+decision: `7a104ff` carries one README that task 1 has already replaced with a better one, and
+nothing else.
 
 ```bash
 cd /d/Projects/sushistack
-git push https://github.com/SushiSystems/SushiCore.git sushicore-split:main
+git push --force https://github.com/SushiSystems/SushiCore.git sushicore-split:main
 ```
+
+Confirm what landed before going on:
+
+```bash
+gh api repos/SushiSystems/SushiCore/commits?per_page=3 --jq '.[] | .sha[0:7] + " " + (.commit.message | split("\n")[0])'
+```
+
+Expected: the top commits are sushicore's own, and `7a104ff Initial commit` is gone.
 
 - [ ] **Step 4: Clone it beside the others and confirm it stands alone**
 
