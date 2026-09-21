@@ -6,6 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "sushihub"
 version = "0.1.0"
 description = "SushiStack CLI — shared dependency provisioning and module manager for the stack"
+readme = "README.md"
 authors = [{ name = "Mustafa Garip", email = "mustafagarip@sushisystems.io" }]
 requires-python = ">=3.10"
 dependencies = [
