@@ -45,6 +45,11 @@ read from one place. Waves 0 through 4 landed on 2026-09-22; waves 5 through 7 a
 
 ## Outside the programme
 
+- **`use_vcpkg` is declared and never read.** `defaults.toml` sets `use_vcpkg = false` for Linux,
+  but `sushicore.stack_config.resolved_vcpkg` never consults it: it returns `vcpkg_root` when one
+  is set, else the provisioned tree. On Linux the default `vcpkg_root = "~/vcpkg"` therefore wins
+  over `dependencies/vcpkg` for every build, which is either the intent written in the wrong place
+  or a key that should be deleted. Decide which; the change lands in `sushicore`.
 - **An install from PyPI has no desktop application.** `hub gui build` and `hub gui run` build
   `sushihub/gui`, which only a clone of this repository carries, and the installers no longer
   clone. A user who wants the application clones by hand today. Wave 5 owns how it is
