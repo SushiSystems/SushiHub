@@ -42,17 +42,28 @@ modules declare. `hub install-cli <module…>` reinstalls a CLI on demand, for i
 
 ## Upgrading an install made before 2026-09-22
 
-`sushicore` used to be injected into `hub`'s pipx environment as an editable install pointing at
-`sushicore/` inside this checkout. That directory is gone, so an older install fails at startup
-with `ModuleNotFoundError: No module named 'sushicore'`. One command repairs it, and pip resolves
-the package from PyPI this time:
+`sushicore` used to be injected as an editable install pointing at `sushicore/` inside this
+checkout. That directory is gone, so **every** pipx environment that carried the injection now
+fails at startup with `ModuleNotFoundError: No module named 'sushicore'`. That is `hub` and all
+five module CLIs, not just `hub`: `sr`, `se`, `sa`, `sb` and `sd` each hold their own copy of the
+dead link.
+
+Repair `hub` first, because the second command is `hub`:
 
 ```bash
 python sushihub/cli/install.py
+hub install-cli sushiruntime sushiengine sushiai sushiblas sushidsp
 ```
 
-The same applies to each module CLI installed before that date; `hub install-cli <module>`
-reinstalls one.
+Both resolve `sushicore` from PyPI this time. To check one environment rather than trust it, look
+for a dead editable marker:
+
+```bash
+ls ~/pipx/venvs/sushiengine-cli/Lib/site-packages/__editable__.sushicore*
+```
+
+A hit means that environment still points at the deleted directory; no such file, and a
+`sushicore/` directory beside it, means the published package is in place.
 
 ## What `hub install` downloads
 
