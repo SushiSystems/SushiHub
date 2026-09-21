@@ -51,8 +51,8 @@ def run(step: str = "all", dry_run: bool = False,
                 ctx.assume_acpp_llvm = True
             else:
                 ctx.assume_acpp_llvm = _confirm_timeout(
-                    f"[bold][warn]AdaptiveCpp needs LLVM {LLVM_WINDOWS_VERSION} "
-                    "(a ~2-3 GB download) to build on Windows.[/warn][/bold]\n"
+                    f"[warn]AdaptiveCpp needs LLVM {LLVM_WINDOWS_VERSION} "
+                    "(a ~2-3 GB download) to build on Windows.[/warn]\n"
                     "Install it now into the deps folder?",
                     default=False,
                 )
