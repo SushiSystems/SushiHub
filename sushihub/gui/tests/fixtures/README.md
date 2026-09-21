@@ -2,7 +2,7 @@
 
 Two kinds of file live here, and a test reads the kind that matches what it checks.
 
-**Recorded** files are what `hub` printed on a real workspace, last on 2026-09-15. They prove the
+**Recorded** files are what `hub` printed on a real workspace, last on 2026-09-22. They prove the
 parsers accept the stream `hub` actually writes today. Re-record them whenever the contract or the
 command set changes:
 

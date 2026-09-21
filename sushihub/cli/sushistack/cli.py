@@ -359,14 +359,14 @@ def logout():
 
 @app.command("whoami")
 def whoami():
-    """Print the Sushi Account account this machine is signed in as."""
+    """Print the Sushi Account this machine is signed in as."""
     from .services import session as session_svc
     _finish(*session_svc.whoami())
 
 
 @app.command("license")
 def license():
-    """Print the licences the signed-in Sushi Account account holds."""
+    """Print the licences the signed-in Sushi Account holds."""
     from .services import session as session_svc
     _finish(*session_svc.license())
 
