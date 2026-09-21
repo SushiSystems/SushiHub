@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from sushistack.services import links, modules, presence
 from sushistack.services.catalog import CATALOG
 from sushistack.services.module_manifest import MANIFEST_FILE
@@ -83,6 +85,23 @@ def test_a_manifest_that_will_not_read_is_reported_rather_than_raised(tmp_path):
     assert list(known) == CATALOG.names()
     assert len(problems) == 1
     assert "sushidsp" in problems[0]
+
+
+class _Silent:
+    """Swallow what a command prints, so no test writes to the real console.
+
+    Under pytest's capture the shared Rich console can hold a stream that is
+    already closed, which is a property of the harness rather than of `hub`.
+    """
+
+    def __getattr__(self, _name):
+        return lambda *a, **k: None
+
+
+@pytest.fixture(autouse=True)
+def quiet(monkeypatch):
+    """Give every test in this module a console that prints nothing."""
+    monkeypatch.setattr(modules, "console", _Silent())
 
 
 def test_link_accepts_a_checkout_that_describes_itself(tmp_path, monkeypatch):
