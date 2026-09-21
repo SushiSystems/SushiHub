@@ -49,6 +49,12 @@ them. See "Machine-readable output".
 | `hub whoami` | Print the signed-in account: its id, its email and how many licences it holds. |
 | `hub license` | Print one row per licence on the account: product, holder (`account` or `org`), expiry. |
 
+`hub --help` groups the commands under Workspace, Modules, Dependencies, Account and Desktop app,
+and each command's own help ends with examples. On a colour terminal the root screen shows the
+logo. On a dark terminal add `[cli]` and `background = "dark"` to `config.local.toml` in the
+`hub` checkout to give it a glow; `COLORFGBG` is read when the terminal sets it, and Windows
+Terminal does not.
+
 Tab completion: run `hub --install-completion` once.
 
 ## Machine-readable output

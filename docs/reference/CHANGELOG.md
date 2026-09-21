@@ -3,6 +3,7 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Drew `hub --help` from sushicore's help page: command groups, examples and the logo (`cli/sushihub/cli.py`, `cli/sushihub/console.py`).
 - 2026-09-22 — Split the two names in prose: `SushiHub` is the tool, `SushiStack` is the applications it installs (`README.md`, `docs/`).
 - 2026-09-22 — Pointed the application's vcpkg fallback at the workspace root it now sits one level below (`gui/CMakeLists.txt`).
 - 2026-09-22 — Lifted the CLI, the application and the contract to the repository root, the shape every sibling module already had (`cli/`, `gui/`, `contract/`).

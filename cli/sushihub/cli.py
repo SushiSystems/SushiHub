@@ -18,6 +18,7 @@ import sys
 from typing import List, Optional
 
 import typer
+from sushicore.typer_help import help_group
 
 from . import console
 from .config import upgrade_workspace, workspace_root
@@ -28,8 +29,17 @@ from .services import modules as modules_svc
 from .services import setup as setup_svc
 from .services import status_report
 
+K_WORKSPACE = "Workspace"
+K_MODULES = "Modules"
+K_DEPENDENCIES = "Dependencies"
+K_DESKTOP_APP = "Desktop app"
+K_ACCOUNT = "Account"
+
+_help_group = help_group(console.current)
+
 app = typer.Typer(
     name="hub",
+    cls=_help_group,
     help="SushiHub CLI — one shared dependency tree and module manager for the stack.",
     rich_markup_mode="rich",
 )
@@ -90,7 +100,11 @@ def _finish(rc: int, payload: dict | None = None) -> None:
 # --------------------------------------------------------------------------- #
 # workspace
 # --------------------------------------------------------------------------- #
-@app.command("init")
+@app.command(
+    "init",
+    rich_help_panel=K_WORKSPACE,
+    epilog="hub init  # Mark this directory as a workspace",
+)
 def init():
     """Turn the current directory into a SushiStack workspace.
 
@@ -101,7 +115,11 @@ def init():
     _finish(modules_svc.init())
 
 
-@app.command("home")
+@app.command(
+    "home",
+    rich_help_panel=K_WORKSPACE,
+    epilog="hub home",
+)
 def home():
     """Print the resolved workspace root and dependency directory."""
     from .config import deps_dir, workspace_root
@@ -111,7 +129,12 @@ def home():
     _finish(0, {"workspace": str(root), "dependencies": str(deps)})
 
 
-@app.command("status")
+@app.command(
+    "status",
+    rich_help_panel=K_WORKSPACE,
+    epilog="hub status\n"
+           "hub status --check-updates  # Fetch each checkout first",
+)
 def status(
     json_output: bool = typer.Option(
         False, "--json", help="Print machine-readable JSON instead of a table."),
@@ -136,7 +159,13 @@ def status(
 _MODULE_NAMES = " | ".join(CATALOG.names())
 _MODULE_ALIASES = "`, `".join(CATALOG.aliases())
 # --------------------------------------------------------------------------- #
-@app.command("add")
+@app.command(
+    "add",
+    rich_help_panel=K_MODULES,
+    epilog="hub add sr  # Bring sushiruntime in\n"
+           "hub add all --dry-run  # Show the plan only\n"
+           "hub add se --binary  # Install sushiengine from its release",
+)
 def add(
     modules: List[str] = typer.Argument(
         ..., help=f"Modules to bring in: {_MODULE_NAMES} | all."),
@@ -159,7 +188,11 @@ def add(
                             binary=binary))
 
 
-@app.command("link")
+@app.command(
+    "link",
+    rich_help_panel=K_MODULES,
+    epilog="hub link se ../sushiengine  # Register an existing checkout",
+)
 def link(
     module: str = typer.Argument(
         ..., help=f"Module name: {_MODULE_NAMES}."),
@@ -178,7 +211,11 @@ def link(
     _finish(modules_svc.link(module, path, dry_run=dry_run, skip_install=skip_install))
 
 
-@app.command("install-cli")
+@app.command(
+    "install-cli",
+    rich_help_panel=K_MODULES,
+    epilog="hub install-cli sr",
+)
 def install_cli(
     modules: List[str] = typer.Argument(
         ..., help=f"Modules whose CLI to install: {_MODULE_NAMES} | all."),
@@ -198,7 +235,12 @@ def install_cli(
     _finish(cli_install_svc.install_cli(modules, dry_run=dry_run))
 
 
-@app.command("update")
+@app.command(
+    "update",
+    rich_help_panel=K_MODULES,
+    epilog="hub update\n"
+           "hub update sr --dry-run",
+)
 def update(
     modules: Optional[List[str]] = typer.Argument(
         None, help="Modules to update (omit for all present modules)."),
@@ -216,7 +258,13 @@ def update(
 # --------------------------------------------------------------------------- #
 # dependencies
 # --------------------------------------------------------------------------- #
-@app.command("install")
+@app.command(
+    "install",
+    rich_help_panel=K_DEPENDENCIES,
+    epilog="hub install\n"
+           "hub install --customize  # Pick toolchains interactively\n"
+           "hub install --dry-run",
+)
 def install(
     customize: bool = typer.Option(
         False, "--customize",
@@ -248,7 +296,11 @@ def install(
                           assume_yes=yes, refresh_toolchains=refresh_toolchains))
 
 
-@app.command("sync")
+@app.command(
+    "sync",
+    rich_help_panel=K_MODULES,
+    epilog="hub sync",
+)
 def sync(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't change."),
 ):
@@ -256,13 +308,21 @@ def sync(
     _finish(modules_svc.sync(dry_run=dry_run))
 
 
-@app.command("doctor")
+@app.command(
+    "doctor",
+    rich_help_panel=K_DEPENDENCIES,
+    epilog="hub doctor",
+)
 def doctor():
     """Inventory tools, compilers, and dependencies; report what is missing."""
     _finish(setup_svc.run("detect", dry_run=False))
 
 
-@app.command("remove")
+@app.command(
+    "remove",
+    rich_help_panel=K_DEPENDENCIES,
+    epilog="hub remove --all --dry-run  # Show what --all would remove",
+)
 def remove(
     all: bool = typer.Option(
         False, "--all",
@@ -283,13 +343,18 @@ def remove(
 # --------------------------------------------------------------------------- #
 gui_app = typer.Typer(
     name="gui",
+    cls=_help_group,
     help="Build, test and run the desktop application under gui.",
     rich_markup_mode="rich",
 )
-app.add_typer(gui_app, name="gui")
+app.add_typer(gui_app, name="gui", rich_help_panel=K_DESKTOP_APP)
 
 
-@gui_app.command("build")
+@gui_app.command(
+    "build",
+    epilog="hub gui build --type release\n"
+           "hub gui build --clean",
+)
 def gui_build(
     build_type: gui_svc.BuildType = typer.Option(
         gui_svc.BuildType.debug, "--type", help="The configuration to build."),
@@ -306,7 +371,11 @@ def gui_build(
     _finish(gui_svc.build(build_type, clean=clean, defines=define))
 
 
-@gui_app.command("test")
+@gui_app.command(
+    "test",
+    epilog="hub gui test --filter <pattern>\n"
+           "hub gui test --repeat 5",
+)
 def gui_test(
     filter: Optional[str] = typer.Option(
         None, "--filter", help="Run only the tests whose name matches this pattern."),
@@ -320,6 +389,7 @@ def gui_test(
 @gui_app.command(
     "run",
     context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+    epilog="hub gui run",
 )
 def gui_run(
     ctx: typer.Context,
@@ -333,13 +403,20 @@ def gui_run(
     _finish(gui_svc.run(target, ctx.args))
 
 
-@gui_app.command("clean")
+@gui_app.command(
+    "clean",
+    epilog="hub gui clean",
+)
 def gui_clean():
     """Remove the desktop application's build tree."""
     _finish(gui_svc.clean())
 
 
-@app.command("login")
+@app.command(
+    "login",
+    rich_help_panel=K_ACCOUNT,
+    epilog="hub login",
+)
 def login():
     """Sign in to Sushi Account and keep the session in the credential store.
 
@@ -350,21 +427,33 @@ def login():
     _finish(*session_svc.login())
 
 
-@app.command("logout")
+@app.command(
+    "logout",
+    rich_help_panel=K_ACCOUNT,
+    epilog="hub logout",
+)
 def logout():
     """Forget the stored Sushi Account session on this machine."""
     from .services import session as session_svc
     _finish(*session_svc.logout())
 
 
-@app.command("whoami")
+@app.command(
+    "whoami",
+    rich_help_panel=K_ACCOUNT,
+    epilog="hub whoami",
+)
 def whoami():
     """Print the Sushi Account this machine is signed in as."""
     from .services import session as session_svc
     _finish(*session_svc.whoami())
 
 
-@app.command("license")
+@app.command(
+    "license",
+    rich_help_panel=K_ACCOUNT,
+    epilog="hub license",
+)
 def license():
     """Print the licences the signed-in Sushi Account holds."""
     from .services import session as session_svc
