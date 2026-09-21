@@ -59,7 +59,7 @@ cover. That is the wave 0 tests doing their job: they make the removal visible i
 
 ### Task 1: Make sushicore publishable, in place
 
-`sushicore/` has a `pyproject.toml`, a `LICENSE`, `docs/README.md`, `CLAUDE.md` and 94 tests, but
+`sushicore/` has a `pyproject.toml`, a `LICENSE`, `docs/README.md`, `docs/CLAUDE.md` and 89 tests, but
 no front-door `README.md` and no packaging metadata beyond a name and a description. PyPI renders
 the readme on the project page and the classifiers drive its search, so both are added before
 anything moves.
@@ -110,12 +110,15 @@ The manual is in `docs/README.md`. Licensed under the terms in `LICENSE`.
 - [ ] **Step 2: Add the packaging metadata**
 
 In `sushicore/pyproject.toml`, the `[project]` table today names only `name`, `version`,
-`description`, `authors`, `requires-python` and `dependencies`. Add the four fields PyPI needs,
-directly after the `description` line:
+`description`, `authors`, `requires-python` and `dependencies`. Add the fields PyPI needs,
+directly after the `description` line. The licence is the SPDX expression rather than the
+`{ file = ... }` table, which setuptools deprecates and removes on 2027-02-18; that form needs
+`requires = ["setuptools>=77.0"]` in `[build-system]`, so raise it from 61 in the same edit.
 
 ```toml
 readme = "README.md"
-license = { file = "LICENSE" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -147,7 +150,7 @@ readme means step 1 or step 2 is wrong; fix it rather than proceeding.
 - [ ] **Step 4: Confirm the tests still pass and the build tree is not committed**
 
 Run: `python -m pytest sushicore/tests -q`
-Expected: 94 passed.
+Expected: 89 passed.
 
 Run: `git status --porcelain sushicore/`
 Expected: `sushicore/dist/` and `sushicore/*.egg-info` do not appear, because `sushicore/.gitignore`
@@ -238,6 +241,12 @@ gh api repos/SushiSystems/SushiCore/commits?per_page=3 --jq '.[] | .sha[0:7] + "
 Expected: the top commits are sushicore's own, and `7a104ff Initial commit` is gone.
 
 - [ ] **Step 4: Clone it beside the others and confirm it stands alone**
+> **Found by this step on 2026-09-22.** The first standalone clone could not even collect its
+> tests: `tests/test_record_cli_argv.py` loaded `../../../tools/record_cli_argv.py`, which is a
+> SushiStack tool, and in a clone that path resolves outside the repository. The test never
+> imported `sushicore`. It moved to `tools/tests/` in SushiStack, beside the tool it covers, and
+> `sushicore` dropped from 94 tests to 89. Any later re-split must be taken after that move.
+
 
 ```bash
 cd /d/Projects
@@ -247,7 +256,7 @@ python -m pip install -e ".[test]"
 python -m pytest tests -q
 ```
 
-Expected: 94 passed, from a checkout that has no SushiStack anywhere near it. This is the whole
+Expected: 89 passed, from a checkout that has no SushiStack anywhere near it. This is the whole
 point of the wave; if it does not pass here, nothing after this task is worth starting.
 
 - [ ] **Step 5: Delete the local split branch**
