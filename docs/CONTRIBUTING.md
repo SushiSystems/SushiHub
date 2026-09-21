@@ -17,11 +17,13 @@ happened. The hand-maintained manual is the rest of `docs/`, indexed from `docs/
 
 ## Two components, two owners
 
-`sushihub/cli/` is the `hub` command, `sushihub/gui/` the desktop application over it. `sushicore/` is the engine under `hub` and the five module CLIs in the
-other repositories. A change to `sushicore` is a change to six programs at once, and this
-repository's CI runs each of the five consumers' own test suites against the `sushicore` under
-test. Nothing in `sushicore` may name a module or a cache variable; anything module-specific is a
-parameter. The reasoning is in `docs/agent/specs/2026-08-25-cmake-driver-design.md`.
+`sushihub/cli/` is the `hub` command, `sushihub/gui/` the desktop application over it.
+
+The engine under both, `sushicore`, left this repository on 2026-09-22 and is installed from
+PyPI like any other dependency. Its source, its tests and its own CI are at
+`github.com/SushiSystems/SushiCore`. A change there still reaches seven programs at once, so
+nothing in it may name a module or a cache variable; anything module-specific is a parameter.
+The reasoning is in `docs/agent/specs/2026-08-25-cmake-driver-design.md`.
 
 ## Documentation lands with the code
 
@@ -43,9 +45,9 @@ the docstring cites by path.
 
 ## Verification before claiming something works
 
-`sushicore`'s suite runs with `python -m pytest sushicore/tests -q` from the repository root. The
-`hub` command's suite runs with `python -m pytest sushihub/cli/tests -q`; the two suites cannot share
-one run, because both packages are named `tests`. Never invoke
+The `hub` command's suite runs with `python -m pytest sushihub/cli/tests -q` and the argv
+recorder's with `python -m pytest tools/tests -q`. `sushicore`'s own suite runs in its
+repository. Never invoke
 `cmake`, `ninja` or `ctest` directly, and never run a real build to prove a CLI change; the argv
 recorder in `tools/record_cli_argv.py` exists so the build code can be checked without compiling.
 Say plainly what was verified and what was not.

@@ -12,13 +12,15 @@ curl -fsSL https://sushisystems.io/install.sh | bash      # Linux / WSL
 irm https://sushisystems.io/install.ps1 | iex             # Windows (PowerShell)
 ```
 
-The repository carries three things of its own:
+The repository carries two things of its own:
 
 | Directory | What it is | Its README |
 |---|---|---|
 | `sushihub/cli/` | The `hub` command: dependency provisioning and module lifecycle. | `sushihub/cli/README.md` |
 | `sushihub/gui/` | The desktop application: a screen for every `hub` command, over `hub --json`. | `sushihub/gui/README.md` |
-| `sushicore/` | The engine under every Sushi CLI (`hub`, `sr`, `se`, `sa`, `sb`, `sd`, `st`): console, config, workspace resolution, the cmake driver. | `sushicore/docs/README.md` |
+
+The engine under every Sushi CLI is `sushicore`, which lives in its own repository and installs
+from PyPI: console, config, workspace resolution and the cmake driver.
 
 Everything else under the workspace root is a module checkout `hub add` produces, or the
 `dependencies/` tree `hub install` fills. Neither is tracked here.

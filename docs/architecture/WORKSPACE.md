@@ -8,7 +8,6 @@ sushistack/
   .sushistack              workspace marker, written by `hub init`
   sushihub/cli/            the `hub` command and its dependency manifests
   sushihub/gui/            the desktop application
-  sushicore/               the shared CLI engine, tracked in this repository
   dependencies/            toolchains, vcpkg, cmake and ninja; git-ignored, filled by `hub install`
   sushiruntime/            added by `hub add sushiruntime`
   sushiblas/               added by `hub add sushiblas`

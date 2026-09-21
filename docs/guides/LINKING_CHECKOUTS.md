@@ -15,17 +15,18 @@ cloned one: its `cli/sushistack.deps.toml` contributes to what `hub install` pro
 
 ## Your own sushicore
 
-`sushicore` is not a module; it ships inside this repository and needs no clone. To make every CLI
-use a checkout of it that you are editing:
+`sushicore` is not a module and `hub link sushicore` is refused. Since 2026-09-22 it lives at
+`github.com/SushiSystems/SushiCore` and every CLI takes it from PyPI. To edit it and have the
+change reach the CLIs, install your checkout over the published one:
 
 ```bash
-hub link sushicore /path/to/sushicore
+git clone https://github.com/SushiSystems/SushiCore.git
+pip install -e ./SushiCore
 ```
 
-Resolution order, first match wins: the `SUSHICORE_DIR` environment variable, a linked path, the
-`sushicore/` under the workspace, a sibling checkout next to the workspace. Because the CLIs
-receive it as an editable install, edits apply to `hub`, `sr`, `se` and the rest without
-reinstalling.
+An editable install shadows the release for as long as it is there, so edits apply to `hub`, `sr`,
+`se` and the rest without reinstalling. `pip install --force-reinstall sushicore` puts the
+published version back.
 
 ## Undoing a link
 
