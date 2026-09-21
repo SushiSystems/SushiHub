@@ -64,6 +64,8 @@ Everything an agent wrote while working, kept as a record rather than as part of
 - `agent/specs/2026-08-25-cmake-driver-design.md` — the shared cmake driver: what five
   `services/project.py` copies had in common, what they did not, and what moved into `sushicore`.
 - `agent/plans/2026-08-25-cmake-driver.md` — the plan that landed that design, task by task.
+- `agent/plans/2026-09-21-wave-0-uncovered-seams.md` — wave 0 of the decoupling: tests for the
+  five seams the later waves rewrite.
 - `agent/reports/` — reports written while executing a plan. Empty so far.
 
 ## Archive
