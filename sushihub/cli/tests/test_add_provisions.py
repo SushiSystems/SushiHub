@@ -1,13 +1,13 @@
 """Bringing a module in brings its dependencies with it."""
 
-from sushistack.services import links, modules
+from sushistack.services import git_ops, links, modules
 
 
 def test_add_provisions_once_after_a_new_clone(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(modules, "workspace_root", lambda: tmp_path)
     monkeypatch.setattr(links, "registered", lambda: {})
-    monkeypatch.setattr(modules, "_run_git", lambda args, cwd: (tmp_path / "sushiruntime" / ".git").mkdir(parents=True) or 0)
+    monkeypatch.setattr(git_ops, "run", lambda args, cwd: (tmp_path / "sushiruntime" / ".git").mkdir(parents=True) or 0)
     monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
     rc = modules.add(["sushiruntime"], provision=lambda dry_run: calls.append(dry_run) or 0)
     assert rc == 0 and calls == [False]
@@ -27,7 +27,7 @@ def test_add_honours_skip_install(monkeypatch, tmp_path):
     calls = []
     monkeypatch.setattr(modules, "workspace_root", lambda: tmp_path)
     monkeypatch.setattr(links, "registered", lambda: {})
-    monkeypatch.setattr(modules, "_run_git", lambda args, cwd: (tmp_path / "sushiruntime" / ".git").mkdir(parents=True) or 0)
+    monkeypatch.setattr(git_ops, "run", lambda args, cwd: (tmp_path / "sushiruntime" / ".git").mkdir(parents=True) or 0)
     monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
     modules.add(["sushiruntime"], skip_install=True, provision=lambda dry_run: calls.append(dry_run) or 0)
     assert calls == []
@@ -42,7 +42,7 @@ def test_add_leaves_a_binary_module_alone(monkeypatch, tmp_path):
     cloned = []
     monkeypatch.setattr(modules, "workspace_root", lambda: tmp_path)
     monkeypatch.setattr(links, "registered", lambda: {})
-    monkeypatch.setattr(modules, "_run_git", lambda args, cwd: cloned.append(args) or 0)
+    monkeypatch.setattr(git_ops, "run", lambda args, cwd: cloned.append(args) or 0)
     monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
     rc = modules.add(["sushiengine"], provision=lambda dry_run: calls.append(dry_run) or 0)
     assert rc == 0 and cloned == [] and calls == []
