@@ -15,6 +15,7 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from rich.markup import escape
 from sushicore.config_base import write_toml_document
 from sushicore.workspace import read_toml
 
@@ -100,6 +101,12 @@ _OK = "OK"
 _MISSING = "MISSING"
 _NOT_NEEDED = "NOT NEEDED"
 
+#: How the summary line names a status; a status not listed is named by its own text.
+_SUMMARY_LABELS = {_MISSING: "missing", _NOT_NEEDED: "not needed"}
+
+#: One inventory row: component, status, owner, detail.
+_Row = tuple[str, str, str, str]
+
 #: What each discrete-GPU vendor implies for the compute SDK that gets installed.
 _VENDOR_SDK = {
     "amd":  "AMD — installs ROCm (HIP)",
@@ -117,6 +124,11 @@ _VENDOR_SDK_NVIDIA = {
 def _status(present: bool) -> str:
     """Return the status a probed component reports."""
     return _OK if present else _MISSING
+
+
+def _literal(text: str) -> str:
+    """Return *text* ready for ``console.info``: escaped on a terminal, untouched in JSON events."""
+    return text if console.is_machine() else escape(text)
 
 
 class DetectStep(Step):
@@ -281,6 +293,27 @@ class DetectStep(Step):
         return [row for owner in owner_order(self._source, by_owner)
                 for row in by_owner[owner]]
 
+    @staticmethod
+    def summarize_inventory(rows: list[_Row]) -> tuple[dict[str, int], list[_Row]]:
+        """Count the inventory rows by status text and pick out the missing ones.
+
+        Args:
+            rows: The rows the inventory table shows, as ``inventory_rows`` returned them.
+
+        Returns:
+            The count per status, ordered OK, MISSING, NOT NEEDED and then any other
+            status by first appearance, with no zero counts; and the MISSING rows in
+            table order.
+        """
+        seen: dict[str, int] = {}
+        for _component, status, _owner, _detail in rows:
+            seen[status] = seen.get(status, 0) + 1
+        known = (_OK, _MISSING, _NOT_NEEDED)
+        ordered = [status for status in known if status in seen]
+        ordered += [status for status in seen if status not in known]
+        return ({status: seen[status] for status in ordered},
+                [row for row in rows if row[1] == _MISSING])
+
     def run(self, ctx: InstallContext) -> StepResult:
         refresh_windows_path()  # reflect tools the bootstrap installer just added
 
@@ -288,10 +321,12 @@ class DetectStep(Step):
         # the row ordering and the readiness report below both read.
         all_deps = self._source.all()
 
+        rows = self.inventory_rows(ctx, all_deps)
         console.table(
             ["Component", "Status", "Owner", "Detail"],
-            [list(row) for row in self.inventory_rows(ctx, all_deps)],
+            [list(row) for row in rows],
             title="Environment inventory",
+            group_by="Owner",
         )
 
         from ..config import deps_dir
@@ -307,8 +342,21 @@ class DetectStep(Step):
                          "compiler (gcc) plus the -dev packages (hwloc, gtest, "
                          "opencl), git, and the toolkit for the detected GPU.")
 
+        self._report_inventory(rows)
         self._report_readiness(ctx, all_deps)
         return StepResult.OK
+
+    def _report_inventory(self, rows: list[_Row]) -> None:
+        """Print the one-line summary of *rows* and, when any is missing, what to do about it."""
+        counts, missing = self.summarize_inventory(rows)
+        console.info(" | ".join(f"{count} {_SUMMARY_LABELS.get(status, status)}"
+                               for status, count in counts.items()))
+        if not missing:
+            return
+        console.warn("Needs attention")
+        for component, _status_text, _owner, detail in missing:
+            console.info(_literal(f"{component}  {detail}".rstrip()))
+        console.info("Run `hub install` to provision what is missing.")
 
     def _effective_required(self, module: str, all_deps: list[Dependency]) -> list[Dependency]:
         """The required dependencies a module needs to build.
