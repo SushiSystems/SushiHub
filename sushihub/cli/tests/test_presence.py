@@ -4,7 +4,7 @@ import json
 
 import sushicore.profile
 
-from sushistack.services import modules, presence, status_report
+from sushistack.services import git_ops, modules, presence, status_report
 from sushistack.services.presence import Presence
 from sushistack.setup import dependency_source, steps
 from sushistack.setup.pipeline import InstallContext
@@ -156,7 +156,7 @@ def test_update_refreshes_a_binary_module_through_sushi_id(tmp_path, monkeypatch
     binary_install(root / "sushiengine")
     pulled = []
     refreshed = []
-    monkeypatch.setattr(modules, "_run_git", lambda args, cwd: pulled.append(cwd) or 0)
+    monkeypatch.setattr(git_ops, "run", lambda args, cwd: pulled.append(cwd) or 0)
     monkeypatch.setattr(modules, "_update_binary",
                         lambda name, dest: refreshed.append((name, dest)) or True)
     recorder = Recorder()

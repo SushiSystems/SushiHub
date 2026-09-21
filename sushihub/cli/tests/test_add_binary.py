@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from sushistack.services import licence_file, links, modules, session
+from sushistack.services import git_ops, licence_file, links, modules, session
 from sushistack.services.identity import SushiAccount
 from sushistack.services.licence_file import LICENCE_FILE
 from sushistack.services.presence import RELEASE_MANIFEST
@@ -24,9 +24,9 @@ def workspace(tmp_path, monkeypatch):
     monkeypatch.setattr(modules, "workspace_root", lambda: tmp_path)
     monkeypatch.setattr(links, "registered", lambda: {})
     monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
-    monkeypatch.setattr(modules, "_run_git",
+    monkeypatch.setattr(git_ops, "run",
                         lambda args, cwd: pytest.fail(f"git ran: {args}"))
-    monkeypatch.setattr(modules, "_source_reachable",
+    monkeypatch.setattr(git_ops, "source_reachable",
                         lambda repo: pytest.fail(f"the remote was asked about: {repo}"))
     return tmp_path
 
@@ -48,7 +48,7 @@ def sign_in(fake_id, monkeypatch, tokens=Tokens("access-1", "refresh-1", 1e12)):
 
 def reachable(monkeypatch, answer: bool) -> None:
     """Say whether this machine's Git identity reaches a module's repository."""
-    monkeypatch.setattr(modules, "_source_reachable", lambda repo: answer)
+    monkeypatch.setattr(git_ops, "source_reachable", lambda repo: answer)
 
 
 def serve_release(fake_id, version: str = "1.4.2") -> None:
@@ -74,7 +74,7 @@ def test_add_clones_sushiengine_when_its_repository_answers(
         workspace, recorder, monkeypatch):
     reachable(monkeypatch, True)
     cloned = []
-    monkeypatch.setattr(modules, "_run_git",
+    monkeypatch.setattr(git_ops, "run",
                         lambda args, cwd: cloned.append(args[0]) or 0)
     rc = modules.add(["sushiengine"], provision=lambda dry_run: 0)
     assert rc == 0 and cloned == ["clone"]

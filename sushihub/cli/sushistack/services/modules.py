@@ -16,7 +16,7 @@ from pathlib import Path
 from .. import console
 from ..config import WORKSPACE_MARKER, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
-from . import licence_file, links, releases, session
+from . import git_ops, licence_file, links, releases, session
 from .catalog import CATALOG
 from .identity import ReleaseInfo, SushiAccount, SushiAccountError
 from .presence import Presence, describe, presence_of, read_release
@@ -28,10 +28,6 @@ from .releases import ReleaseCorrupt
 # inside this repository (see `sushicore/`), so there is nothing to clone and no
 # checkout for anyone to manage -- cloning SushiStack already produced it.
 SUSHICORE_NAME = "sushicore"
-
-# How long `git ls-remote` may take to answer before the source counts as out of
-# reach, in seconds.
-REACHABLE_TIMEOUT = 15
 
 
 # Lines `hub init` ensures are present in the workspace .gitignore: the shared
@@ -68,33 +64,6 @@ def sushicore_dir(root: Path) -> Path | None:
     """
     pkg = root / SUSHICORE_NAME
     return pkg if (pkg / "pyproject.toml").is_file() else None
-
-
-def _run_git(args: list[str], cwd: Path) -> int:
-    """Run a git command, streaming its output. Return its exit code."""
-    try:
-        return subprocess.run(["git", *args], cwd=str(cwd)).returncode
-    except FileNotFoundError:
-        console.error("git not found on PATH. Install git and try again.")
-        return 1
-
-
-def _source_reachable(repo: str) -> bool:
-    """Report whether this machine's Git identity can read *repo*.
-
-    Asks the remote for its default branch and nothing else, so a private
-    repository the credentials do not open answers a non-zero exit code rather
-    than a clone that fails halfway.
-
-    Args:
-        repo: The clone URL to ask about.
-    """
-    try:
-        return subprocess.run(
-            ["git", "ls-remote", "--exit-code", "-h", repo, "HEAD"],
-            capture_output=True, timeout=REACHABLE_TIMEOUT).returncode == 0
-    except (OSError, subprocess.SubprocessError):
-        return False
 
 
 def _install_binary(name: str, dest: Path, client: SushiAccount,
@@ -321,7 +290,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             if not dry_run:
                 _install_module_cli(name, dest)
             continue
-        if mod.is_binary and (binary or not _source_reachable(mod.repo)):
+        if mod.is_binary and (binary or not git_ops.source_reachable(mod.repo)):
             if dry_run:
                 console.info(f"{name}: (dry-run) would install its release -> {dest}")
                 continue
@@ -339,7 +308,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             brought_in = True
             continue
         console.info(f"{name}: cloning {mod.repo} -> {dest}")
-        if _run_git(["clone", mod.repo, str(dest)], cwd=root) != 0:
+        if git_ops.run(["clone", mod.repo, str(dest)], cwd=root) != 0:
             console.error(f"{name}: clone failed.")
             failed = True
             continue
@@ -454,7 +423,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
             console.info(f"{name}: (dry-run) would git pull ({dest})")
             continue
         console.info(f"{name}: git pull ({dest})")
-        if _run_git(["pull", "--ff-only"], cwd=dest) != 0:
+        if git_ops.run(["pull", "--ff-only"], cwd=dest) != 0:
             console.error(f"{name}: update failed.")
             failed = True
     if not any_present:
@@ -506,7 +475,7 @@ def _self_update(root: Path, dry_run: bool) -> None:
         console.info(f"sushistack: (dry-run) would git pull ({root})")
         return
     console.info(f"sushistack: git pull ({root})")
-    if _run_git(["pull", "--ff-only"], cwd=root) != 0:
+    if git_ops.run(["pull", "--ff-only"], cwd=root) != 0:
         console.warn("sushistack: self-update failed; continuing with the "
                       "current checkout. Pull it by hand if `hub` behaves stale.")
 
