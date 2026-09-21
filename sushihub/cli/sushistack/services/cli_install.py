@@ -20,8 +20,10 @@ import sys
 
 from .. import console
 from ..config import workspace_root
+from . import links
 from . import pipx as pipx_svc
-from .modules import _resolve_names, module_dest
+from .modules import _resolve_names
+from .presence import module_dir
 
 
 def _run(cmd: list[str]) -> int:
@@ -71,10 +73,11 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
     if dry_run:
         console.info("Dry-run: showing actions without installing.")
 
+    linked = links.registered()
     if dry_run:
         failed = False
         for name in resolved:
-            pkg_dir = module_dest(root, name) / "cli"
+            pkg_dir = module_dir(root, name, linked) / "cli"
             if not (pkg_dir / "pyproject.toml").is_file():
                 console.warn(f"{name}: no cli/ package at {pkg_dir}; "
                              "clone or link the module first. Skipping.")
@@ -93,7 +96,7 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
 
     failed = False
     for name in resolved:
-        dest = module_dest(root, name)
+        dest = module_dir(root, name, linked)
         pkg_dir = dest / "cli"
         if not (pkg_dir / "pyproject.toml").is_file():
             console.warn(f"{name}: no cli/ package at {pkg_dir}; "

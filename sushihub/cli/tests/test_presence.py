@@ -85,6 +85,22 @@ def test_read_release_is_none_when_a_field_is_missing(tmp_path):
     assert presence.read_release(tmp_path) is None
 
 
+def test_module_dir_follows_the_catalog_directory(tmp_path):
+    """A cataloged name resolves through CATALOG[name].directory, not the bare name."""
+    assert presence.module_dir(tmp_path, "sushiengine") == tmp_path / "sushiengine"
+
+
+def test_module_dir_prefers_a_link_over_the_catalog(tmp_path):
+    """A linked path wins even for a name the catalog knows."""
+    linked = {"sushiengine": str(tmp_path / "elsewhere")}
+    assert presence.module_dir(tmp_path, "sushiengine", linked) == tmp_path / "elsewhere"
+
+
+def test_module_dir_falls_back_to_the_bare_name_for_a_stale_link(tmp_path):
+    """A name the catalog no longer lists (a stale `hub link`) resolves without raising."""
+    assert presence.module_dir(tmp_path, "sushidsp") == tmp_path / "sushidsp"
+
+
 def test_a_directory_with_the_manifest_is_binary(tmp_path):
     binary_install(tmp_path / "sushiengine")
     assert presence.presence_of(tmp_path, "sushiengine", {}) is Presence.BINARY

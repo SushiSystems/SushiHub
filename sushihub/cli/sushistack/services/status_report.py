@@ -20,8 +20,8 @@ from . import git_state, licence_file, links, session
 from .catalog import CATALOG
 from .hub_install import read_hub_install
 from .identity import SushiAccount
-from .modules import SUSHICORE_NAME, module_dest, sushicore_dir
-from .presence import Presence, describe, presence_of, read_release
+from .modules import SUSHICORE_NAME, sushicore_dir
+from .presence import Presence, describe, module_dir, presence_of, read_release
 from .update_check import latest_release
 
 
@@ -31,11 +31,6 @@ class StatusReport:
 
     payload: dict
     warnings: list[str] = field(default_factory=list)
-
-
-def _module_dir(root: Path, name: str, state: Presence, location: str) -> Path:
-    """Return the directory module *name* occupies, following a link to its target."""
-    return Path(location) if state is Presence.LINKED else module_dest(root, name)
 
 
 def _source(path: Path, check_updates: bool, warnings: list[str], label: str) -> dict | None:
@@ -67,7 +62,7 @@ def _module_row(root: Path, name: str, linked: dict[str, str], check_updates: bo
     """Build the payload row of module *name*."""
     state = presence_of(root, name, linked)
     location, text = describe(root, name, linked)
-    path = _module_dir(root, name, state, location)
+    path = module_dir(root, name, linked)
     row = {"name": name, "location": location, "state": text, "presence": state.value,
            "version": None, "source": None, "binary": None, "latest_version": None}
 

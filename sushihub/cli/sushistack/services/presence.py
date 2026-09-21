@@ -19,6 +19,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Mapping
 
+from .catalog import CATALOG
+
 #: File the release build writes at the root of an unpacked binary install.
 #: The same name as :data:`sushicore.profile.RELEASE_MANIFEST`, which is how a
 #: module's own CLI finds a binary root; cli/tests/test_presence.py pins the two
@@ -72,10 +74,27 @@ def is_binary(root: Path) -> bool:
     return (root / RELEASE_MANIFEST).is_file()
 
 
-def _module_dir(root: Path, name: str, linked: Mapping[str, str]) -> Path:
-    """Return the directory module *name* occupies: its linked path, else <root>/<name>."""
-    target = linked.get(name)
-    return Path(target) if target else root / name
+def module_dir(root: Path, name: str, linked: Mapping[str, str] | None = None) -> Path:
+    """Return the directory module *name* occupies.
+
+    Its linked path wins when there is one. Otherwise the catalog's own
+    ``directory`` field decides, so a module whose directory differs from its
+    name still resolves; a name the catalog does not know (a stale link this
+    machine still carries, to a module dropped from the stack) falls back to
+    ``root / name`` rather than raising, so a caller like `hub status` keeps
+    treating it as absent instead of crashing.
+
+    Args:
+        root: Workspace root.
+        name: Module name.
+        linked: Module name to path, as ``hub link`` recorded it; empty when None.
+    """
+    target = (linked or {}).get(name)
+    if target:
+        return Path(target)
+    if name in CATALOG:
+        return root / CATALOG[name].directory
+    return root / name
 
 
 def presence_of(root: Path, name: str, linked: Mapping[str, str]) -> Presence:
@@ -91,7 +110,7 @@ def presence_of(root: Path, name: str, linked: Mapping[str, str]) -> Presence:
         name: Module name, which is also its directory name under *root*.
         linked: Module name to path, as ``hub link`` recorded it.
     """
-    where = _module_dir(root, name, linked)
+    where = module_dir(root, name, linked)
     if name in linked:
         return Presence.LINKED if (where / ".git").is_dir() else Presence.ABSENT
     if is_binary(where):
@@ -118,10 +137,10 @@ def describe(root: Path, name: str, linked: Mapping[str, str]) -> tuple[str, str
     state = presence_of(root, name, linked)
     if name in linked:
         text = "linked" if state is Presence.LINKED else "linked (missing)"
-        return str(_module_dir(root, name, linked)), text
+        return str(module_dir(root, name, linked)), text
     if state is not Presence.BINARY:
         return name, state.value
-    release = read_release(root / name)
+    release = read_release(module_dir(root, name, linked))
     if release is None:
         return name, "binary"
     return name, f"binary {release.version}"

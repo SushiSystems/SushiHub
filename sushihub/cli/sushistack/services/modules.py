@@ -17,7 +17,7 @@ from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import binary as binary_svc
 from . import git_ops, links, pipx
 from .catalog import CATALOG
-from .presence import Presence, describe, presence_of
+from .presence import Presence, describe, module_dir, presence_of
 
 # sushicore is the shared CLI presentation layer, not a stack build module: it
 # ships no dependency fragment, is never built, and stays out of CATALOG so it is
@@ -37,18 +37,6 @@ _GITIGNORE_LINES = [
     "/sushihub/cli/config.local.toml",
     "/sushihub/cli/modules.local.toml",
 ]
-
-
-def module_dest(root: Path, name: str) -> Path:
-    """Where module *name* lives: its linked external path, else inside the workspace.
-
-    A module registered via ``hub link`` resolves to that checkout; otherwise it is
-    the conventional ``<workspace>/<directory>`` that ``hub add`` clones into.
-    """
-    linked = links.registered().get(name)
-    if linked:
-        return Path(linked)
-    return root / CATALOG[name].directory
 
 
 def sushicore_dir(root: Path) -> Path | None:
@@ -172,7 +160,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
         if name in linked:
             console.info(f"{name}: linked to {linked[name]} (use `hub link` to change); skipping clone.")
             if not dry_run:
-                _install_module_cli(name, module_dest(root, name))
+                _install_module_cli(name, module_dir(root, name, linked))
             continue
         mod = CATALOG[name]
         dest = root / mod.directory
@@ -300,7 +288,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     failed = False
     any_present = False
     for name in resolved:
-        dest = module_dest(root, name)
+        dest = module_dir(root, name, linked)
         state = presence_of(root, name, linked)
         if state is Presence.BINARY:
             any_present = True
