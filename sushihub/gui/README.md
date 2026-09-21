@@ -92,7 +92,7 @@ hub gui run     # an optional target, then anything after -- goes to the program
 hub gui clean
 ```
 
-The ports are declared in `sushihub/cli/manifests/gui.deps.toml`: `imgui` with the GLFW and
+The ports are declared in `sushihub/cli/sushistack/manifests/gui.deps.toml`: `imgui` with the GLFW and
 OpenGL3 bindings, `glfw3`, and `nlohmann-json`. `gtest` comes from the base fragment, because
 every module in the stack tests with it. `hub install` puts them in the workspace's shared
 `dependencies/vcpkg` tree, in classic mode. The imgui port must be 1.91.1 or newer, which is

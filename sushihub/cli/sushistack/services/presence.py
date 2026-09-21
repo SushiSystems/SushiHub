@@ -2,9 +2,9 @@
 
 Presence is never recorded, only observed. A module directory holding
 ``sushi-release.json`` is an unpacked binary install, one holding ``.git`` is a
-checkout, and a path in ``modules.local.toml`` is a link. Every command that
-used to ask whether ``.git`` is there asks this module instead, so the four
-forms are decided in one place and worded the same everywhere.
+checkout, and a path in ``workspace.toml``'s ``[modules]`` is a link. Every
+command that used to ask whether ``.git`` is there asks this module instead, so
+the four forms are decided in one place and worded the same everywhere.
 
 The layout rule this reads by is the workspace's own: a module named
 ``sushiengine`` lives at ``<workspace>/sushiengine``, whether it was cloned or

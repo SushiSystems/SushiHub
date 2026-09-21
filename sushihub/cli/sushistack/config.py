@@ -1,7 +1,8 @@
 """Layered configuration loading for the SushiStack CLI.
 
 Precedence (lowest to highest):
-    built-in defaults -> config.toml -> .sushistack/workspace.toml -> SR_* env vars
+    built-in defaults -> the package's defaults.toml -> .sushistack/workspace.toml
+    -> SR_* env vars
 
 The active platform's ``[tool.<platform>]`` table is merged over the common
 ``[tool]`` table, so a single file describes both Linux and Windows.
@@ -17,8 +18,11 @@ from __future__ import annotations
 import os
 import platform
 
+from contextlib import contextmanager
 from dataclasses import dataclass
+from importlib.resources import as_file, files
 from pathlib import Path
+from typing import Iterator
 
 # Domain-agnostic config plumbing shared by every Sushi* CLI. The generic build-
 # tool schema (cmake/ninja/vcpkg paths) and the layered-load / [tool]-write
@@ -39,9 +43,12 @@ from sushicore.workspace import (
 )
 from sushicore.workspace import workspace_file as _core_workspace_file
 
-#: The checkout directory holding the tool's committed defaults and dependency manifests.
+#: The checkout directory a pre-2026-09-22 workspace kept its local config in.
 #: SushiStack's own layout, which is why :mod:`sushicore` does not name it.
 CHECKOUT_CLI_DIR = Path("sushihub") / "cli"
+
+#: The tool's own portable defaults, shipped as package data beside ``catalog.toml``.
+DEFAULTS_FILE = "defaults.toml"
 
 #: The file `hub install` wrote its ``[tool]`` paths into before 2026-09-22.
 LEGACY_TOOL_FILE = "config.local.toml"
@@ -90,14 +97,27 @@ def workspace_root(start: Path | None = None) -> Path:
 find_project_root = workspace_root
 
 
-def config_dir(root: Path | None = None) -> Path:
-    """The checkout directory holding the committed defaults and the dependency manifests.
+def legacy_cli_dir(root: Path | None = None) -> Path:
+    """The checkout directory a workspace kept its local config in before 2026-09-22.
 
-    Nothing the workspace owns is written here any more; that lives in
-    :func:`workspace_file`. See ``docs/design/WORKSPACE_DECOUPLING.md`` section 3.3.
+    Only the `[cli]` theme is still read from here, through
+    :class:`~sushicore.cli_console.LazyConsole`. Everything else the workspace owns
+    lives in :func:`workspace_file` and everything the tool owns ships inside this
+    package. See ``docs/design/WORKSPACE_DECOUPLING.md`` section 3.3.
     """
     root = root or workspace_root()
     return root / CHECKOUT_CLI_DIR
+
+
+@contextmanager
+def packaged_defaults() -> Iterator[Path]:
+    """Yield a real filesystem path to the ``defaults.toml`` this package ships.
+
+    @pre The path is valid only inside the ``with`` block, because
+        ``importlib.resources`` may have extracted it.
+    """
+    with as_file(files("sushistack") / DEFAULTS_FILE) as path:
+        yield path
 
 
 def workspace_file(root: Path | None = None) -> Path:
@@ -158,21 +178,23 @@ DEFAULT_IDENTITY_URL = "https://account.sushisystems.io"
 def identity_url() -> str:
     """Return the Sushi Account base URL, without its trailing slash.
 
-    Reads ``SUSHI_ACCOUNT_URL`` first, then ``[identity] url`` from workspace.toml
-    and config.toml, then :data:`DEFAULT_IDENTITY_URL`. Outside a workspace only
-    the environment and the default are available.
+    Reads ``SUSHI_ACCOUNT_URL`` first, then ``[identity] url`` from workspace.toml,
+    then from the packaged defaults, then :data:`DEFAULT_IDENTITY_URL`. Outside a
+    workspace the packaged defaults still answer.
     """
     override = os.environ.get("SUSHI_ACCOUNT_URL")
     if override:
         return override.rstrip("/")
+    sources: list[Path] = []
     try:
-        root = workspace_root()
+        sources.append(workspace_file(workspace_root()))
     except SystemExit:
-        return DEFAULT_IDENTITY_URL
-    for source in (workspace_file(root), config_dir(root) / "config.toml"):
-        url = read_toml(source).get("identity", {}).get("url")
-        if isinstance(url, str) and url:
-            return url.rstrip("/")
+        pass
+    with packaged_defaults() as defaults:
+        for source in (*sources, defaults):
+            url = read_toml(source).get("identity", {}).get("url")
+            if isinstance(url, str) and url:
+                return url.rstrip("/")
     return DEFAULT_IDENTITY_URL
 
 
@@ -320,8 +342,8 @@ def load_config() -> Config:
     plat = platform.system().lower()  # 'windows' | 'linux' | 'darwin'
 
     root = workspace_root()
-    sources = [config_dir(root) / "config.toml", workspace_file(root)]
-    cfg = load_tool_config(Config, sources, plat, _ENV_OVERRIDES)
+    with packaged_defaults() as defaults:
+        cfg = load_tool_config(Config, [defaults, workspace_file(root)], plat, _ENV_OVERRIDES)
     # Guard against a stale/typo'd toolchain leaking through from config or env.
     if cfg.toolchain not in TOOLCHAINS:
         cfg.toolchain = "intel-llvm"

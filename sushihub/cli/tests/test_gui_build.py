@@ -9,15 +9,14 @@ from pathlib import Path
 
 import pytest
 
-from sushistack.config import CHECKOUT_CLI_DIR
+from sushistack.config import WORKSPACE_MARKER
 from sushistack.gui_config import GuiConfig, gui_root, load_gui_config
 
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
-    """Build a throwaway workspace carrying sushihub/gui and a config directory."""
-    (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
-    (tmp_path / CHECKOUT_CLI_DIR).mkdir(parents=True)
+    """Build a throwaway workspace carrying sushihub/gui and a marker directory."""
+    (tmp_path / WORKSPACE_MARKER).mkdir()
     gui = tmp_path / "sushihub" / "gui"
     gui.mkdir(parents=True)
     (gui / "CMakeLists.txt").write_text("", encoding="utf-8")

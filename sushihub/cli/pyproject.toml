@@ -31,9 +31,9 @@ sushihub = "sushistack.cli:app"
 where = ["."]
 include = ["sushistack*"]
 
-# The dependency fragments under cli/manifests/ are read from the cloned
-# workspace at run time (hub resolves the workspace root via the .sushistack
-# marker), so they are not shipped inside the wheel.
+# The tool's own data travels with the tool: the module catalog, the committed
+# defaults and the dependency fragments every workspace shares. A workspace is
+# no longer a checkout, so none of these can be read out of one.
 
 [tool.setuptools.package-data]
-sushistack = ["py.typed", "catalog.toml"]
+sushistack = ["py.typed", "catalog.toml", "defaults.toml", "manifests/*.deps.toml"]

@@ -17,9 +17,9 @@ from __future__ import annotations
 
 from sushicore.cli_console import LazyConsole
 
-from .config import config_dir
+from .config import legacy_cli_dir
 
-_lazy = LazyConsole(config_dir)
+_lazy = LazyConsole(legacy_cli_dir)
 
 
 def set_machine(flag: bool) -> None:
@@ -30,7 +30,7 @@ def set_machine(flag: bool) -> None:
     line, before anything reaches the terminal.
     """
     global _lazy
-    _lazy = LazyConsole(config_dir)
+    _lazy = LazyConsole(legacy_cli_dir)
     _lazy.machine = flag
 
 

@@ -3,8 +3,8 @@
 # Module-specific dependencies do NOT live here; each module declares its own in a
 # `sushistack.deps.toml` at its repo root, which `hub` aggregates with this file.
 #
-# `hub install` merges every cli/manifests/*.deps.toml fragment plus each known
-# module's sushistack.deps.toml into one dependency set, gathers the package names
+# `hub install` merges every manifests/*.deps.toml fragment this package ships plus
+# each known module's sushistack.deps.toml into one dependency set, gathers the names
 # for the active platform, checks what is already present, and installs only the
 # missing ones into the shared dependencies/ tree. No dependency name lives in the
 # installer code.

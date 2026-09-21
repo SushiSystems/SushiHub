@@ -12,7 +12,7 @@ import pytest
 from typer.testing import CliRunner
 
 from sushistack.cli import app
-from sushistack.config import CHECKOUT_CLI_DIR
+from sushistack.config import WORKSPACE_MARKER
 from sushistack.services import session
 from sushistack.services.identity import SushiAccount
 from sushistack.services.token_store import MemoryStore, Tokens
@@ -20,7 +20,6 @@ from sushistack.services.token_store import MemoryStore, Tokens
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 
 CONTRACT = Path(__file__).resolve().parents[2] / "contract"
-MANIFESTS = Path(__file__).resolve().parents[1] / "manifests"
 
 
 def _schema(name):
@@ -56,13 +55,8 @@ def _events(result):
 
 @pytest.fixture
 def workspace(tmp_path):
-    """Build a throwaway workspace with the marker, the base manifest and a config."""
-    (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
-    (tmp_path / CHECKOUT_CLI_DIR / "manifests").mkdir(parents=True)
-    (tmp_path / CHECKOUT_CLI_DIR / "manifests" / "base.deps.toml").write_text(
-        (MANIFESTS / "base.deps.toml").read_text(encoding="utf-8"), encoding="utf-8")
-    (tmp_path / CHECKOUT_CLI_DIR / "config.toml").write_text(
-        '[cli]\ntheme = "default"\n', encoding="utf-8")
+    """Build a throwaway workspace: the marker alone, since the tool ships its own data."""
+    (tmp_path / WORKSPACE_MARKER).mkdir()
     gui = tmp_path / "sushihub" / "gui"
     gui.mkdir(parents=True)
     (gui / "CMakeLists.txt").write_text("", encoding="utf-8")

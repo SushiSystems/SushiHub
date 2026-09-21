@@ -16,7 +16,7 @@ under the workspace root), *linked* (a checkout elsewhere, registered in `sushih
 `sushihub/cli/sushistack/services/presence.py` answers it; `hub status` shows it.
 
 **Dependency fragment** — a `*.deps.toml` file naming packages per platform. This repository ships
-the base fragment under `sushihub/cli/manifests/`; each module ships its own. `hub install` merges them.
+the base fragment inside the `sushistack` package's `manifests/`; each module ships its own. `hub install` merges them.
 
 **Toolchain** — a compiler bundle `hub install` downloads into `dependencies/` rather than
 installing through a package manager: intel/llvm, AdaptiveCpp, oneAPI. Each carries a stamp naming

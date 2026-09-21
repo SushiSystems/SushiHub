@@ -2,7 +2,7 @@
 
 A SOLID, dependency-injected pipeline that takes a bare machine to a working
 build: detect what is present, install what is missing (driven by the
-``dependencies.toml`` manifest), generate ``config.local.toml``, then verify by
+``dependencies.toml`` manifest), write the probed ``[tool]`` table, then verify by
 building and smoke-testing.
 
 The public entry point is :func:`factory.build_pipeline`; everything else is an

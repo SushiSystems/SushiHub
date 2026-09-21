@@ -35,8 +35,6 @@ _GITIGNORE_LINES = [
     "/dependencies/",
     *(f"/{CATALOG[n].directory}/" for n in CATALOG),
     "/.sushistack/",
-    "/sushihub/cli/config.local.toml",
-    "/sushihub/cli/modules.local.toml",
 ]
 
 
