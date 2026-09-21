@@ -41,6 +41,10 @@ jobs:
         run: pip install -e ./sushicore -e "./sushihub/cli[test]"
       - name: Test
         run: python -m pytest sushihub/cli/tests -q
+      - name: Test the argv recorder
+        # tools/record_cli_argv.py is this repository's evidence mechanism for a
+        # CLI change, so its own tests run here rather than nowhere.
+        run: python -m pytest tools/tests -q
 
   # ---------------------------------------------------------------------------
   # Consumer CLI contract
