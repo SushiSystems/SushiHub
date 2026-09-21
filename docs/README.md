@@ -40,7 +40,7 @@ Each component's own facts live beside its code:
 
 ## Reference
 
-- `reference/CHANGELOG.md` — one line per meaningful change, newest first.
+- `reference/CHANGELOG.md` — one line per meaningful change, newest first, sectioned by release.
 - `reference/GLOSSARY.md` — the words this repository uses in a specific sense.
 - `reference/MODULE_MANIFEST.md` — `sushi-module.toml`, the file a module writes to say what
   it is, and what `hub` does when it is absent.
@@ -82,4 +82,4 @@ Everything an agent wrote while working, kept as a record rather than as part of
 
 ## Archive
 
-- `archive/` — frozen documents, added to and never edited. Empty so far.
+- `archive/` — frozen documents, added to and never edited. Holds `changelog/v0.1.0.md`.
