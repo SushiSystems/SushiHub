@@ -11,7 +11,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from .. import console
+from .. import DISTRIBUTION, console
 from ..config import WORKSPACE_MARKER, create_workspace_file, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import binary as binary_svc
@@ -308,24 +308,65 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     return 1 if failed else 0
 
 
-def _self_update(root: Path, dry_run: bool) -> None:
-    """Fast-forward the SushiStack workspace repo itself (the ``hub`` source tree).
+def _checkout_of(package_dir: Path) -> Path | None:
+    """The git checkout *package_dir* sits in, or None when it sits in none."""
+    for candidate in (package_dir, *package_dir.parents):
+        if (candidate / ".git").is_dir():
+            return candidate
+    return None
 
-    ``hub sync``/``hub update`` only pull the *modules* (sushiruntime, ...); the
-    workspace root — where `cli/` and its setup pipeline actually live — is a git
-    checkout too, and a stale one means every fix here (e.g. a CUDA pin change)
-    silently never reaches an editable-installed `hub` until someone thinks to
-    pull it by hand. Best-effort: a failure here must not block the rest of sync.
+
+def _self_update(root: Path, dry_run: bool) -> None:
+    """Bring `hub` itself up to date, the way `hub` was installed.
+
+    An install from the index is upgraded with pipx. An editable install tracks a
+    checkout, so that checkout is pulled instead -- and it is the one pipx
+    recorded, which since the workspace stopped being a clone is not necessarily
+    *root*. Best-effort throughout: a failure here must not block the rest of sync.
+
+    Args:
+        root: The workspace root, used only as the fallback checkout for a `hub`
+            pipx does not know about.
+        dry_run: Say what would happen and change nothing.
+    """
+    install = pipx.installed(DISTRIBUTION)
+    if install is None:
+        _pull_checkout(root, dry_run)
+        return
+    if install.editable:
+        checkout = _checkout_of(install.source)
+        if checkout is None:
+            console.warn(f"{DISTRIBUTION}: installed from {install.source}, which is "
+                         "not a git checkout; nothing to update.")
+            return
+        _pull_checkout(checkout, dry_run)
+        return
+    if dry_run:
+        console.info(f"{DISTRIBUTION}: (dry-run) would upgrade from PyPI")
+        return
+    console.info(f"{DISTRIBUTION}: upgrading from PyPI")
+    if pipx.upgrade(DISTRIBUTION) != 0:
+        console.warn(f"{DISTRIBUTION}: self-update failed; continuing with the "
+                     "installed version. Run `pipx upgrade sushihub` by hand if "
+                     "`hub` behaves stale.")
+
+
+def _pull_checkout(root: Path, dry_run: bool) -> None:
+    """Fast-forward the checkout `hub` runs from, when it is one.
+
+    A `hub` installed from the index has no checkout; this is the other branch,
+    and it says nothing at all when *root* is not a git tree, because that is the
+    ordinary case for a workspace created by `hub init`.
     """
     if not (root / ".git").is_dir():
         return
     if dry_run:
-        console.info(f"sushistack: (dry-run) would git pull ({root})")
+        console.info(f"{DISTRIBUTION}: (dry-run) would git pull ({root})")
         return
-    console.info(f"sushistack: git pull ({root})")
+    console.info(f"{DISTRIBUTION}: git pull ({root})")
     if git_ops.run(["pull", "--ff-only"], cwd=root) != 0:
-        console.warn("sushistack: self-update failed; continuing with the "
-                      "current checkout. Pull it by hand if `hub` behaves stale.")
+        console.warn(f"{DISTRIBUTION}: self-update failed; continuing with the "
+                     "current checkout. Pull it by hand if `hub` behaves stale.")
 
 
 def sync(dry_run: bool) -> int:

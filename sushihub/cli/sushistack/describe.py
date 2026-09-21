@@ -14,14 +14,14 @@ import typer
 from rich.errors import MarkupError
 from rich.text import Text
 
+from . import DISTRIBUTION
+
 #: Version of the contract this catalogue and the event stream speak.
 CONTRACT_VERSION = "1"
 
 #: The forms of module presence a command can apply to.
 ALL_PRESENCE = ("cloned", "linked", "binary")
 
-#: Distribution whose version the catalogue reports.
-_DISTRIBUTION = "sushihub"
 
 
 def _plain(text: str) -> str:
@@ -144,7 +144,7 @@ def _version() -> str:
     from importlib.metadata import PackageNotFoundError, version
 
     try:
-        return version(_DISTRIBUTION)
+        return version(DISTRIBUTION)
     except PackageNotFoundError:
         return "0"
 

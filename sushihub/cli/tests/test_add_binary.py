@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from sushistack.services import binary, git_ops, licence_file, links, modules, session
+from sushistack.services import binary, git_ops, licence_file, links, modules, pipx, session
 from sushistack.services.identity import SushiAccount
 from sushistack.services.licence_file import LICENCE_FILE
 from sushistack.services.presence import RELEASE_MANIFEST
@@ -28,6 +28,7 @@ def workspace(tmp_path, monkeypatch):
                         lambda args, cwd: pytest.fail(f"git ran: {args}"))
     monkeypatch.setattr(git_ops, "source_reachable",
                         lambda repo: pytest.fail(f"the remote was asked about: {repo}"))
+    monkeypatch.setattr(pipx, "installed", lambda name: None)
     return tmp_path
 
 

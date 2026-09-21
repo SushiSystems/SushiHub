@@ -4,7 +4,7 @@ import json
 
 import sushicore.profile
 
-from sushistack.services import binary, git_ops, modules, presence, status_report
+from sushistack.services import binary, git_ops, modules, pipx, presence, status_report
 from sushistack.services.presence import Presence
 from sushistack.setup import dependency_source, steps
 from sushistack.setup.pipeline import InstallContext
@@ -55,8 +55,14 @@ def checkout(path) -> None:
 
 
 def workspace(tmp_path, monkeypatch):
-    """Point every `hub` lookup at *tmp_path* and return it as the workspace root."""
+    """Point every `hub` lookup at *tmp_path* and return it as the workspace root.
+
+    `hub`'s own self-update asks pipx how `hub` is installed, so pipx is answered
+    with "not installed here"; otherwise a test on this machine would find the
+    developer's editable install and pull their checkout.
+    """
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
+    monkeypatch.setattr(pipx, "installed", lambda name: None)
     return tmp_path
 
 
