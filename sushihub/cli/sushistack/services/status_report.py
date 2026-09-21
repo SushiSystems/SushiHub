@@ -15,8 +15,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
-from ..config import deps_dir, registered_modules, workspace_root
-from . import git_state, licence_file, session
+from ..config import deps_dir, workspace_root
+from . import git_state, licence_file, links, session
 from .catalog import CATALOG
 from .hub_install import read_hub_install
 from .identity import SushiAccount
@@ -116,7 +116,7 @@ def build_status(check_updates: bool = False, *, home: Path | None = None,
     deps = deps_dir()
     warnings: list[str] = []
     client = _LazyClient(client_factory)
-    linked = registered_modules()
+    linked = links.registered()
 
     hub = read_hub_install(home or Path.home())
     hub["source"] = _source(root, check_updates, warnings, "hub")

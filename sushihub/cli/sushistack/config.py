@@ -69,23 +69,6 @@ def config_dir(root: Path | None = None) -> Path:
 # `hub install` writes into config.local.toml.
 MODULES_FILE = "modules.local.toml"
 
-
-def registered_modules() -> dict[str, str]:
-    """name -> absolute path for modules linked via ``hub link``.
-
-    A developer's working checkouts often live outside the workspace tree (e.g.
-    sibling repos). Linking one records its path here so ``hub`` aggregates its
-    ``sushistack.deps.toml`` and tracks it, without cloning a second copy. Read
-    from ``<workspace>/sushihub/cli/modules.local.toml`` ``[modules]``.
-    """
-    try:
-        home = workspace_root()
-    except SystemExit:
-        return {}
-    doc = read_toml(home / WORKSPACE_CLI_DIR / MODULES_FILE)
-    mods = doc.get("modules", {})
-    return {k: str(v) for k, v in mods.items() if isinstance(v, str)}
-
 # Sushi Account's base URL when neither the environment nor the config names one. The
 # four endpoints under it are written down in sushihub/contract/sushi-account.md.
 DEFAULT_IDENTITY_URL = "https://account.sushisystems.io"
