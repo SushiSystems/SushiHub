@@ -121,12 +121,18 @@ over the binary and the source build is never displaced.
 Hierarchy first: `sushicore` sits under every CLI and moves first; the catalog is fixed before
 anything reading it changes.
 
-`sushihub/cli/` has no tests, which `REMAINING_WORK.md` already records. This design opens
-`modules.py`, `config.py` and `steps.py`, so the net comes before the move.
+Measured on 2026-09-21: `sushihub/cli/tests` holds 24 files and 297 passing tests, and
+`.github/workflows/ci.yml:43` runs them. The source-or-binary decision is the best covered part
+of the code, with 18 tests in `tests/test_add_binary.py`.
+
+Five seams this design rewrites carry no test at all. No test file names `config_dir`,
+`MODULES`, `_GITIGNORE_LINES`, `sushicore_dir` or `_install_module_cli`, and `hub init` and
+`hub link` are exercised only incidentally through `tests/test_json_streams.py`. Wave 0 covers
+those five and nothing else.
 
 | Wave | Work | Waits on | Acceptance |
 |---|---|---|---|
-| 0 | A test suite for today's `hub`: `add`, `link`, `init`, `status`, `install` against a fixture workspace, including the source-or-binary choice for `sushiengine`. | nothing | The suite states today's behaviour and passes |
+| 0 | Tests for the five uncovered seams: `workspace_root` and `config_dir` resolution, the `MODULES` catalog and its aliases, `hub init`'s marker and `.gitignore` lines, `hub link`'s write to `modules.local.toml`, and the `sushicore` injection in `_install_module_cli`. | nothing | The five state today's behaviour and the suite still passes as a whole |
 | 1 | `sushicore` moves to its own repository and publishes to PyPI. `hub`, `sr`, `se`, `sa` and `sb` depend on the published package; the path injection is deleted. | 0 | On a clean machine `pipx install sushihub` gives a working `hub --version` |
 | 2 | `ModuleCatalog` and `catalog.toml` inside the package, four entries. `BINARY_MODULE` becomes the `distribution` field. `sushidsp` and `sushitrack` leave the catalog. | 1 | `hub add all` names four modules; `hub add sushidsp` reports an unknown module |
 | 3 | `.sushistack` becomes a directory holding `workspace.toml`, `modules.toml` and `config.local.toml`. `config.toml` and `manifests/` move into the package. `hub init` upgrades an old marker. | 2 | `hub init` then `hub install` works in an empty directory, and an upgraded existing workspace prints the same `hub status` table as before |
@@ -149,5 +155,6 @@ is removable.
 uploads a placeholder `sushicore` before anything else in that wave.
 
 **The engine's licence path.** Wave 2 rewrites the source-or-binary decision at
-`services/modules.py:426`. Wave 0 covers that decision first, so the rewrite has something to
-answer to.
+`services/modules.py:426`. `tests/test_add_binary.py` already pins it with 18 tests covering the
+clone, the out-of-reach fallback, the forced binary, the missing licence, the hash mismatch and
+the update path, so the rewrite has something to answer to and wave 0 adds nothing here.

@@ -34,7 +34,7 @@ read from one place. Nothing is built yet.
 
 | Wave | Work | Waits on |
 |---|---|---|
-| 0 | A test suite for today's `hub` commands, including the source-or-binary choice for `sushiengine`. | nothing |
+| 0 | Tests for the five seams the later waves rewrite and today's suite leaves uncovered. | nothing |
 | 1 | `sushicore` moves to its own repository and publishes to PyPI; the path injection goes. | 0 |
 | 2 | `ModuleCatalog` and a packaged `catalog.toml`; `sushidsp` and `sushitrack` leave the catalog. | 1 |
 | 3 | `.sushistack` becomes a directory holding the workspace's own data; the defaults move into the package. | 2 |
@@ -70,9 +70,11 @@ read from one place. Nothing is built yet.
 
 - **A source-comment checker.** Every repository carries `tools/documentation/check_source_comments.py`
   to hold the docstring rules in `../CONTRIBUTING.md`. This one does not yet.
-- **A test suite for `hub`.** `sushicore` has 44 tests and a CI job; `cli/` has none. Wave 1a adds
-  the contract tests; the existing commands deserve coverage of their own before that wave moves
-  them.
+- **Five uncovered seams in `hub`.** Measured 2026-09-21: `sushicore` has 94 tests and
+  `sushihub/cli` has 297, both run by `.github/workflows/ci.yml`. No test names `config_dir`,
+  `MODULES`, `_GITIGNORE_LINES`, `sushicore_dir` or `_install_module_cli`, and `hub init` and
+  `hub link` are only reached incidentally through `tests/test_json_streams.py`. The decoupling
+  programme's wave 0 covers them.
 - **`hub unlink`.** Removing a link means editing `sushihub/cli/modules.local.toml` by hand
   (`../guides/LINKING_CHECKOUTS.md`).
 - **`sushicore`'s README placement.** The component's facts live in `sushicore/docs/README.md`
