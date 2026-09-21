@@ -3,7 +3,7 @@
 Each step has a single responsibility and depends only on abstractions:
 ``DetectStep`` inventories the machine, ``InstallDepsStep`` installs missing
 manifest packages through injected package managers, ``ConfigureStep`` writes
-``config.local.toml`` from probed tool paths, ``VerifyStep`` builds and
+``workspace.toml`` from probed tool paths, ``VerifyStep`` builds and
 smoke-tests through the project service, and ``UninstallStep`` tears down
 everything the installer placed on the system.
 """
@@ -15,8 +15,11 @@ import shutil
 import subprocess
 from pathlib import Path
 
+from sushicore.config_base import write_toml_document
+from sushicore.workspace import read_toml
+
 from .. import console
-from ..config import config_dir
+from ..config import workspace_file
 from . import probe
 from .probe import binary_works
 from .dependency_source import SHARED_OWNER, Dependency, IDependencySource
@@ -744,7 +747,7 @@ class InstallDepsStep(Step):
 
 
 class ConfigureStep(Step):
-    """Probe installed tools and write ``config.local.toml``."""
+    """Probe installed tools and write ``[tool]`` into ``workspace.toml``."""
 
     name = "configure"
 
@@ -755,7 +758,7 @@ class ConfigureStep(Step):
         values = probe.resolve_local_config(ctx.cfg, gpu=ctx.gpu)
         ctx.resolved_paths = values
 
-        target = config_dir() / "config.local.toml"
+        target = workspace_file()
 
         if ctx.dry_run:
             if ctx.active_toolchain:
@@ -772,12 +775,11 @@ class ConfigureStep(Step):
             return StepResult.SKIPPED
 
         if values:
-            content = probe.render_local_config(ctx.cfg.platform, values)
             if target.is_file():
                 backup = target.with_suffix(".toml.bak")
                 shutil.copyfile(target, backup)
                 console.info(f"Backed up existing config to {backup.name}")
-            target.write_text(content, encoding="utf-8")
+            probe.write_platform_paths(target, ctx.cfg.platform, values)
             console.success(f"Wrote {target}")
 
         # Pin the profile's toolchain last: set_toolchain rewrites the file while
@@ -941,13 +943,23 @@ class UninstallStep(Step):
         console.success(f"Removed the vendored deps folder at {dep_dir}")
 
     def _remove_config(self, ctx: InstallContext) -> None:
-        target = config_dir() / "config.local.toml"
-        if target.is_file():
-            if ctx.dry_run:
-                console.info(f"(dry-run) would remove {target}")
-            else:
-                target.unlink()
-                console.success(f"Removed {target}")
+        """Empty the ``[tool]`` table `hub install` wrote, leaving the rest of the file.
+
+        The file also holds the link registry, which no part of the install put
+        there and which `hub remove` has no business taking with it.
+        """
+        from ..config import WORKSPACE_HEADER
+
+        target = workspace_file()
+        document = dict(read_toml(target))
+        if "tool" not in document:
+            return
+        if ctx.dry_run:
+            console.info(f"(dry-run) would clear the `tool` section of {target}")
+            return
+        del document["tool"]
+        write_toml_document(target, document, WORKSPACE_HEADER)
+        console.success(f"Cleared the `tool` section of {target}")
 
 
 # --------------------------------------------------------------------------- #

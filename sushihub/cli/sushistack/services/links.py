@@ -3,47 +3,46 @@
 A developer's working checkouts often live outside the workspace tree (e.g.
 sibling repos). ``hub link`` records a module's path here so `hub` aggregates
 its ``sushistack.deps.toml`` fragment and tracks it, without cloning a second
-copy. This is the one place that reads and writes
-``<workspace>/sushihub/cli/modules.local.toml``.
+copy. This is the one place that reads and writes ``[modules]`` in
+``<workspace>/.sushistack/workspace.toml``.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
 
-from sushicore.workspace import WORKSPACE_CLI_DIR, read_toml
+from sushicore.config_base import write_toml_document
+from sushicore.workspace import read_toml
 
-from ..config import MODULES_FILE, config_dir, workspace_root
+from ..config import WORKSPACE_HEADER, workspace_file, workspace_root
 
 
 def registered() -> dict[str, str]:
     """name -> absolute path for modules linked via ``hub link``.
 
-    Reads from ``<workspace>/sushihub/cli/modules.local.toml`` ``[modules]``.
-    Answers empty outside a workspace, so callers need no workspace of their own.
+    Reads ``[modules]`` from ``<workspace>/.sushistack/workspace.toml``. Answers
+    empty outside a workspace, so callers need no workspace of their own.
     """
     try:
         home = workspace_root()
     except SystemExit:
         return {}
-    doc = read_toml(home / WORKSPACE_CLI_DIR / MODULES_FILE)
-    mods = doc.get("modules", {})
+    mods = read_toml(workspace_file(home)).get("modules", {})
     return {k: str(v) for k, v in mods.items() if isinstance(v, str)}
 
 
 def write(name: str, path: Path) -> None:
-    """Record (or update) a module -> path entry in modules.local.toml."""
-    registry = dict(registered())
+    """Record (or update) a module -> path entry in ``[modules]``.
+
+    Re-renders the whole document through :func:`write_toml_document`, the one
+    renderer ``[tool]``'s writer also goes through, so the tool paths sharing the
+    file survive the write.
+    """
+    target = workspace_file()
+    document = dict(read_toml(target))
+    registry = dict(document.get("modules", {}))
     registry[name] = str(path)
-    target = config_dir() / MODULES_FILE
-    lines = [
-        "# Managed by `hub link`: modules pointed at existing checkouts outside the",
-        "# workspace tree. `hub` reads these to aggregate their dependency fragments",
-        "# and track them alongside cloned modules.",
-        "",
-        "[modules]",
-    ]
-    for key in sorted(registry):
-        lines.append(f'{key} = "{str(registry[key]).replace(chr(92), "/")}"')
-    lines.append("")
-    target.write_text("\n".join(lines), encoding="utf-8")
+    document["modules"] = registry
+    document.setdefault("workspace", {"version": "1"})
+    target.parent.mkdir(parents=True, exist_ok=True)
+    write_toml_document(target, document, WORKSPACE_HEADER)

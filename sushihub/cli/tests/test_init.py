@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.config import WORKSPACE_MARKER
+from sushicore.workspace import read_toml
+from sushistack.config import WORKSPACE_MARKER, workspace_file
 from sushistack.services import modules
 
 from .test_presence import Recorder
@@ -26,12 +27,11 @@ def recorder(monkeypatch):
     return spy
 
 
-def test_init_writes_the_marker_file(workspace, recorder):
-    """The marker is a file whose comment says how to detach the directory."""
+def test_init_writes_the_marker_directory(workspace, recorder):
+    """The marker is a directory holding a versioned workspace.toml."""
     assert modules.init() == 0
-    marker = workspace / WORKSPACE_MARKER
-    assert marker.is_file()
-    assert "Delete it to detach this directory" in marker.read_text(encoding="utf-8")
+    assert (workspace / WORKSPACE_MARKER).is_dir()
+    assert read_toml(workspace_file(workspace))["workspace"]["version"] == "1"
 
 
 def test_init_creates_the_dependency_tree(workspace, recorder):

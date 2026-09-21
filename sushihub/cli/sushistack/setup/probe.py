@@ -1,4 +1,4 @@
-"""Tool-path probing and ``config.local.toml`` rendering.
+"""Tool-path probing and ``[tool.<platform>]`` rendering.
 
 Kept separate from the steps so ``ConfigureStep`` stays a thin orchestrator: this
 module knows *where tools live*, the step knows *when to write them out*.
@@ -16,7 +16,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-from ..config import Config, deps_dir
+from sushicore.config_base import write_toml_document
+from sushicore.workspace import read_toml
+
+from ..config import WORKSPACE_HEADER, Config, deps_dir
 
 # Common Windows install roots probed when a tool is not already on PATH.
 _VS_VCVARS_GLOBS = [
@@ -318,7 +321,7 @@ def find_configured_toolchain(cfg: Config) -> tuple[str | None, str]:
 
 
 def resolve_local_config(cfg: Config, gpu: bool = False) -> dict[str, str]:
-    """Probe machine-specific tool paths to write into config.local.toml.
+    """Probe machine-specific tool paths to write into ``[tool.<platform>]``.
 
     Returns only the fields that were actually found, so we never write empty
     placeholders that would shadow the committed defaults.
@@ -419,6 +422,20 @@ def _resolve_linux(cfg: Config) -> dict[str, str]:
     del path
     _discover_installed_toolchains(cfg, values)
     return values
+
+
+def write_platform_paths(target: Path, platform: str, values: dict[str, str]) -> Path:
+    """Merge *values* into *target*'s ``[tool.<platform>]`` table. Return the path.
+
+    Goes through :func:`write_toml_document`, so the ``[modules]`` registry and
+    the ``[workspace]`` version sharing the file are re-emitted unchanged.
+    """
+    document = dict(read_toml(target))
+    tool = dict(document.get("tool", {}))
+    tool[platform] = {**tool.get(platform, {}), **values}
+    document["tool"] = tool
+    target.parent.mkdir(parents=True, exist_ok=True)
+    return write_toml_document(target, document, WORKSPACE_HEADER)
 
 
 def render_local_config(platform: str, values: dict[str, str]) -> str:

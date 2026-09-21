@@ -1,7 +1,7 @@
 """Layered configuration loading for the SushiStack CLI.
 
 Precedence (lowest to highest):
-    built-in defaults -> config.toml -> config.local.toml -> SR_* env vars
+    built-in defaults -> config.toml -> .sushistack/workspace.toml -> SR_* env vars
 
 The active platform's ``[tool.<platform>]`` table is merged over the common
 ``[tool]`` table, so a single file describes both Linux and Windows.
@@ -23,13 +23,44 @@ from pathlib import Path
 # Domain-agnostic config plumbing shared by every Sushi* CLI. The generic build-
 # tool schema (cmake/ninja/vcpkg paths) and the layered-load / [tool]-write
 # skeleton live in sushicore; this repo adds only the SYCL-specific fields below.
-from sushicore.config_base import ToolConfig, load_tool_config, write_tool_section
-from sushicore.workspace import WORKSPACE_CLI_DIR, has_marker, read_toml, resolve_env_path, walk_up
+from sushicore.config_base import (
+    ToolConfig,
+    load_tool_config,
+    write_toml_document,
+    write_tool_section,
+)
+from sushicore.workspace import (
+    WORKSPACE_FILE,
+    WORKSPACE_MARKER,
+    has_marker,
+    read_toml,
+    resolve_env_path,
+    walk_up,
+)
+from sushicore.workspace import workspace_file as _core_workspace_file
 
-# Marker file written at the workspace root by `hub init`. Its presence is how any
-# stack CLI invocation (`hub`, `sr`, `se`, `sa`, `sb`) locates the shared
-# workspace from a nested directory.
-WORKSPACE_MARKER = ".sushistack"
+#: The checkout directory holding the tool's committed defaults and dependency manifests.
+#: SushiStack's own layout, which is why :mod:`sushicore` does not name it.
+CHECKOUT_CLI_DIR = Path("sushihub") / "cli"
+
+#: The file `hub install` wrote its ``[tool]`` paths into before 2026-09-22.
+LEGACY_TOOL_FILE = "config.local.toml"
+
+#: The file `hub link` wrote its ``[modules]`` registry into before 2026-09-22.
+LEGACY_MODULES_FILE = "modules.local.toml"
+
+#: The value written into ``[workspace] version``, as a string so it can become "1.1".
+WORKSPACE_VERSION = "1"
+
+#: The comment block every writer puts at the top of ``workspace.toml``.
+WORKSPACE_HEADER = [
+    "# The SushiStack workspace's own data. `hub` locates this directory by walking up from the",
+    "# working directory, and everything it records about this machine lives in this one file.",
+    "#",
+    "# [workspace] version  the format's version, so a later `hub` can migrate this file.",
+    "# [modules]            name = path, written by `hub link`.",
+    "# [tool]               tool paths and the selected toolchain, written by `hub install`.",
+]
 
 
 def workspace_root(start: Path | None = None) -> Path:
@@ -38,13 +69,14 @@ def workspace_root(start: Path | None = None) -> Path:
     The CLI is installed (pip/pipx) outside the workspace, so the package location
     tells us nothing about where the workspace lives — the invocation directory
     does. Resolution order: ``SUSHISTACK_HOME`` env var, then a walk up from CWD
-    looking for the ``.sushistack`` marker (or a ``sushihub/cli/manifests`` tree, which is
-    the repo's own signature). Run any `hub` command from anywhere inside the tree.
+    looking for the ``.sushistack`` marker. The marker is a directory since
+    2026-09-22 and was a file before it; both resolve, and
+    :func:`upgrade_workspace` converts the second into the first.
     """
     home = resolve_env_path("SUSHISTACK_HOME")
     if home:
         return home
-    root = walk_up(start or Path.cwd(), has_marker(WORKSPACE_MARKER, str(WORKSPACE_CLI_DIR / "manifests")))
+    root = walk_up(start or Path.cwd(), has_marker(WORKSPACE_MARKER))
     if root is None:
         raise SystemExit(
             "Not inside a SushiStack workspace: no .sushistack marker found in the "
@@ -59,15 +91,64 @@ find_project_root = workspace_root
 
 
 def config_dir(root: Path | None = None) -> Path:
-    """Directory holding config.toml / config.local.toml (the workspace's sushihub/cli/)."""
+    """The checkout directory holding the committed defaults and the dependency manifests.
+
+    Nothing the workspace owns is written here any more; that lives in
+    :func:`workspace_file`. See ``docs/design/WORKSPACE_DECOUPLING.md`` section 3.3.
+    """
     root = root or workspace_root()
-    return root / WORKSPACE_CLI_DIR
+    return root / CHECKOUT_CLI_DIR
 
 
-# Registry of modules linked to existing checkouts outside the workspace tree.
-# Kept in its own file so writing it never disturbs the [tool] paths that
-# `hub install` writes into config.local.toml.
-MODULES_FILE = "modules.local.toml"
+def workspace_file(root: Path | None = None) -> Path:
+    """The one file the workspace owns: ``<root>/.sushistack/workspace.toml``."""
+    return _core_workspace_file(root or workspace_root())
+
+
+def create_workspace_file(root: Path) -> Path:
+    """Create *root*'s marker directory and write an empty workspace.toml into it.
+
+    @return The path written.
+    """
+    (root / WORKSPACE_MARKER).mkdir(parents=True, exist_ok=True)
+    return write_toml_document(
+        workspace_file(root),
+        {"workspace": {"version": WORKSPACE_VERSION}},
+        WORKSPACE_HEADER,
+    )
+
+
+def upgrade_workspace(root: Path) -> bool:
+    """Convert a pre-2026-09-22 workspace in place. Return whether anything changed.
+
+    The marker used to be a file and the data used to sit in the checkout, at
+    ``sushihub/cli/``. This replaces the file with a directory and moves what it
+    finds into ``workspace.toml``: ``modules.local.toml``'s ``[modules]`` and
+    ``config.local.toml``'s ``[tool]``. The originals are left where they are, so
+    the step is undone by deleting the directory.
+
+    @pre *root* is a workspace root, old or new.
+    """
+    from . import console
+
+    marker = root / WORKSPACE_MARKER
+    if marker.is_dir():
+        return False
+    legacy = root / CHECKOUT_CLI_DIR
+    tables: dict = {"workspace": {"version": WORKSPACE_VERSION}}
+    modules = read_toml(legacy / LEGACY_MODULES_FILE).get("modules", {})
+    if modules:
+        tables["modules"] = modules
+    tool = read_toml(legacy / LEGACY_TOOL_FILE).get("tool", {})
+    if tool:
+        tables["tool"] = tool
+    if marker.exists():
+        marker.unlink()
+    marker.mkdir(parents=True)
+    target = write_toml_document(workspace_file(root), tables, WORKSPACE_HEADER)
+    console.info(f"Upgraded this workspace: its data now lives in {target}.")
+    return True
+
 
 # Sushi Account's base URL when neither the environment nor the config names one. The
 # four endpoints under it are written down in sushihub/contract/sushi-account.md.
@@ -77,7 +158,7 @@ DEFAULT_IDENTITY_URL = "https://account.sushisystems.io"
 def identity_url() -> str:
     """Return the Sushi Account base URL, without its trailing slash.
 
-    Reads ``SUSHI_ACCOUNT_URL`` first, then ``[identity] url`` from config.local.toml
+    Reads ``SUSHI_ACCOUNT_URL`` first, then ``[identity] url`` from workspace.toml
     and config.toml, then :data:`DEFAULT_IDENTITY_URL`. Outside a workspace only
     the environment and the default are available.
     """
@@ -85,11 +166,11 @@ def identity_url() -> str:
     if override:
         return override.rstrip("/")
     try:
-        cfg_dir = config_dir()
+        root = workspace_root()
     except SystemExit:
         return DEFAULT_IDENTITY_URL
-    for name in ("config.local.toml", "config.toml"):
-        url = read_toml(cfg_dir / name).get("identity", {}).get("url")
+    for source in (workspace_file(root), config_dir(root) / "config.toml"):
+        url = read_toml(source).get("identity", {}).get("url")
         if isinstance(url, str) and url:
             return url.rstrip("/")
     return DEFAULT_IDENTITY_URL
@@ -179,7 +260,7 @@ class Config(ToolConfig):
 
     Inherits the generic host build-tool fields (cmake/ninja/vcpkg paths, etc.)
     from :class:`ToolConfig` and adds the SYCL toolchain selection and compiler
-    roots ``hub install`` discovers and writes into config.local.toml.
+    roots ``hub install`` discovers and writes into workspace.toml.
     """
 
     # SYCL toolchain selection (intel-llvm | adaptivecpp | oneapi). Persisted by
@@ -195,7 +276,7 @@ class Config(ToolConfig):
     # intel/llvm nightly bundle root (holds bin/clang++) for the intel-llvm
     # toolchain, and the AdaptiveCpp compiler for the adaptivecpp toolchain.
     # On Windows these are how the non-oneAPI toolchains provide a SYCL compiler;
-    # they are discovered by `hub install` and written to config.local.toml.
+    # they are discovered by `hub install` and written to workspace.toml.
     llvm_root: str = ""
     acpp_exe: str = ""
 
@@ -238,8 +319,8 @@ def load_config() -> Config:
     """Load and resolve the layered configuration for the current platform."""
     plat = platform.system().lower()  # 'windows' | 'linux' | 'darwin'
 
-    cfg_dir = config_dir()
-    sources = [cfg_dir / "config.toml", cfg_dir / "config.local.toml"]
+    root = workspace_root()
+    sources = [config_dir(root) / "config.toml", workspace_file(root)]
     cfg = load_tool_config(Config, sources, plat, _ENV_OVERRIDES)
     # Guard against a stale/typo'd toolchain leaking through from config or env.
     if cfg.toolchain not in TOOLCHAINS:
@@ -248,20 +329,13 @@ def load_config() -> Config:
 
 
 def set_toolchain(toolchain: str) -> Path:
-    """Persist the selected SYCL toolchain into config.local.toml.
+    """Persist the selected SYCL toolchain into workspace.toml.
 
-    Writes a top-level ``[tool] toolchain = "..."`` key, preserving any existing
-    ``[tool.<platform>]`` tables written by `sr setup configure`. Returns the
-    path that was written.
+    Writes a top-level ``[tool] toolchain = "..."`` key, preserving the
+    ``[tool.<platform>]`` tables `hub install` probed and every sibling table the
+    file carries. Returns the path that was written.
     """
     if toolchain not in TOOLCHAINS:
         raise ValueError(f"Unknown toolchain '{toolchain}'. Choose one of {', '.join(TOOLCHAINS)}.")
 
-    return write_tool_section(
-        config_dir() / "config.local.toml",
-        {"toolchain": toolchain},
-        [
-            "# Managed by the SushiStack CLI. `hub` writes the toolchain key and the",
-            "# [tool.<platform>] tool paths every module reads.",
-        ],
-    )
+    return write_tool_section(workspace_file(), {"toolchain": toolchain}, WORKSPACE_HEADER)

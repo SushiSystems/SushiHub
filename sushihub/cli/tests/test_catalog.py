@@ -80,6 +80,7 @@ def test_the_gitignore_lines_cover_every_module_and_the_local_files():
     assert "/dependencies/" in lines
     for name in CATALOG:
         assert f"/{name}/" in lines
+    assert "/.sushistack/" in lines
     assert "/sushihub/cli/config.local.toml" in lines
     assert "/sushihub/cli/modules.local.toml" in lines
 

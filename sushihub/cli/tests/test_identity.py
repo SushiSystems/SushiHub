@@ -13,8 +13,7 @@ import keyring.backend
 import keyring.errors
 import pytest
 
-from sushicore.workspace import WORKSPACE_CLI_DIR
-from sushistack.config import DEFAULT_IDENTITY_URL, identity_url
+from sushistack.config import CHECKOUT_CLI_DIR, DEFAULT_IDENTITY_URL, identity_url
 from sushistack.services import session
 from sushistack.services.identity import (
     Account,
@@ -41,8 +40,8 @@ from sushistack.services.token_store import (
 def _workspace_with_identity(tmp_path, url: str):
     """Write a throwaway workspace whose config.toml pins the Sushi Account url."""
     (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
-    (tmp_path / WORKSPACE_CLI_DIR).mkdir(parents=True)
-    (tmp_path / WORKSPACE_CLI_DIR / "config.toml").write_text(
+    (tmp_path / CHECKOUT_CLI_DIR).mkdir(parents=True)
+    (tmp_path / CHECKOUT_CLI_DIR / "config.toml").write_text(
         f'[identity]\nurl = "{url}"\n', encoding="utf-8")
     return tmp_path
 

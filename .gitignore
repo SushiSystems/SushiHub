@@ -6,6 +6,7 @@
 /sushiblas/
 
 # Local machine config written by `hub install` / `hub link`.
+/.sushistack/
 /sushihub/cli/config.local.toml
 /sushihub/cli/modules.local.toml
 
