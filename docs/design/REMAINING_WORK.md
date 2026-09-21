@@ -72,6 +72,3 @@ read from one place. Wave 0 landed on 2026-09-22; waves 1 through 7 are open.
   to hold the docstring rules in `../CONTRIBUTING.md`. This one does not yet.
 - **`hub unlink`.** Removing a link means editing `sushihub/cli/modules.local.toml` by hand
   (`../guides/LINKING_CHECKOUTS.md`).
-- **`sushicore`'s README placement.** The component's facts live in `sushicore/docs/README.md`
-  rather than `sushicore/README.md`, the shape every other component follows. Moving it touches
-  the other five repositories' documentation links.
