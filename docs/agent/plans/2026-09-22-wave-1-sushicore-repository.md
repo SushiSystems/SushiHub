@@ -188,9 +188,9 @@ git subtree split --prefix=sushicore -b sushicore-split
 git log --oneline sushicore-split | wc -l
 ```
 
-Expected: a branch `sushicore-split` whose root is `pyproject.toml`, `README.md`, `sushicore/`
-and `tests/` rather than `sushicore/...`. The commit count is smaller than `main`'s, because only
-the commits touching `sushicore/` are carried.
+Expected: a branch `sushicore-split` whose root is `pyproject.toml`, `sushicore/` and `tests/`
+rather than `sushicore/...`. Measured on 2026-09-22: 34 commits, against 181 on `main`, because
+only the commits touching `sushicore/` are carried.
 
 Confirm the shape before pushing anything:
 
@@ -198,8 +198,10 @@ Confirm the shape before pushing anything:
 git ls-tree --name-only sushicore-split
 ```
 
-Expected, exactly: `.gitignore`, `CLAUDE.md`, `LICENSE`, `README.md`, `docs`, `pyproject.toml`,
-`sushicore`, `tests`.
+Expected, exactly: `.gitignore`, `LICENSE`, `README.md`, `docs`, `pyproject.toml`, `sushicore`,
+`tests`. `CLAUDE.md` is not there and should not be: it sits at `sushicore/docs/CLAUDE.md`, so
+the split carries it inside `docs/`. `README.md` appears only because task 1 created it; a split
+run before task 1 lists six entries rather than seven.
 
 - [ ] **Step 2: Make the existing repository public and describe it** — owner step
 
