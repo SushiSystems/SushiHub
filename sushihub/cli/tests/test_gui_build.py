@@ -101,8 +101,16 @@ def _env(cfg, build_dir):
 
 @pytest.fixture
 def provisioned(workspace):
-    """Add the vcpkg tree `hub install` provisions to the throwaway workspace."""
+    """Add the vcpkg tree `hub install` provisions to the throwaway workspace.
+
+    The packaged defaults pin ``vcpkg_root`` on Linux and leave it unset on
+    Windows, and an explicit root always wins over the provisioned tree. This
+    clears it, so the test asks the one question it means to ask on either
+    platform: with nothing pinned, is the provisioned tree the one chosen?
+    """
     (workspace / "dependencies" / "vcpkg").mkdir(parents=True)
+    (workspace / WORKSPACE_MARKER / "workspace.toml").write_text(
+        "[workspace]\nversion = \"1\"\n\n[tool]\nvcpkg_root = \"\"\n", encoding="utf-8")
     return workspace
 
 
