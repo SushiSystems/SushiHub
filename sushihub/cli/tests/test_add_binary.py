@@ -7,11 +7,11 @@ import json
 
 import pytest
 
-from sushistack.services import binary, git_ops, licence_file, links, modules, pipx, session
-from sushistack.services.identity import SushiAccount
-from sushistack.services.licence_file import LICENCE_FILE
-from sushistack.services.presence import RELEASE_MANIFEST
-from sushistack.services.token_store import MemoryStore, Tokens
+from sushihub.services import binary, git_ops, licence_file, links, modules, pipx, session
+from sushihub.services.identity import SushiAccount
+from sushihub.services.licence_file import LICENCE_FILE
+from sushihub.services.presence import RELEASE_MANIFEST
+from sushihub.services.token_store import MemoryStore, Tokens
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_presence import Recorder
@@ -37,7 +37,7 @@ def recorder(monkeypatch):
     """Capture every line `hub add` and `hub update` print.
 
     The binary install policy prints through its own `console` reference
-    (:mod:`sushistack.services.binary`), so both it and `modules` are patched
+    (:mod:`sushihub.services.binary`), so both it and `modules` are patched
     to the same spy; otherwise a message ``binary`` prints would go unseen.
     """
     spy = Recorder()

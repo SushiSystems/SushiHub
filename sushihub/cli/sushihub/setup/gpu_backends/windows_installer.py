@@ -135,7 +135,7 @@ class HttpDownloader:
         console.info(f"Downloading {download.url} ...")
         try:
             request = urllib.request.Request(download.url,
-                                             headers={"User-Agent": "sushistack-installer"})
+                                             headers={"User-Agent": "sushihub-installer"})
             with urllib.request.urlopen(request, timeout=300) as resp, open(part, "wb") as fh:
                 while chunk := resp.read(1 << 16):
                     fh.write(chunk)

@@ -2,7 +2,7 @@
 
 The CLI command parses flags, this builds the pipeline via the composition root,
 runs it, and maps success to an exit code. All the real logic lives in the
-``sushistack.setup`` package.
+``sushihub.setup`` package.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ def run(step: str = "all", dry_run: bool = False,
     need a TTY to proceed.
     """
     detect_only = step == "detect"
-    console.header("SushiStack Doctor" if detect_only else "SushiStack Install")
+    console.header("SushiHub Doctor" if detect_only else "SushiHub Install")
     if dry_run:
         console.info("Dry-run: showing actions without changing the system.")
 
@@ -85,7 +85,7 @@ def uninstall(
     assume_yes: bool = False,
 ) -> int:
     """Remove packages and config files placed by `hub install`. Return exit code."""
-    console.header("SushiStack Remove")
+    console.header("SushiHub Remove")
     if dry_run:
         console.info("Dry-run: showing actions without changing the system.")
     if everything:

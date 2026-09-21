@@ -6,15 +6,15 @@ import pathlib
 
 import pytest
 
-from sushistack.config import Config
-from sushistack.setup import steps as steps_mod
-from sushistack.setup.gpu_backends.backend import GpuBackendSpec, ToolkitInstall
-from sushistack.setup.gpu_backends.provisioning import provision_gpu_adapters
-from sushistack.setup.gpu_backends.registry import Registry
-from sushistack.setup.package_managers import LinuxPackageManager
-from sushistack.setup.package_managers import install_gpu_stack as _real_install_gpu_stack
-from sushistack.setup.pipeline import InstallContext, StepResult
-from sushistack.setup.steps import InstallDepsStep, provision_adapters_for_run
+from sushihub.config import Config
+from sushihub.setup import steps as steps_mod
+from sushihub.setup.gpu_backends.backend import GpuBackendSpec, ToolkitInstall
+from sushihub.setup.gpu_backends.provisioning import provision_gpu_adapters
+from sushihub.setup.gpu_backends.registry import Registry
+from sushihub.setup.package_managers import LinuxPackageManager
+from sushihub.setup.package_managers import install_gpu_stack as _real_install_gpu_stack
+from sushihub.setup.pipeline import InstallContext, StepResult
+from sushihub.setup.steps import InstallDepsStep, provision_adapters_for_run
 
 from .conftest import MemorySource
 
@@ -25,12 +25,12 @@ _COMMIT = "d5f649b706f63b5c74e1929bc95db8de91085560"
 def _plain_console():
     """Force the human-readable console renderer for every test in this file.
 
-    ``sushistack.console`` builds one console lazily and keeps it for the
+    ``sushihub.console`` builds one console lazily and keeps it for the
     process; a test elsewhere that switches it to the JSON renderer leaves
     that choice in place for every test that runs after it. Resetting it here
     keeps this file's console assertions independent of test order.
     """
-    from sushistack import console
+    from sushihub import console
     console.set_machine(False)
     yield
 
@@ -187,7 +187,7 @@ def test_a_missing_commit_in_dry_run_prints_the_dry_run_line_instead_of_a_warnin
 def test_provision_adapters_for_run_skips_without_a_resolved_llvm_root(monkeypatch, capsys):
     calls: list[pathlib.Path] = []
     monkeypatch.setattr(
-        "sushistack.setup.steps.provision_gpu_adapters",
+        "sushihub.setup.steps.provision_gpu_adapters",
         lambda cfg, registry, root, builder, dry_run: calls.append(root),
     )
     ctx = InstallContext(cfg=Config(platform="linux"))
@@ -201,7 +201,7 @@ def test_provision_adapters_for_run_skips_without_a_resolved_llvm_root(monkeypat
 def test_provision_adapters_for_run_uses_the_resolved_llvm_root(monkeypatch, tmp_path):
     calls: list[pathlib.Path] = []
     monkeypatch.setattr(
-        "sushistack.setup.steps.provision_gpu_adapters",
+        "sushihub.setup.steps.provision_gpu_adapters",
         lambda cfg, registry, root, builder, dry_run: calls.append(root),
     )
     ctx = InstallContext(cfg=Config(platform="linux"))

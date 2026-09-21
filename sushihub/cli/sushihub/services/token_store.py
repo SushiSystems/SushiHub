@@ -1,6 +1,6 @@
 """Where the Sushi Account session lives between two `hub` runs.
 
-The client in ``sushistack.services.identity`` never names a credential store: it
+The client in ``sushihub.services.identity`` never names a credential store: it
 takes a :class:`TokenStore`. In production that is :class:`KeyringStore`, which
 puts one JSON document in the operating system's credential store; in tests it is
 :class:`MemoryStore`, which holds it in the process and is gone when the process
@@ -19,7 +19,7 @@ import keyring.errors
 
 # The credential store's coordinates. One entry holds the whole session, so a
 # sign-out is one deletion.
-KEYRING_SERVICE = "sushistack"
+KEYRING_SERVICE = "sushihub"
 KEYRING_USERNAME = "sushi-account"
 
 

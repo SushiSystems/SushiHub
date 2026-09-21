@@ -10,10 +10,10 @@ from pathlib import Path
 
 import pytest
 
-from sushistack.config import Config
-from sushistack.setup.gpu_backends.adapter_builder import AdapterBuilder
-from sushistack.setup.gpu_backends.backend import GpuBackendSpec, ToolkitInstall
-from sushistack.setup.toolchains import TOOLCHAIN_STAMP, _write_toolchain_stamp
+from sushihub.config import Config
+from sushihub.setup.gpu_backends.adapter_builder import AdapterBuilder
+from sushihub.setup.gpu_backends.backend import GpuBackendSpec, ToolkitInstall
+from sushihub.setup.toolchains import TOOLCHAIN_STAMP, _write_toolchain_stamp
 
 _COMMIT = "d5f649b706f63b5c74e1929bc95db8de91085560"
 

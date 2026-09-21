@@ -3,7 +3,7 @@
 import subprocess
 from pathlib import Path
 
-from sushistack.setup.gpu_backends.compiler_identity import read_intel_llvm_commit
+from sushihub.setup.gpu_backends.compiler_identity import read_intel_llvm_commit
 
 _DPCPP_VERSION = (
     "DPC++ ...\n"

@@ -11,11 +11,11 @@ import jsonschema
 import pytest
 from typer.testing import CliRunner
 
-from sushistack.cli import app
-from sushistack.config import WORKSPACE_MARKER
-from sushistack.services import session
-from sushistack.services.identity import SushiAccount
-from sushistack.services.token_store import MemoryStore, Tokens
+from sushihub.cli import app
+from sushihub.config import WORKSPACE_MARKER
+from sushihub.services import session
+from sushihub.services.identity import SushiAccount
+from sushihub.services.token_store import MemoryStore, Tokens
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 
@@ -97,7 +97,7 @@ def test_describe_schema_accepts_the_documented_example():
 def test_set_machine_before_first_print_switches_to_json(capsys):
     import importlib
 
-    from sushistack import console as c
+    from sushihub import console as c
 
     importlib.reload(c)
     c.set_machine(True)

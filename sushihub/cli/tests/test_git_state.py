@@ -5,7 +5,7 @@ from __future__ import annotations
 import subprocess
 from pathlib import Path
 
-from sushistack.services.git_state import fetch, read_git_state
+from sushihub.services.git_state import fetch, read_git_state
 
 
 def _git(cwd: Path, *args: str) -> str:

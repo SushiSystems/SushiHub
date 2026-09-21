@@ -13,14 +13,14 @@ import keyring.backend
 import keyring.errors
 import pytest
 
-from sushistack.config import (
+from sushihub.config import (
     DEFAULT_IDENTITY_URL,
     WORKSPACE_MARKER,
     identity_url,
     workspace_file,
 )
-from sushistack.services import session
-from sushistack.services.identity import (
+from sushihub.services import session
+from sushihub.services.identity import (
     Account,
     Licence,
     LicenceToken,
@@ -33,7 +33,7 @@ from sushistack.services.identity import (
     SushiAccountError,
     UnknownProduct,
 )
-from sushistack.services.token_store import (
+from sushihub.services.token_store import (
     KEYRING_SERVICE,
     KEYRING_USERNAME,
     KeyringStore,

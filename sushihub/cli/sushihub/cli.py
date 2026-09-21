@@ -1,4 +1,4 @@
-"""SushiStack developer CLI (`hub`).
+"""SushiHub developer CLI (`hub`).
 
 The umbrella that provisions one shared dependency tree for the whole stack and
 manages the module checkouts named in `catalog.toml` that live inside the workspace. Each
@@ -6,7 +6,7 @@ module keeps its own CLI — `sr`, `se`, `sa`, `sb` — for building and testing
 downloading, installing, and module lifecycle.
 
 Thin Typer layer: commands parse arguments and delegate to the service layer in
-``sushistack.services``. Every command ends through :func:`_finish`, which emits
+``sushihub.services``. Every command ends through :func:`_finish`, which emits
 the one ``result`` event the JSON contract in ``sushihub/contract/README.md``
 requires and then exits.
 """
@@ -30,7 +30,7 @@ from .services import status_report
 
 app = typer.Typer(
     name="hub",
-    help="SushiStack CLI — one shared dependency tree and module manager for the stack.",
+    help="SushiHub CLI — one shared dependency tree and module manager for the stack.",
     rich_markup_mode="rich",
 )
 
@@ -96,7 +96,7 @@ def init():
 
     Writes the [cyan].sushistack[/cyan] marker, ensures [cyan].gitignore[/cyan]
     excludes the shared [cyan]dependencies/[/cyan] tree and module checkouts, and
-    creates the dependency directory. Run this once after cloning sushistack.
+    creates the dependency directory. Run this once after cloning sushihub.
     """
     _finish(modules_svc.init())
 

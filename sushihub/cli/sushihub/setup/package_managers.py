@@ -114,7 +114,7 @@ def install_gpu_stack(cfg: Config, vendor: str, dry_run: bool) -> bool:
 
     Looks the vendor up in the GPU backend registry and delegates to its
     locator's ``provision``, so nvidia/amd/intel each answer through the one
-    :class:`~sushistack.setup.gpu_backends.backend.GpuBackendSpec` that already
+    :class:`~sushihub.setup.gpu_backends.backend.GpuBackendSpec` that already
     knows how to locate and install it. No vendor is named here: adding a
     backend to the registry is enough for this function to reach it.
     Always best-effort: a failure here never fails `hub install`.

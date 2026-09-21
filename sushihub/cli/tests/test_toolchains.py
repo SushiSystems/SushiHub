@@ -6,7 +6,7 @@ import json
 import os
 from pathlib import Path
 
-from sushistack.setup.toolchains import (
+from sushihub.setup.toolchains import (
     TOOLCHAIN_STAMP,
     _write_toolchain_stamp,
     read_toolchain_stamp,

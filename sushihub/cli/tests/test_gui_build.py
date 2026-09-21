@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from sushistack.config import WORKSPACE_MARKER
-from sushistack.gui_config import GuiConfig, gui_root, load_gui_config
+from sushihub.config import WORKSPACE_MARKER
+from sushihub.gui_config import GuiConfig, gui_root, load_gui_config
 
 
 @pytest.fixture
@@ -49,7 +49,7 @@ def test_an_explicit_compiler_still_wins(workspace):
 
 def test_run_launches_the_application_by_default():
     """The run target comes from the profile, never from the workspace's shared [tool] table."""
-    from sushistack.gui_config import GUI_PROFILE
+    from sushihub.gui_config import GUI_PROFILE
 
     assert GUI_PROFILE.default_target == "sushihub_gui"
 
@@ -113,7 +113,7 @@ def _configure_of(driver) -> list[str]:
 
 
 def test_the_configure_points_cmake_at_the_provisioned_vcpkg_tree(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     assert gui.build(driver=driver, env_loader=_env) == 0
@@ -124,7 +124,7 @@ def test_the_configure_points_cmake_at_the_provisioned_vcpkg_tree(provisioned):
 
 
 def test_the_configure_turns_manifest_mode_off_and_tests_on(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     gui.build(driver=driver, env_loader=_env)
@@ -134,7 +134,7 @@ def test_the_configure_turns_manifest_mode_off_and_tests_on(provisioned):
 
 
 def test_the_configure_names_the_build_type_and_the_build_directory(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     gui.build(gui.BuildType.release, driver=driver, env_loader=_env)
@@ -146,7 +146,7 @@ def test_the_configure_names_the_build_type_and_the_build_directory(provisioned)
 
 
 def test_the_configure_names_no_compiler_when_none_is_configured(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     gui.build(driver=driver, env_loader=_env)
@@ -154,7 +154,7 @@ def test_the_configure_names_no_compiler_when_none_is_configured(provisioned):
 
 
 def test_a_caller_define_comes_after_every_default(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     gui.build(defines=["SUSHIHUB_GUI_BUILD_TESTS=OFF"], driver=driver, env_loader=_env)
@@ -163,7 +163,7 @@ def test_a_caller_define_comes_after_every_default(provisioned):
 
 
 def test_a_define_without_a_value_is_refused(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     assert gui.build(defines=["SUSHIHUB_GUI_BUILD_TESTS"], driver=driver, env_loader=_env) == 2
@@ -171,7 +171,7 @@ def test_a_define_without_a_value_is_refused(provisioned):
 
 
 def test_clean_removes_the_tree_before_configuring(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     gui.build(clean=True, driver=driver, env_loader=_env)
@@ -180,7 +180,7 @@ def test_clean_removes_the_tree_before_configuring(provisioned):
 
 
 def test_test_passes_the_filter_and_the_repeat_through_with_no_label(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     (provisioned / "sushihub" / "gui" / "build" / "hub").mkdir(parents=True)
     driver = RecordingDriver()
@@ -189,7 +189,7 @@ def test_test_passes_the_filter_and_the_repeat_through_with_no_label(provisioned
 
 
 def test_test_refuses_before_the_first_build(provisioned, capsys):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     assert gui.test(driver=driver, env_loader=_env) == 1
@@ -199,7 +199,7 @@ def test_test_refuses_before_the_first_build(provisioned, capsys):
 
 
 def test_run_refuses_before_the_first_build(provisioned, capsys):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     assert gui.run(env_loader=_env) == 1
     captured = capsys.readouterr()
@@ -207,7 +207,7 @@ def test_run_refuses_before_the_first_build(provisioned, capsys):
 
 
 def test_clean_removes_the_build_directory(provisioned):
-    from sushistack.services import gui
+    from sushihub.services import gui
 
     driver = RecordingDriver()
     assert gui.clean(driver=driver) == 0

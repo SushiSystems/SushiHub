@@ -1,6 +1,6 @@
 """The four Sushi Account commands: what `hub login`, `logout`, `whoami` and `license` do.
 
-Each function drives :class:`~sushistack.services.identity.SushiAccount` and writes to
+Each function drives :class:`~sushihub.services.identity.SushiAccount` and writes to
 the console, and returns the exit code and the payload the ``result`` event
 carries. One factory, :func:`client`, decides which server and which credential
 store every Sushi Account call in `hub` talks to, so a test replaces the pair in one

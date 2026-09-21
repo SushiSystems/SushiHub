@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.config import (
+from sushihub.config import (
     CHECKOUT_CLI_DIR,
     DEFAULTS_FILE,
     WORKSPACE_MARKER,

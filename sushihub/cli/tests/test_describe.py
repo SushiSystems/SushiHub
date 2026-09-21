@@ -2,8 +2,8 @@
 
 import jsonschema
 
-from sushistack.cli import app
-from sushistack.describe import catalogue
+from sushihub.cli import app
+from sushihub.describe import catalogue
 
 from .test_json_streams import _schema
 
@@ -47,7 +47,7 @@ def test_type_names_are_read_from_the_type_not_its_class():
     """Typer ships its own Click classes; the mapping must not depend on click's."""
     from types import SimpleNamespace
 
-    from sushistack.describe import _type_name
+    from sushihub.describe import _type_name
 
     assert _type_name(SimpleNamespace(name="boolean")) == "boolean"
     assert _type_name(SimpleNamespace(name="integer")) == "integer"

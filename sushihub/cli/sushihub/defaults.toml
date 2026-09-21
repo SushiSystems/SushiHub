@@ -1,4 +1,4 @@
-# SushiStack CLI defaults, shipped inside the `sushistack` package.
+# SushiHub CLI defaults, shipped inside the `sushihub` package.
 #
 # Layering (lowest -> highest precedence):
 #   built-in defaults  ->  this file  ->  .sushistack/workspace.toml

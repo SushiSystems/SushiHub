@@ -82,7 +82,7 @@ def load_catalog() -> ModuleCatalog:
     @pre The file is package data; a source checkout and an installed wheel both
         resolve it through ``importlib.resources``.
     """
-    raw = (files("sushistack") / CATALOG_FILE).read_text(encoding="utf-8")
+    raw = (files("sushihub") / CATALOG_FILE).read_text(encoding="utf-8")
     doc = tomllib.loads(raw)
     entries = {
         name: Module(name=name, repo=body["repo"], directory=body["directory"],

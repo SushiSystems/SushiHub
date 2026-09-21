@@ -4,7 +4,7 @@ SushiStack is the workspace the user clones first; the stack's modules
 (sushiruntime, sushiengine, …) are git checkouts that live *inside* it, cloned by
 ``hub add``. This service owns that lifecycle — initialising the workspace, cloning
 and updating modules, and reporting status — while the dependency engine in
-``sushistack.setup`` owns everything under ``dependencies/``.
+``sushihub.setup`` owns everything under ``dependencies/``.
 """
 
 from __future__ import annotations
@@ -82,7 +82,7 @@ def _resolve_names(names: list[str] | None) -> list[str] | None:
 
 def init() -> int:
     """Turn the current directory into a SushiStack workspace. Return exit code."""
-    console.header("SushiStack Init")
+    console.header("SushiHub Init")
     root = Path.cwd().resolve()
 
     if (root / WORKSPACE_MARKER).is_dir():
@@ -125,7 +125,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
         within reach.
     @param provision Runs the provision pipeline; injected by tests.
     """
-    console.header("SushiStack Add")
+    console.header("SushiHub Add")
     resolved = _resolve_names(names)
     if resolved is None:
         return 1
@@ -207,7 +207,7 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
 
     @param provision Runs the provision pipeline; injected by tests.
     """
-    console.header("SushiStack Link")
+    console.header("SushiHub Link")
     provision = provision or _provision
     resolved = CATALOG.resolve(name)
     if name == SUSHICORE_NAME:
@@ -266,7 +266,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     asks Sushi Account for the latest release and downloads it when its version
     differs from the installed one, then writes the licence again.
     """
-    console.header("SushiStack Update")
+    console.header("SushiHub Update")
     resolved = _resolve_names(names)
     if resolved is None:
         return 1
@@ -383,7 +383,7 @@ def sync(dry_run: bool) -> int:
     """
     from . import setup as setup_svc
 
-    console.header("SushiStack Sync")
+    console.header("SushiHub Sync")
     if dry_run:
         _self_update(workspace_root(), dry_run)
         return setup_svc.run("provision", dry_run=dry_run)

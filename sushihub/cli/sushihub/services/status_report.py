@@ -133,7 +133,7 @@ def _branch_cell(source: dict | None) -> str:
 
 def render(payload: dict) -> int:
     """Print the status *payload* that :func:`build_status` built. Return exit code."""
-    console.header("SushiStack Status")
+    console.header("SushiHub Status")
     console.info(f"Workspace: {payload['workspace']}")
     console.table(
         ["Module", "Location", "State", "Branch"],
@@ -141,7 +141,7 @@ def render(payload: dict) -> int:
           "—" if module["state"] == "absent" else module["state"],
           _branch_cell(module["source"])]
          for module in payload["modules"]],
-        title="SushiStack Status",
+        title="SushiHub Status",
     )
     deps = payload["dependencies"]
     if deps["present"]:

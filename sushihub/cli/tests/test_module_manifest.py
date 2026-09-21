@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.services.module_manifest import MANIFEST_FILE, read
+from sushihub.services.module_manifest import MANIFEST_FILE, read
 
 
 def _checkout(root, name: str, body: str):

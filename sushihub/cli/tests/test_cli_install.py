@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.services import modules, pipx
+from sushihub.services import modules, pipx
 
 from .test_presence import Recorder
 

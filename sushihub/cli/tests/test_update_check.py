@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
-from sushistack.services.identity import SushiAccount
-from sushistack.services.token_store import MemoryStore, Tokens
-from sushistack.services.update_check import latest_release
+from sushihub.services.identity import SushiAccount
+from sushihub.services.token_store import MemoryStore, Tokens
+from sushihub.services.update_check import latest_release
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_identity import _signed_in

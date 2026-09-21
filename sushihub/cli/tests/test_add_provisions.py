@@ -1,6 +1,6 @@
 """Bringing a module in brings its dependencies with it."""
 
-from sushistack.services import git_ops, links, modules
+from sushihub.services import git_ops, links, modules
 
 
 def test_add_provisions_once_after_a_new_clone(monkeypatch, tmp_path):

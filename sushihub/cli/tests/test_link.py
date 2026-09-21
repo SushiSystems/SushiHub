@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.config import WORKSPACE_MARKER, workspace_file
-from sushistack.services import links, modules
+from sushihub.config import WORKSPACE_MARKER, workspace_file
+from sushihub.services import links, modules
 
 from .test_presence import Recorder
 
