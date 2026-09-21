@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.services import modules
+from sushistack.services import modules, pipx
 
 from .test_presence import Recorder
 
@@ -62,7 +62,7 @@ def test_sushicore_is_none_when_the_checkout_is_partial(tmp_path):
 
 def test_a_module_without_a_cli_package_is_skipped(tmp_path, recorder, monkeypatch):
     """Skips pipx and succeeds when the checkout carries no cli/pyproject.toml."""
-    monkeypatch.setattr(modules, "_pipx_cmd",
+    monkeypatch.setattr(pipx, "command",
                         lambda: pytest.fail("pipx was looked for"))
     assert modules._install_module_cli("sushiai", tmp_path / "sushiai") is True
     assert recorder.said("sushiai: no cli/ package to install; skipping CLI install.")
@@ -70,24 +70,37 @@ def test_a_module_without_a_cli_package_is_skipped(tmp_path, recorder, monkeypat
 
 def test_a_missing_pipx_is_a_warning(checkout, recorder, monkeypatch):
     """Reports failure and names the command to run later when pipx is missing."""
-    monkeypatch.setattr(modules, "_pipx_cmd", lambda: None)
+    monkeypatch.setattr(pipx, "command", lambda: None)
     assert modules._install_module_cli("sushiruntime", checkout) is False
     assert recorder.said("sushiruntime: pipx not found; skipping CLI install. Install "
                          f"it later with `pipx install {checkout / 'cli'}`.")
 
 
-def test_the_happy_path_installs_the_module_cli_alone(checkout, recorder, monkeypatch):
-    """Installs the module's cli/ with pipx and runs no second command."""
+def test_the_happy_path_installs_the_module_cli_editable(checkout, recorder, monkeypatch):
+    """Installs the module's cli/ with pipx, editable, and runs no second command."""
     runs = _Runs()
-    monkeypatch.setattr(modules, "_pipx_cmd", lambda: ["pipx"])
-    monkeypatch.setattr(modules, "subprocess", type("S", (), {"run": runs}))
+    monkeypatch.setattr(pipx, "command", lambda: ["pipx"])
+    monkeypatch.setattr(pipx, "subprocess", type("S", (), {"run": runs}))
     assert modules._install_module_cli("sushiruntime", checkout) is True
-    assert runs.commands == [["pipx", "install", "--force", str(checkout / "cli")]]
+    assert runs.commands == [
+        ["pipx", "install", "--force", "--editable", str(checkout / "cli")]]
 
 
 def test_a_failed_pipx_install_is_reported(checkout, recorder, monkeypatch):
     """Reports failure when pipx cannot install the module's CLI."""
-    monkeypatch.setattr(modules, "_pipx_cmd", lambda: ["pipx"])
-    monkeypatch.setattr(modules, "subprocess", type("S", (), {"run": _Runs(code=1)}))
+    monkeypatch.setattr(pipx, "command", lambda: ["pipx"])
+    monkeypatch.setattr(pipx, "subprocess", type("S", (), {"run": _Runs(code=1)}))
     assert modules._install_module_cli("sushiruntime", checkout) is False
     assert recorder.said("sushiruntime: CLI install failed.")
+
+
+def test_both_paths_install_a_module_cli_the_same_way(checkout, recorder, monkeypatch):
+    """`hub add` and `hub install-cli` leave the same install behind."""
+    runs = _Runs()
+    monkeypatch.setattr(pipx, "command", lambda: ["pipx"])
+    monkeypatch.setattr(pipx, "subprocess", type("S", (), {"run": runs}))
+    modules._install_module_cli("sushiruntime", checkout)
+    from_add = list(runs.commands)
+    runs.commands.clear()
+    pipx.install(checkout / "cli", editable=True)
+    assert runs.commands == from_add
