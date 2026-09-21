@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from sushistack.services import modules
+from sushistack.services.catalog import CATALOG, load_catalog
 
 from .test_presence import Recorder
 
@@ -19,7 +20,7 @@ def recorder(monkeypatch):
 
 def test_the_catalog_holds_the_six_modules_of_today():
     """Six modules are registered; wave 2 drops sushidsp and sushitrack from this list."""
-    assert list(modules.MODULES) == [
+    assert CATALOG.names() == [
         "sushiruntime",
         "sushiengine",
         "sushiai",
@@ -31,7 +32,8 @@ def test_the_catalog_holds_the_six_modules_of_today():
 
 def test_every_entry_names_its_repository_and_directory():
     """A catalog entry carries a github URL and a directory equal to its name."""
-    for name, entry in modules.MODULES.items():
+    for name in CATALOG:
+        entry = CATALOG[name]
         assert entry.name == name
         assert entry.directory == name
         assert entry.repo == f"https://github.com/sushisystems/{name}.git"
@@ -40,26 +42,26 @@ def test_every_entry_names_its_repository_and_directory():
 def test_sushiengine_is_the_one_module_sold_as_a_binary():
     """BINARY_MODULE names sushiengine and nothing else."""
     assert modules.BINARY_MODULE == "sushiengine"
-    assert modules.BINARY_MODULE in modules.MODULES
+    assert modules.BINARY_MODULE in CATALOG
 
 
 def test_sushicore_is_not_a_catalog_member():
     """sushicore ships inside the repository, so the catalog never lists it."""
-    assert modules.SUSHICORE_NAME not in modules.MODULES
+    assert modules.SUSHICORE_NAME not in CATALOG
 
 
 def test_every_module_has_a_two_letter_alias():
     """Each alias maps to a catalog member and no module is left without one."""
-    assert set(modules._ALIASES.values()) == set(modules.MODULES)
-    assert modules._ALIASES["sr"] == "sushiruntime"
-    assert modules._ALIASES["se"] == "sushiengine"
+    assert set(CATALOG.aliases().values()) == set(CATALOG.names())
+    assert CATALOG.aliases()["sr"] == "sushiruntime"
+    assert CATALOG.aliases()["se"] == "sushiengine"
 
 
 def test_an_empty_list_means_every_module():
     """Passing nothing, or 'all', expands to the whole catalog in order."""
-    assert modules._resolve_names(None) == list(modules.MODULES)
-    assert modules._resolve_names([]) == list(modules.MODULES)
-    assert modules._resolve_names(["all"]) == list(modules.MODULES)
+    assert modules._resolve_names(None) == CATALOG.names()
+    assert modules._resolve_names([]) == CATALOG.names()
+    assert modules._resolve_names(["all"]) == CATALOG.names()
 
 
 def test_aliases_expand_to_module_names():
@@ -78,7 +80,19 @@ def test_the_gitignore_lines_cover_every_module_and_the_local_files():
     """`hub init` ignores the dependency tree, every module directory and both local files."""
     lines = modules._GITIGNORE_LINES
     assert "/dependencies/" in lines
-    for name in modules.MODULES:
+    for name in CATALOG:
         assert f"/{name}/" in lines
     assert "/sushihub/cli/config.local.toml" in lines
     assert "/sushihub/cli/modules.local.toml" in lines
+
+
+def test_the_catalog_resolves_a_name_and_an_alias_to_the_same_module():
+    """resolve answers the module name for both spellings and None for neither."""
+    assert CATALOG.resolve("sushiruntime") == "sushiruntime"
+    assert CATALOG.resolve("sr") == "sushiruntime"
+    assert CATALOG.resolve("sushiwater") is None
+
+
+def test_the_packaged_catalog_is_readable_as_package_data():
+    """The catalog loads through importlib.resources, as an installed wheel must."""
+    assert load_catalog().names() == CATALOG.names()

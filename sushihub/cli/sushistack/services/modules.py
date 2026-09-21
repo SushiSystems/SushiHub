@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from dataclasses import dataclass
 from pathlib import Path
 
 from .. import console
@@ -25,37 +24,13 @@ from ..config import (
 )
 from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import licence_file, releases, session
+from .catalog import CATALOG
 from .identity import ReleaseInfo, SushiAccount, SushiAccountError
 from .presence import Presence, describe, presence_of, read_release
 from .releases import ReleaseCorrupt
 
-
-@dataclass(frozen=True)
-class Module:
-    """One stack module: its short name, clone URL, and on-disk directory."""
-
-    name: str          # short name used on the CLI: runtime | engine | ai | blas
-    repo: str          # git clone URL
-    directory: str     # directory name created under the workspace root
-
-
-# The known stack modules. Names are the exact program names — there is no
-# program called "runtime", it is "sushiruntime" — so no one confuses them. The
-# directory matches the name because that is what every module's own
-# cmake/Runtime.cmake (and sushiai's cmake/BLAS.cmake) resolves a sibling
-# checkout by: a flat <workspace>/<module> layout is what makes their
-# add_subdirectory fallback find the dependency.
-MODULES: dict[str, Module] = {
-    "sushiruntime": Module("sushiruntime", "https://github.com/sushisystems/sushiruntime.git", "sushiruntime"),
-    "sushiengine":  Module("sushiengine",  "https://github.com/sushisystems/sushiengine.git",  "sushiengine"),
-    "sushiai":      Module("sushiai",      "https://github.com/sushisystems/sushiai.git",      "sushiai"),
-    "sushiblas":    Module("sushiblas",    "https://github.com/sushisystems/sushiblas.git",    "sushiblas"),
-    "sushidsp":     Module("sushidsp",     "https://github.com/sushisystems/sushidsp.git",     "sushidsp"),
-    "sushitrack":   Module("sushitrack",   "https://github.com/sushisystems/sushitrack.git",   "sushitrack"),
-}
-
 # sushicore is the shared CLI presentation layer, not a stack build module: it
-# ships no dependency fragment, is never built, and stays out of MODULES so it is
+# ships no dependency fragment, is never built, and stays out of CATALOG so it is
 # excluded from `hub add all`, readiness, and dependency aggregation. It lives
 # inside this repository (see `sushicore/`), so there is nothing to clone and no
 # checkout for anyone to manage -- cloning SushiStack already produced it.
@@ -72,25 +47,13 @@ BINARY_MODULE = "sushiengine"
 REACHABLE_TIMEOUT = 15
 
 
-# Short aliases for the module names, matching each module's own CLI program
-# name (sushiruntime -> `sr`, sushiengine -> `se`, ...), so `hub add sr` works
-# the same as `hub add sushiruntime`.
-_ALIASES: dict[str, str] = {
-    "sr": "sushiruntime",
-    "se": "sushiengine",
-    "sa": "sushiai",
-    "sb": "sushiblas",
-    "sd": "sushidsp",
-    "st": "sushitrack",
-}
-
 # Lines `hub init` ensures are present in the workspace .gitignore: the shared
 # dependency tree and every module checkout are build artifacts of the workspace,
 # not part of it.
 _GITIGNORE_LINES = [
     "# Managed by `hub init`: shared dependencies and cloned modules are not tracked.",
     "/dependencies/",
-    *(f"/{m.directory}/" for m in MODULES.values()),
+    *(f"/{CATALOG[n].directory}/" for n in CATALOG),
     "/sushihub/cli/config.local.toml",
     "/sushihub/cli/modules.local.toml",
 ]
@@ -105,7 +68,7 @@ def module_dest(root: Path, name: str) -> Path:
     linked = registered_modules().get(name)
     if linked:
         return Path(linked)
-    return root / MODULES[name].directory
+    return root / CATALOG[name].directory
 
 
 def sushicore_dir(root: Path) -> Path | None:
@@ -211,7 +174,7 @@ def _add_binary(name: str, dest: Path, requested: bool) -> bool:
         else:
             console.error(
                 f"{name}: neither way in is open. The source needs a Git identity with "
-                f"access to {MODULES[name].repo}; the binary needs a licence, which "
+                f"access to {CATALOG[name].repo}; the binary needs a licence, which "
                 "`hub login` signs you in for.")
         return False
     return _install_binary(name, dest, client)
@@ -297,15 +260,15 @@ def _resolve_names(names: list[str] | None) -> list[str] | None:
     Returns None on an unknown name (after reporting it), so callers can abort.
     """
     if not names or names == ["all"]:
-        return list(MODULES)
-    resolved = [_ALIASES.get(n, n) for n in names]
-    unknown = [n for n in resolved if n not in MODULES]
+        return CATALOG.names()
+    resolved = [(n, CATALOG.resolve(n)) for n in names]
+    unknown = [given for given, found in resolved if found is None]
     if unknown:
         console.error(f"Unknown module(s): {', '.join(unknown)}. "
-                      f"Choose from: {', '.join(MODULES)} (or their aliases: "
-                      f"{', '.join(_ALIASES)}; or 'all').")
+                      f"Choose from: {', '.join(CATALOG.names())} (or their aliases: "
+                      f"{', '.join(CATALOG.aliases())}; or 'all').")
         return None
-    return resolved
+    return [found for _, found in resolved]
 
 
 def init() -> int:
@@ -377,7 +340,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             if not dry_run:
                 _install_module_cli(name, module_dest(root, name))
             continue
-        mod = MODULES[name]
+        mod = CATALOG[name]
         dest = root / mod.directory
         state = presence_of(root, name, linked)
         if state is Presence.BINARY:
@@ -442,15 +405,17 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
     """
     console.header("SushiStack Link")
     provision = provision or _provision
-    name = _ALIASES.get(name, name)
+    resolved = CATALOG.resolve(name)
     if name == SUSHICORE_NAME:
         console.error(f"{SUSHICORE_NAME} ships inside this repository and cannot be "
                       "linked. Edit it in place, at `sushicore/`.")
         return 1
-    if name not in MODULES:
+    if resolved is None:
         console.error(f"Unknown module '{name}'. Choose from: "
-                      f"{', '.join(MODULES)} (or their aliases: {', '.join(_ALIASES)}).")
+                      f"{', '.join(CATALOG.names())} (or their aliases: "
+                      f"{', '.join(CATALOG.aliases())}).")
         return 1
+    name = resolved
     target = Path(path).expanduser().resolve()
     if not target.is_dir():
         console.error(f"Path does not exist: {target}")

@@ -1,0 +1,47 @@
+# The modules `hub` can bring into a workspace, in the order every command lists them.
+#
+# Each table's key is the module's name on the command line and the directory `hub add`
+# clones into; the two are deliberately the same, because every module's own cmake resolves a
+# sibling checkout by that flat <workspace>/<module> layout.
+#
+# Fields:
+#   repo          git clone URL.
+#   directory     directory created under the workspace root.
+#   alias         the module's own CLI program name, accepted wherever a name is.
+#   distribution  "source" to clone, "binary" for the one module sold as a compiled release.
+
+[sushiruntime]
+repo = "https://github.com/sushisystems/sushiruntime.git"
+directory = "sushiruntime"
+alias = "sr"
+distribution = "source"
+
+[sushiengine]
+repo = "https://github.com/sushisystems/sushiengine.git"
+directory = "sushiengine"
+alias = "se"
+distribution = "binary"
+
+[sushiai]
+repo = "https://github.com/sushisystems/sushiai.git"
+directory = "sushiai"
+alias = "sa"
+distribution = "source"
+
+[sushiblas]
+repo = "https://github.com/sushisystems/sushiblas.git"
+directory = "sushiblas"
+alias = "sb"
+distribution = "source"
+
+[sushidsp]
+repo = "https://github.com/sushisystems/sushidsp.git"
+directory = "sushidsp"
+alias = "sd"
+distribution = "source"
+
+[sushitrack]
+repo = "https://github.com/sushisystems/sushitrack.git"
+directory = "sushitrack"
+alias = "st"
+distribution = "source"
