@@ -1,4 +1,4 @@
-"""How a module's own CLI is installed, and where the in-repo sushicore checkout resolves."""
+"""How a module's own CLI is installed."""
 
 from __future__ import annotations
 
@@ -40,24 +40,6 @@ def checkout(tmp_path):
     return tmp_path / "sushiruntime"
 
 
-@pytest.fixture
-def root(tmp_path):
-    """Build a workspace root carrying an in-repo sushicore checkout."""
-    core = tmp_path / modules.SUSHICORE_NAME
-    core.mkdir()
-    (core / "pyproject.toml").write_text("", encoding="utf-8")
-    return tmp_path
-
-
-def test_sushicore_is_found_at_a_fixed_path_under_the_root(root):
-    """Resolves sushicore to <root>/sushicore when that path carries a pyproject."""
-    assert modules.sushicore_dir(root) == root / modules.SUSHICORE_NAME
-
-
-def test_sushicore_is_none_when_the_checkout_is_partial(tmp_path):
-    """Treats a sushicore directory without a pyproject.toml as missing."""
-    (tmp_path / modules.SUSHICORE_NAME).mkdir()
-    assert modules.sushicore_dir(tmp_path) is None
 
 
 def test_a_module_without_a_cli_package_is_skipped(tmp_path, recorder, monkeypatch):

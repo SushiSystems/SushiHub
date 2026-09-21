@@ -43,6 +43,11 @@ and Modules screens draw from it. Every key is always present. A fact `hub` coul
 `null`: a detached HEAD has no `branch`, a checkout without an upstream has no `ahead` or
 `behind`, one that was never fetched has no `last_fetch`.
 
+`modules` carries the stack's modules and nothing else, the ones `catalog.toml` lists. It held a
+`sushicore` row until 2026-09-22; `sushicore` is a PyPI dependency of `hub` rather than a module,
+and `pip show sushicore` answers the version question. A consumer that still looks for the row
+finds nothing and must not read the absence as an error.
+
 Plain `hub status` reads the disk and never the network, so `ahead` and `behind` count against
 the last fetch. `hub status --check-updates` is the one online form: it fetches every checkout
 first and asks Sushi Account for every binary install's latest release, sets `checked_updates` to

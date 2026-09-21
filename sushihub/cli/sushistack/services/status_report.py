@@ -21,7 +21,6 @@ from . import git_state, licence_file, links, session
 from .catalog import CATALOG
 from .hub_install import read_hub_install
 from .identity import SushiAccount
-from .modules import SUSHICORE_NAME, sushicore_dir
 from .presence import Presence, describe, module_dir, presence_of, read_release
 from .update_check import latest_release
 
@@ -83,15 +82,6 @@ def _module_row(root: Path, name: str, linked: dict[str, str], check_updates: bo
     return row
 
 
-def _sushicore_row(root: Path) -> dict:
-    """Build the row of the in-repo presentation layer, which is present or missing."""
-    present = sushicore_dir(root) is not None
-    return {"name": SUSHICORE_NAME, "location": SUSHICORE_NAME if present else "",
-            "state": "in-repo" if present else "missing",
-            "presence": (Presence.CLONED if present else Presence.ABSENT).value,
-            "version": None, "source": None, "binary": None, "latest_version": None}
-
-
 def build_status(check_updates: bool = False, *, home: Path | None = None,
                  client_factory: Callable[[], SushiAccount] = session.client) -> StatusReport:
     """Collect the workspace, `hub`, every module and the dependency tree.
@@ -120,7 +110,6 @@ def build_status(check_updates: bool = False, *, home: Path | None = None,
 
     rows = [_module_row(root, name, linked, check_updates, client, warnings)
             for name in CATALOG]
-    rows.append(_sushicore_row(root))
 
     payload = {
         "workspace": str(root),
