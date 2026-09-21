@@ -39,6 +39,11 @@ def is_machine() -> bool:
     return _lazy.machine
 
 
+def current():
+    """Return the sushicore Console this run prints through, building it on first use."""
+    return _lazy.get()
+
+
 def __getattr__(name: str):
     """Resolve a console attribute, building the console on the first one."""
     return _lazy.attribute(name)
