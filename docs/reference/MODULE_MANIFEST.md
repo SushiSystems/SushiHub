@@ -19,7 +19,7 @@ name = "sushiruntime"                   # the name on the command line and the d
 alias = "sr"                            # the module's own CLI program name
 distribution = "source"                 # "source" to clone, "binary" for a compiled release
 repo = "https://github.com/sushisystems/sushiruntime.git"
-fragment = "cli/sushistack.deps.toml"   # the dependency fragment, relative to this file
+# fragment = "cli/sushistack.deps.toml"  # optional; this is the default
 ```
 
 ## The keys
@@ -29,8 +29,11 @@ fragment = "cli/sushistack.deps.toml"   # the dependency fragment, relative to t
 | `name` | yes | The name on the command line, and the directory the checkout sits in |
 | `alias` | yes | The module's own CLI program name, accepted wherever a name is |
 | `distribution` | yes | `source` to clone, `binary` for a module sold as a compiled release |
-| `fragment` | yes | Path to the dependency fragment, relative to this file |
 | `repo` | no | The git clone URL. A module that is never cloned by name may omit it |
+| `fragment` | no | Path to the dependency fragment, relative to this file. Defaults to `cli/sushistack.deps.toml`, which is where all six repositories keep it |
+
+Three keys are required and two are not, because a required key that every file spells the
+same way is a constant six repositories have to repeat.
 
 `name` must equal the directory the checkout sits in. Every module's cmake resolves a sibling by
 the flat `<workspace>/<module>` layout, so a manifest that disagrees would lie about where the
