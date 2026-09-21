@@ -1,6 +1,6 @@
 # Decoupling the hub from the SushiStack checkout
 
-**Status:** designed 2026-09-21. Wave 0 landed 2026-09-22
+**Status:** designed 2026-09-21. Waves 0 and 1 landed 2026-09-22
 (`../agent/plans/2026-09-21-wave-0-uncovered-seams.md`); waves 1 through 7 are open. The waves are
 mirrored into `REMAINING_WORK.md` so the order can be read from one place. The catalog work in
 wave 2 removes `sushidsp` and `sushitrack` from the stack, which is a breaking change to
@@ -134,7 +134,7 @@ those five and nothing else.
 | Wave | Work | Waits on | Acceptance |
 |---|---|---|---|
 | 0 | Tests for the five uncovered seams: `workspace_root` and `config_dir` resolution, the `MODULES` catalog and its aliases, `hub init`'s marker and `.gitignore` lines, `hub link`'s write to `modules.local.toml`, and the `sushicore` injection in `_install_module_cli`. | nothing | Landed 2026-09-22: 37 tests across five modules, the suite at 334 |
-| 1 | `sushicore` moves to its own repository and publishes to PyPI. `hub`, `sr`, `se`, `sa` and `sb` depend on the published package; the path injection is deleted. | 0 | On a clean machine `pipx install sushihub` gives a working `hub --version` |
+| 1 | `sushicore` moves to its own repository and publishes to PyPI. All seven consumer CLIs depend on the published package; the path injection is deleted. | 0 | Landed 2026-09-22: `sushicore==0.1.0` on PyPI, installed from the index by `hub` and by all six consumer repositories |
 | 2 | `ModuleCatalog` and `catalog.toml` inside the package, four entries. `BINARY_MODULE` becomes the `distribution` field. `sushidsp` and `sushitrack` leave the catalog. | 1 | `hub add all` names four modules; `hub add sushidsp` reports an unknown module |
 | 3 | `.sushistack` becomes a directory holding `workspace.toml`, `modules.toml` and `config.local.toml`. `config.toml` and `manifests/` move into the package. `hub init` upgrades an old marker. | 2 | `hub init` then `hub install` works in an empty directory, and an upgraded existing workspace prints the same `hub status` table as before |
 | 4 | The installers drop the clone: pipx from PyPI, then `hub init`. `sushihub` publishes to PyPI. | 3 | One line on a clean Windows machine, then `hub add sushiengine` downloads the release |

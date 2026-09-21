@@ -3,8 +3,8 @@
 ## One command
 
 On a fresh machine the installer puts Python and Git in place if they are missing, clones this
-repository, installs `hub` together with the `sushicore` it carries, and provisions the shared
-dependency tree under `dependencies/`.
+repository, installs `hub`, and provisions the shared dependency tree under `dependencies/`.
+`sushicore`, the engine under `hub`, comes from PyPI as an ordinary dependency.
 
 ```bash
 curl -fsSL https://sushisystems.io/install.sh | bash      # Linux / WSL
@@ -27,7 +27,7 @@ The same result, one command at a time:
 ```bash
 git clone https://github.com/sushisystems/sushistack.git
 cd sushistack
-python sushihub/cli/install.py       # install `hub` via pipx, inject sushicore
+python sushihub/cli/install.py       # install `hub` via pipx
 
 hub init                              # write the .sushistack marker and .gitignore entries
 hub install                           # download what the present modules declare
@@ -39,6 +39,20 @@ cd sushiruntime && sr build
 `hub add` installs each cloned module's own CLI and then provisions the dependencies the new
 modules declare. `hub install-cli <module…>` reinstalls a CLI on demand, for instance after
 `hub link` pointed a module at a different checkout.
+
+## Upgrading an install made before 2026-09-22
+
+`sushicore` used to be injected into `hub`'s pipx environment as an editable install pointing at
+`sushicore/` inside this checkout. That directory is gone, so an older install fails at startup
+with `ModuleNotFoundError: No module named 'sushicore'`. One command repairs it, and pip resolves
+the package from PyPI this time:
+
+```bash
+python sushihub/cli/install.py
+```
+
+The same applies to each module CLI installed before that date; `hub install-cli <module>`
+reinstalls one.
 
 ## What `hub install` downloads
 

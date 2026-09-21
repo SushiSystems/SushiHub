@@ -30,12 +30,12 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 ## The decoupling programme
 
 Designed in `WORKSPACE_DECOUPLING.md`; the waves below are its §5, kept here so the order can be
-read from one place. Wave 0 landed on 2026-09-22; waves 1 through 7 are open.
+read from one place. Waves 0 and 1 landed on 2026-09-22; waves 2 through 7 are open.
 
 | Wave | Work | Waits on |
 |---|---|---|
 | 0 | Tests for the five seams the later waves rewrite and today's suite leaves uncovered. Landed 2026-09-22. | nothing |
-| 1 | `sushicore` moves to its own repository and publishes to PyPI; the path injection goes. | 0 |
+| 1 | `sushicore` moves to its own repository and publishes to PyPI; the path injection goes. Landed 2026-09-22. | 0 |
 | 2 | `ModuleCatalog` and a packaged `catalog.toml`; `sushidsp` and `sushitrack` leave the catalog. | 1 |
 | 3 | `.sushistack` becomes a directory holding the workspace's own data; the defaults move into the package. | 2 |
 | 4 | The installers drop the clone and take `sushihub` from PyPI. | 3 |
@@ -70,6 +70,14 @@ read from one place. Wave 0 landed on 2026-09-22; waves 1 through 7 are open.
 
 - **A source-comment checker.** Every repository carries `tools/documentation/check_source_comments.py`
   to hold the docstring rules in `../CONTRIBUTING.md`. This one does not yet.
+- **The consumer contract has no home.** `.github/workflows/ci.yml`'s `consumers` job ran the five
+  consumer CLIs' suites against the `sushicore` under test. Wave 1 deleted it with the package. It
+  had been broken since 2026-09-07 in one way and since it was written in another: it ran `pytest
+  sushihub/cli/tests` inside checkouts that hold `cli/tests`, and it checked the consumers out
+  assuming they are public, which all five are not. The same guard belongs in the SushiCore
+  repository, where a change can be tested against its consumers before it is tagged, with a token
+  that reads the private ones.
+
 - **`hub install-cli` has no test.** Wave 1 removed its `sushicore` lookup and pipx injection
   (`sushihub/cli/sushistack/services/cli_install.py`) with nothing covering the command. The
   removal was found by reading, not by a failing test: `hub install-cli` would have hard-failed
