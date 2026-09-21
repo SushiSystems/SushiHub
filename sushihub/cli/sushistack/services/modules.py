@@ -9,14 +9,12 @@ and updating modules, and reporting status — while the dependency engine in
 
 from __future__ import annotations
 
-import shutil
-import subprocess
 from pathlib import Path
 
 from .. import console
 from ..config import WORKSPACE_MARKER, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
-from . import git_ops, licence_file, links, releases, session
+from . import git_ops, licence_file, links, pipx, releases, session
 from .catalog import CATALOG
 from .identity import ReleaseInfo, SushiAccount, SushiAccountError
 from .presence import Presence, describe, presence_of, read_release
@@ -148,30 +146,12 @@ def _update_binary(name: str, dest: Path) -> bool:
     return _install_binary(name, dest, client, info=info)
 
 
-def _pipx_cmd() -> list[str] | None:
-    """Return a command that runs pipx, or None if pipx can't be found.
-
-    `hub` itself was installed by pipx, so pipx is normally on PATH; fall back to
-    `python -m pipx` under whichever interpreter has it. We never sys.executable
-    here — that is `hub`'s own isolated pipx venv, which has no pipx module.
-    """
-    exe = shutil.which("pipx")
-    if exe:
-        return [exe]
-    for py in ("python3", "python"):
-        found = shutil.which(py)
-        if found and subprocess.run(
-            [found, "-m", "pipx", "--version"], capture_output=True
-        ).returncode == 0:
-            return [found, "-m", "pipx"]
-    return None
-
-
 def _install_module_cli(name: str, dest: Path) -> bool:
     """Install a cloned module's own CLI (`sr`, `se`, …) so it is ready to use.
 
     Mirrors how the umbrella installs its own `hub` CLI: pipx-install the module's
-    `cli/` package. Best-effort — a module without a `cli/` package, or a pipx we
+    `cli/` package, editable against the checkout, so a later `git pull` keeps
+    reaching it. Best-effort — a module without a `cli/` package, or a pipx we
     can't locate, is a warning, not a hard failure.
     """
     cli_dir = dest / "cli"
@@ -179,14 +159,13 @@ def _install_module_cli(name: str, dest: Path) -> bool:
         console.info(f"{name}: no cli/ package to install; skipping CLI install.")
         return True
 
-    pipx = _pipx_cmd()
-    if pipx is None:
+    if pipx.command() is None:
         console.warn(f"{name}: pipx not found; skipping CLI install. Install it "
                      f"later with `pipx install {cli_dir}`.")
         return False
 
     console.info(f"{name}: installing its CLI with pipx ({cli_dir}).")
-    if subprocess.run([*pipx, "install", "--force", str(cli_dir)]).returncode != 0:
+    if pipx.install(cli_dir, editable=True) != 0:
         console.error(f"{name}: CLI install failed.")
         return False
     return True

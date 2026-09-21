@@ -17,15 +17,10 @@ from __future__ import annotations
 
 import subprocess
 import sys
-from pathlib import Path
-
-try:
-    import tomllib  # Python 3.11+
-except ModuleNotFoundError:  # Python 3.10 fallback
-    import tomli as tomllib
 
 from .. import console
 from ..config import workspace_root
+from . import pipx as pipx_svc
 from .modules import _resolve_names, module_dest
 
 
@@ -34,11 +29,14 @@ def _run(cmd: list[str]) -> int:
     return subprocess.run(cmd).returncode
 
 
-def _ensure_pipx() -> list[str]:
-    """Return a command prefix that runs pipx, installing it if necessary."""
-    if subprocess.run([sys.executable, "-m", "pipx", "--version"],
-                      capture_output=True).returncode == 0:
-        return [sys.executable, "-m", "pipx"]
+def _ensure_pipx() -> None:
+    """Install pipx with pip when :func:`~.pipx.command` cannot find it.
+
+    Raises:
+        RuntimeError: pip itself failed to install pipx.
+    """
+    if pipx_svc.command() is not None:
+        return
     console.info("pipx not found; installing it with pip ...")
     cmd = [sys.executable, "-m", "pip", "install", "pipx"]
     in_venv = sys.prefix != getattr(sys, "base_prefix", sys.prefix)
@@ -53,13 +51,8 @@ def _ensure_pipx() -> list[str]:
     if _run(cmd) != 0:
         raise RuntimeError("Failed to install pipx.")
     _run([sys.executable, "-m", "pipx", "ensurepath"])
-    return [sys.executable, "-m", "pipx"]
-
-
-def _dist_name(pkg_dir: Path) -> str:
-    """The distribution name pipx installs, read from the package's pyproject."""
-    with (pkg_dir / "pyproject.toml").open("rb") as fh:
-        return str(tomllib.load(fh)["project"]["name"])
+    if pipx_svc.command() is None:
+        raise RuntimeError("pipx was installed but could not be found afterwards.")
 
 
 def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
@@ -87,11 +80,13 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
                              "clone or link the module first. Skipping.")
                 failed = True
                 continue
-            console.info(f"{name}: (dry-run) would install {_dist_name(pkg_dir)} from {pkg_dir}")
+            console.info(
+                f"{name}: (dry-run) would install {pipx_svc.distribution_name(pkg_dir)} "
+                f"from {pkg_dir}")
         return 1 if failed else 0
 
     try:
-        pipx = _ensure_pipx()
+        _ensure_pipx()
     except RuntimeError as exc:
         console.error(str(exc))
         return 1
@@ -105,10 +100,9 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
                          "clone or link the module first. Skipping.")
             failed = True
             continue
-        dist = _dist_name(pkg_dir)
+        dist = pipx_svc.distribution_name(pkg_dir)
         console.info(f"{name}: installing {dist} from {pkg_dir}")
-        rc = _run([*pipx, "install", "--force", "--editable", str(pkg_dir)])
-        if rc != 0:
+        if pipx_svc.install(pkg_dir, editable=True) != 0:
             console.error(f"{name}: install failed.")
             failed = True
 
