@@ -13,9 +13,18 @@ from .test_presence import Recorder
 
 @pytest.fixture
 def cfg_dir(tmp_path, monkeypatch):
-    """Point the link registry at a throwaway sushihub/cli directory."""
+    """Point the link registry at a throwaway sushihub/cli directory.
+
+    SUSHISTACK_HOME moves with it. Patching ``config_dir`` alone is not enough:
+    ``_write_link`` merges onto whatever ``registered_modules()`` answers, and that
+    reads the workspace root rather than ``config_dir()``. Left pinned to the
+    repository root by the suite's conftest, every write here would merge onto the
+    developer's own modules.local.toml -- green on a machine that happens to have
+    the right links, red anywhere else.
+    """
     target = tmp_path / WORKSPACE_CLI_DIR
     target.mkdir(parents=True)
+    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
     monkeypatch.setattr(modules, "config_dir", lambda: target)
     return target
 
@@ -54,16 +63,8 @@ def test_relinking_replaces_the_path_rather_than_repeating_it(cfg_dir, tmp_path)
     assert "new" in text
 
 
-def test_the_registry_reads_back_what_link_wrote(cfg_dir, tmp_path, monkeypatch):
-    """registered_modules returns the name-to-path map _write_link recorded.
-
-    SUSHISTACK_HOME must point at tmp_path before the write, not only before the
-    read: _write_link merges onto whatever registered_modules() answers at write
-    time, and that lookup is not covered by the cfg_dir fixture's config_dir
-    patch -- left pinned to the repository root, it would merge this checkout
-    onto this developer's own real modules.local.toml.
-    """
-    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
+def test_the_registry_reads_back_what_link_wrote(cfg_dir, tmp_path):
+    """registered_modules returns the name-to-path map _write_link recorded."""
     checkout = tmp_path / "checkouts" / "sushiai"
     modules._write_link("sushiai", checkout)
     assert registered_modules() == {"sushiai": str(checkout).replace("\\", "/")}

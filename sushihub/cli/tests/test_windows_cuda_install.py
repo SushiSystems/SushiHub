@@ -211,6 +211,8 @@ def test_failed_download_runs_nothing_and_is_non_fatal(tmp_path, recorder):
     assert recorder.warnings
 
 
+@pytest.mark.skipif(os.name != "nt",
+                    reason="asserts on a PATH split by os.pathsep, which is ';' only on Windows")
 def test_success_refreshes_cuda_path_and_path_and_deletes_the_installer(tmp_path, recorder):
     root = tmp_path / "CUDA" / "v12.6"
     exe = _installer(tmp_path)
@@ -355,6 +357,8 @@ def test_an_unreadable_reused_file_is_caught(tmp_path, monkeypatch, recorder):
     assert any("locked" in w for w in recorder.warnings)
 
 
+@pytest.mark.skipif(os.name != "nt",
+                    reason="asserts on a PATH split by os.pathsep, which is ';' only on Windows")
 def test_prepend_machine_path_adds_only_new_entries(monkeypatch):
     monkeypatch.setenv("PATH", os.pathsep.join([r"C:\Windows", r"C:\Tools"]))
     environment = _FakeEnvironment({"Path": os.pathsep.join([r"c:\windows", r"C:\CUDA\bin"])})
