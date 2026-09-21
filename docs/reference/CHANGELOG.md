@@ -3,6 +3,10 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Stopped reporting `sushicore` as a module in `hub status` (`sushihub/cli/sushistack/services/status_report.py`).
+- 2026-09-22 — Stopped pointing Linux builds at `~/vcpkg`, which Linux never uses (`sushihub/cli/sushistack/defaults.toml`).
+- 2026-09-22 — Re-recorded the desktop application's fixtures from a live `hub` (`sushihub/gui/tests/fixtures/`).
+- 2026-09-22 — Said "Sushi Account" once rather than twice in two help strings (`sushihub/cli/sushistack/cli.py`).
 - 2026-09-22 — Installed `hub` from PyPI rather than cloning the workspace (`install.ps1`, `install.sh`).
 - 2026-09-22 — Upgraded `hub` the way it was installed, by pipx or by pulling its checkout (`sushihub/cli/sushistack/services/modules.py`).
 - 2026-09-22 — Gave the distribution name one owner (`sushihub/cli/sushistack/__init__.py`).
