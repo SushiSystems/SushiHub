@@ -143,8 +143,10 @@ Waves 6 and 7 run beside the 3-4-5 chain; their file sets are disjoint from it.
 oneAPI paths. Wave 3 moves it, so the upgrade leaves the original in place and the new directory
 is removable.
 
-**The PyPI names.** Whether `sushicore` and `sushihub` are free on PyPI is unverified. Wave 1
-checks before it starts.
+**The PyPI names.** Checked on 2026-09-21: `pypi.org/simple/` answers 404 for `sushicore`,
+`sushihub`, `sushistack`, `sushiruntime`, `sushiengine`, `sushiai`, `sushiblas`, `sushidsp` and
+`sushitrack`, so all nine are free. They are unreserved until the first upload, so wave 1
+uploads a placeholder `sushicore` before anything else in that wave.
 
 **The engine's licence path.** Wave 2 rewrites the source-or-binary decision at
 `services/modules.py:426`. Wave 0 covers that decision first, so the rewrite has something to
