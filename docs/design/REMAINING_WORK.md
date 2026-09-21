@@ -38,7 +38,7 @@ read from one place. Waves 0 through 3 landed on 2026-09-22; waves 4 through 7 a
 | 1 | `sushicore` moves to its own repository and publishes to PyPI; the path injection goes. Landed 2026-09-22. | 0 |
 | 2 | `ModuleCatalog` and a packaged `catalog.toml`; `sushidsp` and `sushitrack` leave the catalog. Landed 2026-09-22. | 1 |
 | 3 | `.sushistack` became a directory holding the workspace's own data in one `workspace.toml`; the defaults and the dependency manifests moved into the package. Landed 2026-09-22. | 2 |
-| 4 | The installers drop the clone and take `sushihub` from PyPI. | 3 |
+| 4 | The installers drop the clone and take `sushihub` from PyPI. The module CLIs do not publish; they stay editable from a checkout. Plan: `../agent/plans/2026-09-22-wave-4-hub-on-pypi.md`. | 3 |
 | 5 | The desktop application draws the new fields and its fixtures are re-recorded. | 4 |
 | 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. | 2 |
 | 7 | `sushidsp` and `sushitrack` gain their own install paths. | 2 |
