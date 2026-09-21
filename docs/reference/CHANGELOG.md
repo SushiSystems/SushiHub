@@ -3,6 +3,9 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Recognised a checkout that carries its own `sushi-module.toml` (`sushihub/cli/sushistack/services/module_manifest.py`).
+- 2026-09-22 — Listed in `hub status` what the workspace knows rather than what the catalog ships (`sushihub/cli/sushistack/services/presence.py`).
+- 2026-09-22 — Accepted a self-describing checkout in `hub link` (`sushihub/cli/sushistack/services/modules.py`).
 - 2026-09-22 — Merged two modules' declarations of one dependency instead of taking the first, which cost `sushiengine` the Vulkan feature of its SDL2 (`sushihub/cli/sushistack/setup/dependency_source.py`).
 - 2026-09-22 — Refused a dependency fragment shape the reader cannot read, which used to be skipped in silence (`sushihub/cli/sushistack/setup/dependency_source.py`).
 - 2026-09-22 — Stopped reporting `sushicore` as a module in `hub status` (`sushihub/cli/sushistack/services/status_report.py`).

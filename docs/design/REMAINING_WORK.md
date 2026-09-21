@@ -30,7 +30,7 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 ## The decoupling programme
 
 Designed in `WORKSPACE_DECOUPLING.md`; the waves below are its §5, kept here so the order can be
-read from one place. Waves 0 through 5 landed on 2026-09-22; waves 6, 7 and 8 are open.
+read from one place. Waves 0 through 6 landed on 2026-09-22; waves 7 and 8 are open.
 
 | Wave | Work | Waits on |
 |---|---|---|
@@ -40,12 +40,15 @@ read from one place. Waves 0 through 5 landed on 2026-09-22; waves 6, 7 and 8 ar
 | 3 | `.sushistack` became a directory holding the workspace's own data in one `workspace.toml`; the defaults and the dependency manifests moved into the package. Landed 2026-09-22. | 2 |
 | 4 | The installers drop the clone and take `sushihub` from PyPI. The module CLIs do not publish; they stay editable from a checkout. Landed 2026-09-22. | 3 |
 | 5 | `sushicore` left the status table, the fixtures were re-recorded, Linux stopped being pointed at `~/vcpkg`. Landed 2026-09-22. | 4 |
-| 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. Plan: `../agent/plans/2026-09-22-wave-6-a-module-describes-itself.md`. | 2 |
+| 6 | `sushi-module.toml` and its reader; the catalog became the fallback. Landed 2026-09-22. | 2 |
 | 7 | `sd setup` and `st setup` provision their repositories, with `hub` or without it; the fragment reader moves into `sushicore`. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md`. | 2 |
 | 8 | The desktop application ships as `sushihub-gui`, reached as `pipx install "sushihub[gui]"`. | 5 |
 
 ## Outside the programme
 
+- **`hub add <git-url>` is unwritten.** A module can describe itself once its checkout exists,
+  but a repository nobody has cloned is still reachable only through the catalog. Wave 6 left
+  this out on purpose; whether the catalog should ever open is a separate decision.
 - **`use_vcpkg` is declared and never read.** `defaults.toml` sets `use_vcpkg = false` for Linux,
   but `sushicore.stack_config.resolved_vcpkg` never consults it: it returns `vcpkg_root` when one
   is set, else the provisioned tree. The Linux default that made this harmful, `~/vcpkg`, was
