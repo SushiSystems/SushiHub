@@ -19,6 +19,12 @@ happened. The hand-maintained manual is the rest of `docs/`, indexed from `docs/
 
 `sushihub/cli/` is the `hub` command, `sushihub/gui/` the desktop application over it.
 
+Cloning this repository is what a contributor does, not what a user does. A user installs `hub`
+from PyPI (`pipx install sushihub`) and `hub init` marks whatever directory they chose. To work
+on `hub` instead, clone this repository and run `python sushihub/cli/install.py`, which points
+the same `hub` command at your checkout. The desktop application has no other source, so anyone
+who wants it clones too.
+
 The engine under both, `sushicore`, left this repository on 2026-09-22 and is installed from
 PyPI like any other dependency. Its source, its tests and its own CI are at
 `github.com/SushiSystems/SushiCore`. A change there still reaches seven programs at once, so
