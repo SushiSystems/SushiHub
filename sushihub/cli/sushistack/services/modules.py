@@ -402,8 +402,9 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
     provision = provision or _provision
     resolved = CATALOG.resolve(name)
     if name == SUSHICORE_NAME:
-        console.error(f"{SUSHICORE_NAME} ships inside this repository and cannot be "
-                      "linked. Edit it in place, at `sushicore/`.")
+        console.error(f"{SUSHICORE_NAME} is not a stack module: it is a package every "
+                      "Sushi CLI installs from PyPI. To work on it, install your "
+                      "checkout over the release with `pip install -e <path>`.")
         return 1
     if resolved is None:
         console.error(f"Unknown module '{name}'. Choose from: "

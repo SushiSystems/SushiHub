@@ -74,8 +74,9 @@ def test_link_refuses_sushicore(cfg_dir, recorder, tmp_path):
     """sushicore ships in the repository, so linking it is an error before any write."""
     assert modules.link("sushicore", str(tmp_path)) == 1
     assert recorder.said(
-        "sushicore ships inside this repository and cannot be linked. Edit it in "
-        "place, at `sushicore/`."
+        "sushicore is not a stack module: it is a package every Sushi CLI "
+        "installs from PyPI. To work on it, install your checkout over the "
+        "release with `pip install -e <path>`."
     )
     assert not (cfg_dir / MODULES_FILE).exists()
 

@@ -3,6 +3,9 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Said where sushicore actually lives when `hub link sushicore` is refused (`sushihub/cli/sushistack/services/modules.py`).
+- 2026-09-22 — Took sushidsp and sushitrack out of the stack catalog (`sushihub/cli/sushistack/catalog.toml`).
+- 2026-09-22 — Read the module catalog from packaged data instead of a dict in code (`sushihub/cli/sushistack/services/catalog.py`, `sushihub/cli/sushistack/catalog.toml`).
 - 2026-09-22 — Isolated the link tests from the developer's own `modules.local.toml`, which hid a lost write (`sushihub/cli/tests/test_link.py`).
 - 2026-09-22 — Skipped the two CUDA PATH tests off Windows, where `os.pathsep` splits `C:\Windows` in two (`sushihub/cli/tests/test_windows_cuda_install.py`).
 - 2026-09-22 — Removed `sushicore` from this repository, which now takes it from PyPI (`sushicore/`, `.github/workflows/ci.yml`).
