@@ -5,7 +5,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     if(DEFINED ENV{VCPKG_ROOT})
         set(sushihub_gui_vcpkg_root "$ENV{VCPKG_ROOT}")
     else()
-        set(sushihub_gui_vcpkg_root "${CMAKE_CURRENT_LIST_DIR}/../../dependencies/vcpkg")
+        set(sushihub_gui_vcpkg_root "${CMAKE_CURRENT_LIST_DIR}/../dependencies/vcpkg")
     endif()
     if(EXISTS "${sushihub_gui_vcpkg_root}/scripts/buildsystems/vcpkg.cmake")
         set(CMAKE_TOOLCHAIN_FILE "${sushihub_gui_vcpkg_root}/scripts/buildsystems/vcpkg.cmake"

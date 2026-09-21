@@ -1,6 +1,6 @@
 # Manual
 
-Documentation index for the SushiStack repository. Every document under `docs/` is reachable
+Documentation index for the SushiHub repository. Every document under `docs/` is reachable
 from here. Facts about one component live in that component's own README, beside its code.
 
 ## How to contribute

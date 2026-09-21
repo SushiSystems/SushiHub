@@ -44,7 +44,7 @@ modules declare. `hub install-cli <module…>` reinstalls a CLI on demand, for i
 
 ## There is no desktop application in this install
 
-`hub gui build` and `hub gui run` build `gui`, which lives in the SushiStack repository.
+`hub gui build` and `hub gui run` build `gui`, which lives in the SushiHub repository.
 An install made the way above never clones it, so those commands have nothing to build. Clone the
 repository yourself if you want the application:
 

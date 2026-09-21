@@ -1,6 +1,9 @@
 # Renaming the repository to SushiHub
 
-**Status:** approved 2026-09-22, not started. Blocked on another session's uncommitted work.
+**Status:** approved 2026-09-22. Tasks 0 through 3 landed the same day; task 4, the rename on
+GitHub, is open. The checkout on disk keeps its old name, and the measurement in task 3 is why:
+every sibling module's `config.local.toml` stores absolute paths into
+`D:/Projects/sushistack/dependencies`.
 
 **Goal:** the tool is called `sushihub` at every layer that names the tool, and
 `sushistack` survives only where it names the stack of applications.
