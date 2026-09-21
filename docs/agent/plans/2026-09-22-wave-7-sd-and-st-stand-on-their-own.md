@@ -4,25 +4,28 @@
 > (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use
 > checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** `sd setup` and `st setup` provision their own repositories: they hand the job to
-`hub install` when a SushiStack workspace is there, and otherwise read their own dependency
-fragment and say — or, with `--install`, run — the one command that satisfies it.
+**Goal:** `sd setup` and `st setup` get their own repositories ready to build, each from its own
+source of truth: `sd` from its dependency fragment, handing off to `hub install` inside a
+workspace; `st` from `environment.yml` through conda. Both report by default and act under
+`--install`.
 
-**Architecture:** The reader that turns a fragment into "what is missing and what installs it"
-moves into `sushicore`, so one schema has one reader rather than the three it would otherwise
-have. `hub` delegates to the same brick, because two readers of one file is the bug this
-programme has already been bitten by. The module CLIs keep only the part that acts: run the
-command, or print it.
+**Architecture:** The two commands share a shape, not a mechanism. `sd`'s fragment reader moves
+into `sushicore`, so one schema has one reader — two readers of one file is the bug this
+programme was bitten by today — and `hub` delegates to the same brick. `st` needs none of that:
+conda already gives it cmake, ninja, gtest and PyTorch, so its whole job is to run the right
+environment tool. No abstraction is built over the two.
 
-**Tech Stack:** Python 3.10+, `tomllib`, pytest, apt/dnf/pacman/zypper, vcpkg, PyPI.
+**Tech Stack:** Python 3.10+, `tomllib`, pytest, apt/dnf/pacman/zypper, vcpkg, conda/mamba, PyPI.
 
 **Spec:** `docs/design/WORKSPACE_DECOUPLING.md`, §2 and §5 wave 7.
 
 ## Global Constraints
 
-- **The owner's decisions, 2026-09-22.** The fragment reader lives in `sushicore`, because six
-  repositories share the schema and one copy is the point. `sd setup` **reports by default** and
-  installs only under `--install`, so a user sees what would change before it changes.
+- **The owner's decisions, 2026-09-22.** The fragment reader lives in `sushicore`, so one schema
+  has one reader. Both commands **report by default** and install only under `--install`, so a
+  user sees what would change before it changes. `st setup` uses `mamba` or `micromamba` when
+  PATH carries one and `conda` otherwise, and creates rather than updates. `sushitrack`'s
+  `cli/sushistack.deps.toml` is deleted; `environment.yml` is its single source.
 - `sushidsp` and `sushitrack` stay outside the stack. They share none of its weight: measured
   2026-09-22, no file in either repository mentions SYCL. The door stays open through wave 6's
   manifest — if `sushidsp` ever offloads to `sushiruntime`, it says so in its own manifest and
@@ -44,8 +47,26 @@ command, or print it.
 - `sushidsp` declares `sdl2` (required; `libsdl2-dev` on apt, `sdl2` on vcpkg) and `intel-llvm`
   (optional, installs nothing — it is a C++ compiler preference, and `config.py`'s
   `bundled_clang()` really looks for it).
-- `sushitrack` declares `googletest` alone and vendors Eigen and nlohmann-json under
-  `third_party/`.
+- **Corrected 2026-09-22, before task 1.** `sushitrack` does not provision the way this plan
+  first assumed. Its dependencies come from conda: `environment.yml` pins Python 3.11, PyTorch
+  with `pytorch-cuda=12.1`, torchvision, torchaudio and thirty pip packages, and it carries
+  `cmake=4.3.3`, `ninja` and `gtest=1.17.0` too. Everything `hub install` would provide, conda
+  already provides. Its `cli/sushistack.deps.toml` declares `googletest` alone, which
+  `environment.yml` also has, so **the owner decided on 2026-09-22 that the file is deleted** and
+  `environment.yml` becomes the single source.
+
+  `st setup` therefore has nothing to do with the fragment reader. Task 3 is rewritten below.
+  The consequence for task 1 is noted rather than acted on: the reader now has two consumers,
+  `hub` and `sd`, rather than the six the owner's decision assumed. One owner for one schema is
+  still the answer — two readers of one file is the bug this programme hit today — but the case
+  is thinner than it was, and a later reader of this plan should know that.
+
+- `sushitrack`'s CLI is not shaped like the others: it has its own `app.py` command framework
+  rather than Typer, and already carries `status`, `doctor`, `config`, `paths` and `env`.
+  `setup` joins those and takes their shape, not `hub`'s.
+- Nothing in `sushitrack`'s CLI knows about conda today. `services/evaluate.py` prints
+  `conda env create -f environment.yml` in an error message, and `docs/README.md` line 316 tells
+  a reader to run it by hand. That hand-off is what `st setup` replaces.
 - Neither is aggregated by `hub install` any more: both left the catalog in wave 2, so nothing
   provisions their fragments today.
 - `sushidsp`'s fragment was an array of `[[dependency]]` tables, which the reader skipped in
@@ -157,62 +178,75 @@ git commit -m "refactor(cli): read dependency fragments through sushicore"
 
 ---
 
-### Task 3: `st setup`, the simple case first
+### Task 3: `st setup`, the conda environment
 
 **Files** (repository `D:/Projects/sushitrack`):
-- Modify: `cli/pyproject.toml` — `sushicore>=0.3.0`
-- Modify: `cli/sushitrack/cli.py` and whichever module holds its commands
-- Create: `cli/tests/test_setup.py`
-- Modify: `README.md`, `docs/reference/CHANGELOG.md`
+- Modify: `cli/sushitrack_cli/cli.py` and a new service module beside its siblings
+- Create: `cli/tests/` coverage for the new command, in whatever shape that repository tests in
+- Delete: `cli/sushistack.deps.toml`
+- Modify: `README.md`, `docs/README.md`, `docs/reference/CHANGELOG.md` (check the real path first)
 
 **Interfaces:**
-- Consumes: task 1's brick.
+- Consumes: nothing from `sushicore`'s new brick. This task is independent of tasks 1 and 2.
 - Produces: `st setup` and `st setup --install`.
 
-- [ ] **Step 1: Read the repository before adding to it**
+- [ ] **Step 1: Read the repository's own shape before adding to it**
 
-`sushitrack` declares GoogleTest alone, so this is the small case and it goes first: whatever
-shape it takes, `sd setup` copies it. Read its existing CLI, match its command style, its
-console use and its test layout. A sibling that looks different is a defect even when it works.
+`st` has its own command framework in `cli/sushitrack_cli/app.py`, its own `console` and `proc`
+modules, and a services layer. `setup` is a sibling of `doctor` and `status`: same registration,
+same console calls, same return-code convention. A command that looks like `hub`'s in this
+repository is a defect even when it works.
 
-- [ ] **Step 2: Write the two paths**
+- [ ] **Step 2: Name the tool, and say which one was chosen**
+
+The owner's decision of 2026-09-22: use `mamba` or `micromamba` when PATH carries one, else
+`conda`. The same `environment.yml` drives all three, and mamba's solver is the one that makes
+an environment this size bearable. When none is found, name the command and stop rather than
+guessing at a Python that might do.
+
+Say which tool was picked, every time. A tool that silently chooses between two package managers
+is one a user cannot debug.
+
+- [ ] **Step 3: The two paths**
 
 ```
 st setup            reports; changes nothing
-st setup --install  runs the command the report named
+st setup --install  creates the environment
 ```
 
-In order:
+An environment named `sushitrack` that already exists is reported, not overwritten:
+`conda env create` fails on an existing name, and the update command is named for the user
+rather than run. The owner chose create over update on 2026-09-22; do not quietly add the
+second behaviour.
 
-1. Ask `sushicore.workspace` for a workspace root. If there is one **and** `hub` is runnable,
-   say so and hand off: `hub install`. One shared tree, nothing downloaded twice, which is the
-   whole promise SushiStack exists for.
-2. Otherwise read `cli/sushistack.deps.toml` through the brick, report each dependency as
-   satisfied, missing or not applicable, and name the command for each missing one.
-3. Under `--install`, run those commands. Nothing else in this CLI runs a package manager, so
-   this is the one place that does.
+- [ ] **Step 4: Delete the fragment**
 
-Say which path was taken, every time. A tool that silently picks between two sources is one a
-user cannot debug.
+`git rm cli/sushistack.deps.toml`. `environment.yml` is the single source of truth, which
+`docs/README.md` already says. Check nothing else in the repository names the file:
 
-- [ ] **Step 3: Test both paths with no network and no package manager**
+```bash
+grep -rn "sushistack.deps.toml" . --include=*.py --include=*.md --include=*.toml | grep -v build/
+```
 
-Patch the workspace lookup and the command runner with recorders, as
-`sushistack`'s `tests/test_self_update.py` does for pipx and git. Assert: the workspace path
-calls `hub install` and no package manager; the standalone path names the right command and
-runs nothing without `--install`; `--install` runs exactly what the report named. A test that
-installs a real package is not acceptable.
+A SushiStack workspace holding this checkout then aggregates nothing from it, which is correct:
+conda gives it everything `hub install` would.
 
-- [ ] **Step 4: Say it in the README**
+- [ ] **Step 5: Test without conda**
 
-`sushitrack`'s README is its front door and, since wave 2, its only one. It must answer: what
-this is, how to get its dependencies with and without SushiStack, and how to build. Do not
-mention `hub` as a requirement; it is an accelerator.
+Patch the tool lookup and the command runner with recorders. Assert: mamba is preferred over
+conda when both are present; conda is used when mamba is not; nothing runs without `--install`;
+`--install` runs exactly the command that was reported; an absent tool is reported rather than
+guessed at. A test that creates a real environment is not acceptable.
 
-- [ ] **Step 5: Commit in `sushitrack`**
+- [ ] **Step 6: Say it where a reader already looks**
+
+`docs/README.md` line 316 tells a reader to run `conda env create -f environment.yml` by hand.
+It becomes `st setup --install`, with the hand-written command kept as what the command runs.
+
+- [ ] **Step 7: Commit in `sushitrack`**
 
 ```
-feat(cli): provision this repository with or without SushiStack
+feat(cli): create this repository's conda environment from st
 ```
 
 Do not push.
@@ -232,11 +266,17 @@ Do not push.
 - Consumes: task 3's shape, wave 6's manifest format.
 - Produces: `sd setup`, and a checkout `hub` can recognise when it is in a workspace.
 
-- [ ] **Step 1: Copy the shape, not the code**
+- [ ] **Step 1: Take the command's shape, not its mechanism**
 
-`sd setup` does what `st setup` does. Siblings that do the same kind of thing are shaped the
-same: same flags, same output order, same words for the same states. If task 3's shape does not
-fit `sushidsp`'s two dependencies, say what did not fit rather than diverging quietly.
+`sd setup` and `st setup` answer the same question — "what do I need before I can build?" — from
+different places: `sd` from its dependency fragment through `sushicore`'s reader, `st` from
+`environment.yml` through conda. What the two share is the *command*: the same flags, the same
+output order, the same words for the same states, report by default and act under `--install`.
+What they do not share is the provisioner, and no abstraction is built over two mechanisms with
+two users.
+
+`sushidsp`'s CLI is Typer-shaped like `hub`'s, so `sd setup` follows its own repository's
+conventions rather than `st`'s framework.
 
 - [ ] **Step 2: Give `sushidsp` a manifest**
 
