@@ -48,7 +48,7 @@ What it carries instead:
 | File | Lines | `sushicore` equivalent | How much moves |
 | --- | --- | --- | --- |
 | `proc.py` | 132 | `proc.Runner` | All of it |
-| `env.py` | 133 | `build_env` | Nearly all |
+| `env.py` | 133 | `build_env` | The pure helpers; the vcvars search stays (see below) |
 | `services/discovery.py` | 89 | `discovery.ExecutableIndex` | The walk; the library-artifact helpers stay |
 | `services/diag.py` | 269 | `diag.Diagnostics` | `config` and `env` only |
 | `app.py` | 211 | — | Nothing; a separate decision |
@@ -63,6 +63,28 @@ from `sushicore.build_env` and writes only what is its own, and whose services h
 
 `config.py` already builds `PROFILE = ModuleProfile(name="SushiTrack", program="st",
 env_prefix="ST", ...)`, so the identity `Runner` and `Diagnostics` need is there.
+
+## Two corrections, measured 2026-09-22 after the plan was written
+
+**Task 2 is blocked, and waiting is the owner's decision.** `sushicore.proc.Runner` catches no
+`KeyboardInterrupt`, so migrating `proc.py` onto it as-is would turn Ctrl+C into a traceback.
+The owner chose to move `sushitrack`'s handling into `sushicore` rather than keep a wrapper, and
+another session is mid-wave in that repository with `0.4.0` already claimed, uncommitted and not
+close. Both `pyproject.toml` and `docs/reference/CHANGELOG.md` there carry that session's
+changes, so even a `proc.py`-only commit could not carry its own changelog line. Task 2 waits
+for their release.
+
+**`env.py` moves less than this plan claimed.** `sushicore.build_env.snapshot_windows(cfg,
+console)` reads `cfg.vs_vcvars` and answers None when it is not set: it *uses* a configured
+vcvars and cannot *find* one. Nothing in `sushicore` searches for one — no vswhere, no disk
+scan. `sushitrack`'s `_from_vswhere` and `_from_disk_scan` are capability `sushicore` does not
+have, and `sushitrack`'s `Config` is its own flat dataclass rather than a `ToolConfig`, so it
+carries neither `vs_vcvars` nor `expand`.
+
+What still moves: `merge_env`, `prepend_path`, `parse_windows_set`, `read_cache` and
+`write_cache`. What stays: the vcvars search, and `_snapshot_windows` thinned down to "find one
+locally, then parse through `sushicore`". Finding a vcvars is worth its own look in `sushicore`
+later, since five CLIs would want it; that is recorded rather than built here.
 
 ## Why the tests come first
 
