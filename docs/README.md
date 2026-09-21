@@ -67,6 +67,8 @@ Everything an agent wrote while working, kept as a record rather than as part of
 - `agent/plans/2026-08-25-cmake-driver.md` — the plan that landed that design, task by task.
 - `agent/plans/2026-09-21-wave-0-uncovered-seams.md` — wave 0 of the decoupling: tests for the
   five seams the later waves rewrite.
+- `agent/plans/2026-09-22-wave-3-workspace-directory.md` — wave 3 of the decoupling: the marker
+  becomes a directory holding `workspace.toml`, and the tool's defaults move into the package.
 - `agent/plans/2026-09-22-wave-2-module-catalog.md` — wave 2 of the decoupling: the catalog out
   of code into packaged data, and `sushidsp` and `sushitrack` out of the stack.
 - `agent/plans/2026-09-22-wave-1-sushicore-repository.md` — wave 1 of the decoupling: `sushicore`
