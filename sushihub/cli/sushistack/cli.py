@@ -20,6 +20,7 @@ from typing import List, Optional
 import typer
 
 from . import console
+from .config import upgrade_workspace, workspace_root
 from .describe import catalogue
 from .services.catalog import CATALOG
 from .services import gui as gui_svc
@@ -56,6 +57,20 @@ def _root(
     if ctx.invoked_subcommand is None:
         typer.echo(ctx.get_help())
         raise typer.Exit(0)
+    _upgrade_if_old()
+
+
+def _upgrade_if_old() -> None:
+    """Convert a pre-2026-09-22 workspace before the subcommand body runs.
+
+    Outside a workspace there is nothing to convert, and `hub init` must still
+    run there, so an unresolved root is not an error.
+    """
+    try:
+        root = workspace_root()
+    except SystemExit:
+        return
+    upgrade_workspace(root)
 
 
 def _finish(rc: int, payload: dict | None = None) -> None:

@@ -21,7 +21,7 @@ from sushicore.config_base import load_tool_config
 from sushicore.profile import ModuleProfile
 from sushicore.stack_config import StackConfig
 
-from .config import config_dir, deps_dir, workspace_root
+from .config import config_dir, deps_dir, workspace_file, workspace_root
 
 #: How the desktop application describes itself to the shared build machinery.
 #: Read by the environment snapshot's cache key and by the run target, so the
@@ -105,13 +105,13 @@ class GuiConfig(StackConfig):
 def load_gui_config() -> GuiConfig:
     """Load the layered configuration the application builds under.
 
-    Precedence, low to high: the workspace's config.toml, its config.local.toml
-    (what `hub install` writes), then the ``HUB_GUI_*`` environment overrides.
+    Precedence, low to high: the tool's committed config.toml, the workspace's
+    workspace.toml (what `hub install` writes), then the ``HUB_GUI_*`` overrides.
     """
-    cfg_dir = config_dir()
+    root = workspace_root()
     return load_tool_config(
         GuiConfig,
-        [cfg_dir / "config.toml", cfg_dir / "config.local.toml"],
+        [config_dir(root) / "config.toml", workspace_file(root)],
         platform.system().lower(),
         GUI_PROFILE.env_overrides(),
     )

@@ -11,8 +11,8 @@ import jsonschema
 import pytest
 from typer.testing import CliRunner
 
-from sushicore.workspace import WORKSPACE_CLI_DIR
 from sushistack.cli import app
+from sushistack.config import CHECKOUT_CLI_DIR
 from sushistack.services import session
 from sushistack.services.identity import SushiAccount
 from sushistack.services.token_store import MemoryStore, Tokens
@@ -58,10 +58,10 @@ def _events(result):
 def workspace(tmp_path):
     """Build a throwaway workspace with the marker, the base manifest and a config."""
     (tmp_path / ".sushistack").write_text("marker\n", encoding="utf-8")
-    (tmp_path / WORKSPACE_CLI_DIR / "manifests").mkdir(parents=True)
-    (tmp_path / WORKSPACE_CLI_DIR / "manifests" / "base.deps.toml").write_text(
+    (tmp_path / CHECKOUT_CLI_DIR / "manifests").mkdir(parents=True)
+    (tmp_path / CHECKOUT_CLI_DIR / "manifests" / "base.deps.toml").write_text(
         (MANIFESTS / "base.deps.toml").read_text(encoding="utf-8"), encoding="utf-8")
-    (tmp_path / WORKSPACE_CLI_DIR / "config.toml").write_text(
+    (tmp_path / CHECKOUT_CLI_DIR / "config.toml").write_text(
         '[cli]\ntheme = "default"\n', encoding="utf-8")
     gui = tmp_path / "sushihub" / "gui"
     gui.mkdir(parents=True)

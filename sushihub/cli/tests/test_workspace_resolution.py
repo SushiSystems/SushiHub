@@ -6,11 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from sushicore.workspace import WORKSPACE_CLI_DIR
 from sushistack.config import (
+    CHECKOUT_CLI_DIR,
     WORKSPACE_MARKER,
     config_dir,
     deps_dir,
+    workspace_file,
     workspace_root,
 )
 
@@ -33,17 +34,24 @@ def test_the_environment_variable_names_the_workspace(unpinned, monkeypatch, tmp
 
 
 def test_the_marker_is_found_by_walking_up(unpinned):
-    """A .sushistack marker in an ancestor makes that ancestor the root."""
-    (unpinned / WORKSPACE_MARKER).write_text("", encoding="utf-8")
+    """A .sushistack marker directory in an ancestor makes that ancestor the root."""
+    (unpinned / WORKSPACE_MARKER).mkdir()
     nested = unpinned / "sushiruntime" / "cli"
     nested.mkdir(parents=True)
     assert workspace_root(nested) == unpinned.resolve()
 
 
-def test_the_manifests_tree_is_a_marker_of_its_own(unpinned):
-    """The repository's own sushihub/cli/manifests signature marks a workspace."""
-    (unpinned / WORKSPACE_CLI_DIR / "manifests").mkdir(parents=True)
+def test_the_old_marker_file_still_resolves(unpinned):
+    """A pre-2026-09-22 marker file resolves, so upgrade_workspace can reach it."""
+    (unpinned / WORKSPACE_MARKER).write_text("# old marker\n", encoding="utf-8")
     assert workspace_root(unpinned) == unpinned.resolve()
+
+
+def test_the_manifests_tree_no_longer_marks_a_workspace(unpinned):
+    """A workspace is no longer a checkout, so sushihub/cli/manifests marks nothing."""
+    (unpinned / CHECKOUT_CLI_DIR / "manifests").mkdir(parents=True)
+    with pytest.raises(SystemExit):
+        workspace_root(unpinned)
 
 
 def test_no_marker_anywhere_exits(unpinned):
@@ -53,9 +61,14 @@ def test_no_marker_anywhere_exits(unpinned):
     assert WORKSPACE_MARKER in str(caught.value)
 
 
-def test_the_config_directory_is_the_hub_cli_directory(unpinned):
-    """config_dir resolves to <root>/sushihub/cli, inside the repository tree."""
-    assert config_dir(unpinned) == unpinned / WORKSPACE_CLI_DIR
+def test_the_workspace_file_sits_inside_the_marker_directory(unpinned):
+    """workspace_file resolves to <root>/.sushistack/workspace.toml."""
+    assert workspace_file(unpinned) == unpinned / WORKSPACE_MARKER / "workspace.toml"
+
+
+def test_the_checkout_directory_still_holds_the_committed_defaults(unpinned):
+    """config_dir resolves to <root>/sushihub/cli, where the defaults are committed."""
+    assert config_dir(unpinned) == unpinned / CHECKOUT_CLI_DIR
     assert config_dir(unpinned) == unpinned / Path("sushihub") / "cli"
 
 

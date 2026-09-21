@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from .. import console
-from ..config import WORKSPACE_MARKER, deps_dir, workspace_root
+from ..config import WORKSPACE_MARKER, create_workspace_file, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import binary as binary_svc
 from . import git_ops, links, pipx
@@ -34,6 +34,7 @@ _GITIGNORE_LINES = [
     "# Managed by `hub init`: shared dependencies and cloned modules are not tracked.",
     "/dependencies/",
     *(f"/{CATALOG[n].directory}/" for n in CATALOG),
+    "/.sushistack/",
     "/sushihub/cli/config.local.toml",
     "/sushihub/cli/modules.local.toml",
 ]
@@ -98,16 +99,10 @@ def init() -> int:
     console.header("SushiStack Init")
     root = Path.cwd().resolve()
 
-    marker = root / WORKSPACE_MARKER
-    if marker.is_file():
+    if (root / WORKSPACE_MARKER).is_dir():
         console.info(f"Already a SushiStack workspace: {root}")
     else:
-        marker.write_text(
-            "# SushiStack workspace marker. `hub` locates the workspace by walking\n"
-            "# up to this file. Delete it to detach this directory.\n",
-            encoding="utf-8",
-        )
-        console.success(f"Marked workspace root: {root}")
+        console.success(f"Marked workspace root: {create_workspace_file(root)}")
 
     gitignore = root / ".gitignore"
     existing = gitignore.read_text(encoding="utf-8") if gitignore.is_file() else ""
