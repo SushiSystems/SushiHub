@@ -1,9 +1,10 @@
 # Renaming the repository to SushiHub
 
-**Status:** approved 2026-09-22. Tasks 0 through 3 landed the same day; task 4, the rename on
-GitHub, is open. The checkout on disk keeps its old name, and the measurement in task 3 is why:
-every sibling module's `config.local.toml` stores absolute paths into
-`D:/Projects/sushistack/dependencies`.
+**Status:** done 2026-09-22. All four tasks landed; CI is green on `main` and the remote is
+`SushiSystems/SushiHub`. The checkout on disk keeps its old name on purpose: every sibling
+module's `config.local.toml` stores absolute paths into `D:/Projects/sushistack/dependencies`,
+and ten of them were checked to still resolve after the move. Publishing `sushihub` 1.0.0 to
+PyPI is the one step left, and it is a release, not part of this plan.
 
 **Goal:** the tool is called `sushihub` at every layer that names the tool, and
 `sushistack` survives only where it names the stack of applications.
