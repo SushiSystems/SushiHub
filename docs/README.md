@@ -48,6 +48,11 @@ Each component's own facts live beside its code:
 
 - `design/REMAINING_WORK.md` — the single backlog: what is planned and not yet built, in the order
   it is meant to land.
+- `design/WORKSPACE_DECOUPLING.md` — `hub` as a tool and a workspace as data: the module catalog
+  out of code, the workspace's own directory, `sushicore` and `sushihub` on PyPI, and `sushidsp`
+  and `sushitrack` out of the stack.
+- `design/GPU_BACKEND_PROVISIONING.md` — one brick per GPU vendor and one branch per operating
+  system, with the adapter build wired into `hub install`.
 
 ## Agent output
 

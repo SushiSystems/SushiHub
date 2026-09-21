@@ -27,6 +27,22 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 | 6 | sushiengine, in its repository: the command set of a binary install; `se editor --project <name>`; the project registry and the start screen that lists it, which the hub no longer owns; the runtime licence client and its offline rule. Its own design document there. | 5 |
 | 7 | The install scripts fetch the desktop application; a pass over developer and user experience with both journeys walked end to end. | 4, 6 |
 
+## The decoupling programme
+
+Designed in `WORKSPACE_DECOUPLING.md`; the waves below are its §5, kept here so the order can be
+read from one place. Nothing is built yet.
+
+| Wave | Work | Waits on |
+|---|---|---|
+| 0 | A test suite for today's `hub` commands, including the source-or-binary choice for `sushiengine`. | nothing |
+| 1 | `sushicore` moves to its own repository and publishes to PyPI; the path injection goes. | 0 |
+| 2 | `ModuleCatalog` and a packaged `catalog.toml`; `sushidsp` and `sushitrack` leave the catalog. | 1 |
+| 3 | `.sushistack` becomes a directory holding the workspace's own data; the defaults move into the package. | 2 |
+| 4 | The installers drop the clone and take `sushihub` from PyPI. | 3 |
+| 5 | The desktop application draws the new fields and its fixtures are re-recorded. | 4 |
+| 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. | 2 |
+| 7 | `sushidsp` and `sushitrack` gain their own install paths. | 2 |
+
 ## Outside the programme
 
 - **Every GPU vendor on a machine, not one.** `probe.detect_gpu_vendor` still picks a single
