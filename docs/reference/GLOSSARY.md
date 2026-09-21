@@ -5,8 +5,8 @@ Words this repository uses in a specific sense.
 **Workspace** — a clone of this repository with the `.sushistack` marker at its root, module
 checkouts directly under it and one `dependencies/` tree beside them. `docs/architecture/WORKSPACE.md`.
 
-**Module** — one of the stack's buildable repositories: sushiruntime, sushiblas, sushiai, sushidsp,
-sushiengine, sushitrack. Each has a CLI (`sr`, `sb`, `sa`, `sd`, `se`, `st`) and a dependency fragment
+**Module** — one of the stack's buildable repositories, named in `sushihub/cli/sushistack/catalog.toml`:
+sushiruntime, sushiblas, sushiai, sushiengine. Each has a CLI (`sr`, `sb`, `sa`, `se`) and a dependency fragment
 `cli/sushistack.deps.toml`. `sushicore` is not a module: it is never built and ships inside this
 repository.
 
