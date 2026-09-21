@@ -3,6 +3,8 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Isolated the link tests from the developer's own `modules.local.toml`, which hid a lost write (`sushihub/cli/tests/test_link.py`).
+- 2026-09-22 — Skipped the two CUDA PATH tests off Windows, where `os.pathsep` splits `C:\Windows` in two (`sushihub/cli/tests/test_windows_cuda_install.py`).
 - 2026-09-22 — Removed `sushicore` from this repository, which now takes it from PyPI (`sushicore/`, `.github/workflows/ci.yml`).
 - 2026-09-22 — Stopped `hub install-cli` requiring and injecting a `sushicore` checkout (`sushihub/cli/sushistack/services/cli_install.py`).
 - 2026-09-22 — Took `sushicore` from PyPI in the hub and dropped the pipx injection (`sushihub/cli/pyproject.toml`, `sushihub/cli/install.py`).
