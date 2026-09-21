@@ -3,6 +3,8 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Stopped `hub install-cli` requiring and injecting a `sushicore` checkout (`sushihub/cli/sushistack/services/cli_install.py`).
+- 2026-09-22 — Took `sushicore` from PyPI in the hub and dropped the pipx injection (`sushihub/cli/pyproject.toml`, `sushihub/cli/install.py`).
 - 2026-09-22 — Gave `sushicore` its own CI and a tag-triggered PyPI release workflow (`sushicore/.github/workflows/`).
 - 2026-09-22 — Moved the argv recorder's tests beside the tool they cover (`tools/tests/`, `.github/workflows/ci.yml`).
 - 2026-09-22 — Gave `sushicore` a front-door README and the metadata PyPI renders (`sushicore/README.md`, `sushicore/pyproject.toml`).

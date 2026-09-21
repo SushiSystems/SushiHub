@@ -8,11 +8,9 @@ module added to that registry works the day it is added, with no change to this
 file.
 
 The umbrella owns this so there is a single install seam for the whole stack: no
-module ships its own bootstrap script. Each module CLI depends on ``sushicore``
-(the shared presentation layer), which is not published to any index — so it
-cannot be resolved as a normal pip dependency. This service installs the module
-CLI into an isolated pipx venv, then injects ``sushicore`` from its sibling
-checkout, exactly as `hub` itself is bootstrapped.
+module ships its own bootstrap script. The service installs the module CLI into
+an isolated pipx venv and stops there: ``sushicore`` is an ordinary PyPI
+dependency each module CLI declares, so pipx resolves it like any other.
 """
 
 from __future__ import annotations
@@ -28,7 +26,7 @@ except ModuleNotFoundError:  # Python 3.10 fallback
 
 from .. import console
 from ..config import workspace_root
-from .modules import _resolve_names, module_dest, sushicore_dir
+from .modules import _resolve_names, module_dest
 
 
 def _run(cmd: list[str]) -> int:
@@ -80,14 +78,6 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
     if dry_run:
         console.info("Dry-run: showing actions without installing.")
 
-    sushicore = sushicore_dir(root)
-    if sushicore is None:
-        console.error(
-            "sushicore checkout not found in the workspace, a linked path, or a "
-            "sibling. The bootstrap normally fetches it; run it again, "
-            "`hub link sushicore <path>`, or set SUSHICORE_DIR.")
-        return 1
-
     if dry_run:
         failed = False
         for name in resolved:
@@ -97,8 +87,7 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
                              "clone or link the module first. Skipping.")
                 failed = True
                 continue
-            console.info(f"{name}: (dry-run) would install {_dist_name(pkg_dir)} from {pkg_dir} "
-                         f"and inject sushicore from {sushicore}")
+            console.info(f"{name}: (dry-run) would install {_dist_name(pkg_dir)} from {pkg_dir}")
         return 1 if failed else 0
 
     try:
@@ -119,10 +108,6 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
         dist = _dist_name(pkg_dir)
         console.info(f"{name}: installing {dist} from {pkg_dir}")
         rc = _run([*pipx, "install", "--force", "--editable", str(pkg_dir)])
-        if rc == 0:
-            # sushicore isn't a resolvable pip dependency; inject it (editable so
-            # its edits apply without reinstalling the module CLI).
-            rc = _run([*pipx, "inject", dist, "--editable", str(sushicore)])
         if rc != 0:
             console.error(f"{name}: install failed.")
             failed = True
