@@ -30,7 +30,8 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 ## The decoupling programme
 
 Designed in `WORKSPACE_DECOUPLING.md`; the waves below are its §5, kept here so the order can be
-read from one place. Waves 0 through 6 landed on 2026-09-22; waves 7 and 8 are open.
+read from one place. Waves 0 through 6 landed on 2026-09-22, and wave 7 all but its
+`st setup` task; wave 8 is open.
 
 | Wave | Work | Waits on |
 |---|---|---|
@@ -41,7 +42,7 @@ read from one place. Waves 0 through 6 landed on 2026-09-22; waves 7 and 8 are o
 | 4 | The installers drop the clone and take `sushihub` from PyPI. The module CLIs do not publish; they stay editable from a checkout. Landed 2026-09-22. | 3 |
 | 5 | `sushicore` left the status table, the fixtures were re-recorded, Linux stopped being pointed at `~/vcpkg`. Landed 2026-09-22. | 4 |
 | 6 | `sushi-module.toml` and its reader; the catalog became the fallback. Landed 2026-09-22. | 2 |
-| 7 | `sd setup` and `st setup` provision their repositories, with `hub` or without it; the fragment reader moves into `sushicore`. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md`. | 2 |
+| 7 | `sd setup` provisions sushidsp with `hub` or without it, and the fragment reader moved into `sushicore` 0.3.0. Landed 2026-09-22 except `st setup`, deferred until sushitrack's CLI can be tested. | 2 |
 | 8 | The desktop application ships as `sushihub-gui`, reached as `pipx install "sushihub[gui]"`. | 5 |
 
 ## Outside the programme

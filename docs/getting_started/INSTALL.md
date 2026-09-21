@@ -86,10 +86,18 @@ A hit means that environment still points at the deleted directory; no such file
 ### sushidsp and sushitrack left the stack on 2026-09-22
 
 They share no dependency with `sushiruntime`, `sushiblas`, `sushiai` and `sushiengine`, and are
-their own products with their own CLIs, `sd` and `st`. `hub` no longer knows them: `hub add
-sushidsp` reports an unknown module, and a `sushidsp` line left in `[modules]` in
-`.sushistack/workspace.toml` is ignored rather than honoured. Delete the line by hand; the
-checkout itself is untouched and `sd` keeps working.
+their own products with their own CLIs, `sd` and `st`. `hub add sushidsp` reports an unknown
+module: neither is in the catalog, so neither can be cloned by name.
+
+They are not cut off, though. A checkout carrying `sushi-module.toml` is recognised without a
+catalog entry, so `hub link sushidsp <path>` works, `hub status` lists it, and `hub install`
+provisions what its dependency fragment declares. Each also provisions itself: `sd setup` reports
+what it needs and installs it under `--install`, handing the job to `hub install` when a
+workspace is there. `st setup` is designed and not yet written; until then `sushitrack` uses
+`conda env create -f environment.yml` as its own README says.
+
+Install each CLI from its checkout: `pipx install --force --editable sushidsp/cli`, and the same
+for `sushitrack/cli`.
 
 ### The workspace moved its data on 2026-09-22
 

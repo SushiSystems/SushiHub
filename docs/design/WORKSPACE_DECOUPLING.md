@@ -1,6 +1,7 @@
 # Decoupling the hub from the SushiStack checkout
 
-**Status:** designed 2026-09-21. Waves 0 through 6 landed 2026-09-22; waves 7 and 8 are open.
+**Status:** designed 2026-09-21. Waves 0 through 6 landed 2026-09-22, and wave 7 all but its
+`st setup` task; wave 8 is open.
 Each wave's plan is linked from its row in section 5, and the waves are mirrored into
 `REMAINING_WORK.md` so the order can be read from one place. Two breaking changes have shipped:
 wave 2 took `sushidsp` and `sushitrack` out of `hub add`, `hub link` and `hub install-cli`, and
@@ -55,7 +56,20 @@ ever provisioned. The fragment was rewritten and the reader now refuses a shape 
 - The module catalog is closed to outsiders today and the door is left open: a module describes
   itself, and the catalog is the fallback rather than the only source.
 - `sushidsp` and `sushitrack` leave the catalog. They keep their own CLIs and their own install
-  paths.
+  paths. What that turned out to mean, settled 2026-09-22: each provisions itself from its own
+  source of truth and attaches to a workspace when one is there. `sd setup` reads its dependency
+  fragment and hands off to `hub install` inside a workspace; `st setup` will create its conda
+  environment from `environment.yml`, and is deferred until that repository's CLI can be tested.
+  Neither joins the catalog; `sushi-module.toml` is what makes a checkout recognisable, so the
+  door stays open without reopening the catalog.
+
+  Why they are outside, measured rather than assumed: no file in either repository mentions
+  SYCL, so the shared toolchain tree -- the reason the stack exists -- buys them nothing.
+  `sushidsp`'s real-time path stays on the CPU for two reasons the owner named on 2026-09-22:
+  the circuit solve is sample-serial, so there is no parallelism along the axis a GPU wants,
+  and a nonlinearity inside a feedback loop would not survive floating point that differs
+  between machines. An offline path -- rendering, parameter fitting, batches -- is where
+  `sushiruntime` could pay, and is a separate design if it is ever wanted.
 - `hub` is a tool and a workspace is data. A single checkout is a workspace; so is a directory
   holding six.
 - `sushicore` moves to its own repository and both it and `sushihub` publish to PyPI.
@@ -171,7 +185,7 @@ those five and nothing else.
 | 4 | **Landed 2026-09-22.** `sushihub` publishes to PyPI; the installers bootstrap Python, git and pipx, install from the index and run `hub init`. The module CLIs stay out. `hub sync` upgrades `hub` the way it was installed. Plan: `../agent/plans/2026-09-22-wave-4-hub-on-pypi.md` | 3 | Met: `sushihub` 0.1.0 on PyPI; `install.ps1` ran end to end in a directory that was no checkout, installing from the index and provisioning; a venv install from the index ran `hub init` and `hub install --dry-run` with no `sushihub/` anywhere |
 | 5 | **Landed 2026-09-22.** `sushicore` left the status table, the fixtures were re-recorded from a live `hub`, and Linux stopped being pointed at a vcpkg tree it never uses. The application needed no change: it already read every field the payload carries and names neither removed row. Plan: `../agent/plans/2026-09-22-wave-5-the-application-sees-today.md` | 4 | Met: `hub gui build` exited 0 and `hub gui test` passed 37 of 37, including the case that reads the re-recorded payload |
 | 6 | **Landed 2026-09-22.** `sushi-module.toml`, its reader, and the file in each of the four modules. `hub status` lists what the workspace knows and `hub link` accepts a checkout that names itself; the checkout wins over a catalog entry. `hub add <git-url>` stays out. Plan: `../agent/plans/2026-09-22-wave-6-a-module-describes-itself.md` | 2 | Met: a `sushidsp` checkout carrying a manifest, with no catalog entry, was listed by `hub status` with its real branch |
-| 7 | `sd setup` and `st setup` provision their own repositories: they hand off to `hub install` inside a workspace and read their own fragment outside one. The fragment reader moves into `sushicore`, so one schema has one reader. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md` | 2 | Both repositories stand on their own READMEs, `sd build` and `st build` work, and `hub doctor` counts a `sushidsp` owner, which it has since 2026-09-22 |
+| 7 | **Landed 2026-09-22, except `st setup`.** `sd setup` provisions sushidsp from its own fragment and hands off to `hub install` inside a workspace; the fragment reader moved into `sushicore` 0.3.0 and `hub` reads through it. `st setup` is designed and deferred: sushitrack's CLI carries no test suite. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md` | 2 | Met: `hub status` lists `sushidsp` and `hub doctor` attributes `sdl2` to it, with zero mentions of `sushidsp` in `catalog.toml` |
 | 8 | The desktop application is distributed: a separate `sushihub-gui` distribution with platform wheels, reached as `pipx install "sushihub[gui]"`, versioned from the same tag as `sushihub`. `hub gui run` prefers the workspace's own build tree and falls back to the installed one, the way `hub add sushiengine` chooses source or binary. | 5 | `pipx install "sushihub[gui]"` then `hub gui run` opens the application on a machine with no checkout |
 
 Waves 6 and 7 run beside the 3-4-5 chain; their file sets are disjoint from it.
