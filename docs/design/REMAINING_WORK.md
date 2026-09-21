@@ -45,6 +45,11 @@ read from one place. Waves 0, 1 and 2 landed on 2026-09-22; waves 3 through 7 ar
 
 ## Outside the programme
 
+- **`hub status` reports sushicore as a module.** `sushicore` is a PyPI dependency, not a linked
+  module, yet it still takes a row in the status table and shows as missing. Wave 5 decides what a
+  non-module row should say; until then the row lies.
+- **`hub install-cli` has no test.** The command installs a module's CLI through
+  `services/pipx.py`, which is tested, but nothing covers the command's own path resolution.
 - **Every GPU vendor on a machine, not one.** `probe.detect_gpu_vendor` still picks a single
   vendor, and the registry holds one backend per vendor; a machine with an NVIDIA card and an AMD
   iGPU provisions only CUDA. `GPU_BACKEND_PROVISIONING.md` §3 records the limit.

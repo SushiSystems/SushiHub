@@ -3,6 +3,10 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Split the module service into bricks: links, git, pipx and the licensed install (`sushihub/cli/sushistack/services/`).
+- 2026-09-22 — Installed a module's CLI the same way from `hub add` and `hub install-cli` (`sushihub/cli/sushistack/services/pipx.py`).
+- 2026-09-22 — Resolved a module's directory in one place, through the catalog (`sushihub/cli/sushistack/services/presence.py`).
+- 2026-09-22 — Rendered the status table where its payload is built (`sushihub/cli/sushistack/services/status_report.py`).
 - 2026-09-22 — Built every command's module help from the catalog rather than a repeated literal (`sushihub/cli/sushistack/cli.py`).
 - 2026-09-22 — Said where sushicore actually lives when `hub link sushicore` is refused (`sushihub/cli/sushistack/services/modules.py`).
 - 2026-09-22 — Took sushidsp and sushitrack out of the stack catalog (`sushihub/cli/sushistack/catalog.toml`).
