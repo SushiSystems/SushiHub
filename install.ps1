@@ -4,12 +4,17 @@
 
 .DESCRIPTION
     Bootstraps Python and Git — using winget when available, direct downloads
-    otherwise (no Microsoft Store required). Clones the SushiStack workspace,
-    installs the `hub` CLI, then provisions the shared dependency tree with
-    `hub install`. The portable CMake/Ninja lands in <workspace>\dependencies, so
-    only Python and Git are bootstrapped here. `hub install` provisions what the
-    present modules declare, which in a fresh workspace is the base build tools
-    alone; to choose a different set, run `hub install --customize` after.
+    otherwise (no Microsoft Store required). Installs the `hub` CLI from PyPI with
+    pipx, then runs `hub init` and `hub install` in the directory you choose.
+    Nothing is cloned: a workspace is any directory `hub init` has marked, and Git
+    is installed because `hub add` clones module checkouts with it. The portable
+    CMake/Ninja lands in <workspace>\dependencies, so only Python and Git are
+    bootstrapped here. `hub install` provisions what the present modules declare,
+    which in a fresh workspace is the base build tools alone; to choose a different
+    set, run `hub install --customize` after.
+
+    An install made this way carries no desktop application; `hub gui` needs the
+    SushiStack repository, which you clone yourself if you want it.
 
 .PARAMETER Add
     Space- or comma-separated module list to clone into the workspace, e.g.
@@ -41,8 +46,6 @@ $ErrorActionPreference = "Stop"
 function Info($m) { Write-Host "[INFO] $m"  -ForegroundColor Cyan }
 function Warn($m) { Write-Host "[WARN] $m"  -ForegroundColor Yellow }
 function Fail($m) { Write-Host "[ERROR] $m" -ForegroundColor Red; exit 1 }
-
-$RepoUrl = if ($env:SUSHISTACK_REPO_URL) { $env:SUSHISTACK_REPO_URL } else { "https://github.com/sushisystems/sushistack.git" }
 
 function Prompt-WorkspaceDir($defaultDir) {
     if ($env:SUSHISTACK_DIR) { return $env:SUSHISTACK_DIR }
@@ -171,27 +174,55 @@ Ensure-Git
 $python = Get-Command python -ErrorAction SilentlyContinue
 if (-not $python) { Fail "python not on PATH after install. Open a new terminal and re-run." }
 
-# Locate or clone the workspace. The SushiStack repo is identified by its
-# sushihub\cli\manifests tree (it ships no CMakeLists.txt).
-$ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { $null }
-if ($ScriptDir -and (Test-Path (Join-Path $ScriptDir "sushihub\cli\manifests"))) {
-    $WorkspaceDir = $ScriptDir
-} else {
-    $DefaultWorkspaceDir = Join-Path $HOME "sushistack"
-    $WorkspaceDir = Prompt-WorkspaceDir $DefaultWorkspaceDir
-    if (-not (Test-Path (Join-Path $WorkspaceDir ".git"))) {
-        Info "Cloning $RepoUrl -> $WorkspaceDir"
-        git clone $RepoUrl $WorkspaceDir
-    }
-}
+# Choose the workspace directory. It need not exist and need not be a checkout;
+# `hub init` marks whatever directory it is run in.
+$DefaultWorkspaceDir = Join-Path $HOME "sushistack"
+$WorkspaceDir = Prompt-WorkspaceDir $DefaultWorkspaceDir
+if (-not (Test-Path $WorkspaceDir)) { New-Item -ItemType Directory -Path $WorkspaceDir -Force | Out-Null }
 Set-Location $WorkspaceDir
 Info "Workspace: $WorkspaceDir"
 
-# Install the hub CLI.
-Info "Installing the hub CLI..."
-python sushihub/cli/install.py
+# Name a command that runs pipx: its own shim when PATH carries one, otherwise
+# the module under whichever python has it. Refresh-Path has already rebuilt PATH
+# by now, so `python` is not necessarily the interpreter this shell started with,
+# and `python -m pipx` alone is not safe to assume.
+function Resolve-Pipx {
+    if (Get-Command pipx -ErrorAction SilentlyContinue) { return @("pipx", @()) }
+    return @("python", @("-m", "pipx"))
+}
 
-$PipxBinDir = python -m pipx environment --value PIPX_BIN_DIR
+# Install the hub CLI from PyPI. pipx is bootstrapped here rather than reused
+# from the repository's install.py, because that file arrives with a checkout and
+# this script no longer makes one.
+if (-not (Get-Command pipx -ErrorAction SilentlyContinue)) {
+    Info "pipx not found; installing it with pip..."
+    python -m pip install --user pipx
+    python -m pipx ensurepath
+    Refresh-Path
+}
+$PipxExe, $PipxPre = Resolve-Pipx
+
+# Remove any existing sushihub venv first. `pipx install --force` reuses the venv
+# it finds, which fails when that venv was built another way -- an editable
+# install from a checkout is the common case, and it is exactly what a
+# contributor upgrading to the published package has.
+if ((& $PipxExe @PipxPre list --short) -match "^sushihub") {
+    Info "Replacing the existing sushihub install"
+    & $PipxExe @PipxPre uninstall sushihub
+}
+
+Info "Installing the hub CLI from PyPI..."
+& $PipxExe @PipxPre install sushihub
+if ($LASTEXITCODE -ne 0) { Fail "Could not install sushihub from PyPI." }
+
+$PipxBinDir = & $PipxExe @PipxPre environment --value PIPX_BIN_DIR
+
+# An install made before 2026-09-22 published the same CLI under another
+# distribution name, whose venv keeps its own `hub` shim.
+if ((& $PipxExe @PipxPre list --short) -match "^sushistack-cli") {
+    Info "Removing the sushistack-cli install this package was renamed from"
+    & $PipxExe @PipxPre uninstall sushistack-cli
+}
 
 # An install from before the rename left a shim named ss.exe.
 $StaleShim = Join-Path $PipxBinDir "ss.exe"

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Install the SushiStack `hub` CLI.
+"""Install the `hub` CLI from this checkout, for working on it.
+
+This is the contributor's install. A user installs `hub` from PyPI
+(`pipx install sushihub`), which is what install.ps1 and install.sh do; running
+this script instead points the same command at the checkout you are editing.
 
 Usage:
     python sushihub/cli/install.py            # install / upgrade (always editable)

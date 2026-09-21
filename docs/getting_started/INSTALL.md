@@ -2,9 +2,12 @@
 
 ## One command
 
-On a fresh machine the installer puts Python and Git in place if they are missing, clones this
-repository, installs `hub`, and provisions the shared dependency tree under `dependencies/`.
-`sushicore`, the engine under `hub`, comes from PyPI as an ordinary dependency.
+On a fresh machine the installer puts Python and Git in place if they are missing, installs `hub`
+from PyPI with pipx, and runs `hub init` and `hub install` in the directory you choose. Nothing is
+cloned: a workspace is any directory `hub init` has marked. `sushicore`, the engine under `hub`,
+arrives as an ordinary dependency of the same install.
+
+`SUSHISTACK_DIR` names the directory and skips the prompt.
 
 ```bash
 curl -fsSL https://sushisystems.io/install.sh | bash      # Linux / WSL
@@ -25,10 +28,9 @@ Both scripts accept a module list to clone at the end: `install.sh sushiruntime 
 The same result, one command at a time:
 
 ```bash
-git clone https://github.com/sushisystems/sushistack.git
-cd sushistack
-python sushihub/cli/install.py       # install `hub` via pipx
+pipx install sushihub                 # or: python -m pip install --user pipx, first
 
+mkdir ~/sushistack && cd ~/sushistack
 hub init                              # write the .sushistack directory and .gitignore entries
 hub install                           # download what the present modules declare
 hub add all                           # clone every module with its toolchains, or name them
@@ -39,6 +41,19 @@ cd sushiruntime && sr build
 `hub add` installs each cloned module's own CLI and then provisions the dependencies the new
 modules declare. `hub install-cli <module…>` reinstalls a CLI on demand, for instance after
 `hub link` pointed a module at a different checkout.
+
+## There is no desktop application in this install
+
+`hub gui build` and `hub gui run` build `sushihub/gui`, which lives in the SushiStack repository.
+An install made the way above never clones it, so those commands have nothing to build. Clone the
+repository yourself if you want the application:
+
+```bash
+git clone https://github.com/sushisystems/sushistack.git
+```
+
+Working on `hub` itself is the same clone, plus `python sushihub/cli/install.py`, which points the
+`hub` command at your checkout instead of the published package.
 
 ## Upgrading an install made before 2026-09-22
 

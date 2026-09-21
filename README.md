@@ -1,8 +1,9 @@
 # SushiStack
 
-The workspace for the Sushi stack. One clone gives a machine the toolchains and libraries every
+The workspace for the Sushi stack. One command gives a machine the toolchains and libraries every
 module needs, in one `dependencies/` directory, and the `hub` command that manages the module
-checkouts beside it.
+checkouts beside it. `hub` comes from PyPI as `sushihub`; this repository carries its source and
+the desktop application.
 
 ```bash
 curl -fsSL https://sushisystems.io/install.sh | bash      # Linux / WSL

@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 # SushiStack one-script installer (Linux / WSL).
 #
-# Bootstraps Python, pip, and Git, clones the SushiStack workspace, installs the
-# `hub` CLI, then provisions the shared dependency tree with `hub install`. The
-# portable CMake/Ninja lands in <workspace>/dependencies, so only Python and Git
-# need bootstrapping here.
+# Bootstraps Python, pip and Git, installs the `hub` CLI from PyPI with pipx,
+# then runs `hub init` and `hub install` in the directory you choose. Nothing is
+# cloned: a workspace is any directory `hub init` has marked. The portable
+# CMake/Ninja lands in <workspace>/dependencies, so only Python and Git need
+# bootstrapping here.
+#
+# Git is still installed because `hub add` clones module checkouts with it, not
+# because the workspace itself comes from a clone.
+#
+# An install made this way carries no desktop application; `hub gui` needs the
+# SushiStack repository, which you clone yourself if you want it.
 #
 # `hub install` provisions what the present modules declare, which in a fresh
 # workspace is the base build tools alone. Each module added below brings its own
@@ -19,14 +26,15 @@
 # Usage (bare machine):
 #   curl -fsSL https://sushisystems.io/install.sh | bash -s -- --add "sushiruntime sushiengine"
 #
-# Usage (inside a checkout):
+# Usage (from a local copy):
 #   bash install.sh [--add "..."] [--dry-run] [--no-alias]
+#
+# SUSHISTACK_DIR names the workspace directory and skips the prompt.
 #
 # The installer offers, once, to append `alias sh='hub'` to the interactive shell
 # rc file. `--no-alias` declines without asking.
 set -euo pipefail
 
-REPO_URL="${SUSHISTACK_REPO_URL:-https://github.com/sushisystems/sushistack.git}"
 DRY_FLAG=""
 MODULES=""
 NO_ALIAS=0
@@ -104,40 +112,61 @@ if [ "$need_bootstrap" -eq 1 ]; then
   fi
 fi
 
-# Locate or clone the workspace. The SushiStack repo is identified by its
-# sushihub/cli/manifests tree (it ships no CMakeLists.txt).
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
-if [ -n "$SCRIPT_DIR" ] && [ -d "$SCRIPT_DIR/sushihub/cli/manifests" ]; then
-  WORKSPACE_DIR="$SCRIPT_DIR"
-else
-  DEFAULT_WORKSPACE_DIR="$HOME/sushistack"
-  if [ -n "${SUSHISTACK_DIR:-}" ]; then
-    WORKSPACE_DIR="$SUSHISTACK_DIR"
-  elif [ -t 0 ] && [ -t 1 ]; then
-    printf '\033[1;34m[INFO]\033[0m Install location [%s] (30s to answer, Enter to accept): ' "$DEFAULT_WORKSPACE_DIR"
-    if IFS= read -r -t 30 REPLY_DIR; then
-      WORKSPACE_DIR="${REPLY_DIR:-$DEFAULT_WORKSPACE_DIR}"
-    else
-      printf '\n'
-      log "No input received, using default: $DEFAULT_WORKSPACE_DIR"
-      WORKSPACE_DIR="$DEFAULT_WORKSPACE_DIR"
-    fi
+# Choose the workspace directory. It need not exist and need not be a checkout;
+# `hub init` marks whatever directory it is run in.
+DEFAULT_WORKSPACE_DIR="$HOME/sushistack"
+if [ -n "${SUSHISTACK_DIR:-}" ]; then
+  WORKSPACE_DIR="$SUSHISTACK_DIR"
+elif [ -t 0 ] && [ -t 1 ]; then
+  printf '\033[1;34m[INFO]\033[0m Install location [%s] (30s to answer, Enter to accept): ' "$DEFAULT_WORKSPACE_DIR"
+  if IFS= read -r -t 30 REPLY_DIR; then
+    WORKSPACE_DIR="${REPLY_DIR:-$DEFAULT_WORKSPACE_DIR}"
   else
+    printf '\n'
+    log "No input received, using default: $DEFAULT_WORKSPACE_DIR"
     WORKSPACE_DIR="$DEFAULT_WORKSPACE_DIR"
   fi
-  if [ ! -d "$WORKSPACE_DIR/.git" ]; then
-    log "Cloning $REPO_URL -> $WORKSPACE_DIR"
-    git clone "$REPO_URL" "$WORKSPACE_DIR"
-  fi
+else
+  WORKSPACE_DIR="$DEFAULT_WORKSPACE_DIR"
 fi
+mkdir -p "$WORKSPACE_DIR"
 cd "$WORKSPACE_DIR"
 log "Workspace: $WORKSPACE_DIR"
 
-# Install the hub CLI.
-log "Installing the hub CLI..."
-python3 sushihub/cli/install.py
+# Install the hub CLI from PyPI. pipx is bootstrapped here rather than reused
+# from the repository's install.py, because that file arrives with a checkout and
+# this script no longer makes one.
+if ! command -v pipx >/dev/null 2>&1; then
+  log "pipx not found; installing it with pip..."
+  python3 -m pip install --user pipx || python3 -m pip install --user --break-system-packages pipx
+  python3 -m pipx ensurepath
+fi
 
-PIPX_BIN_DIR=$(python3 -m pipx environment --value PIPX_BIN_DIR)
+# Name a command that runs pipx: its own shim when PATH carries one, otherwise
+# the module under python3. `ensurepath` only edits the rc file, so the shim may
+# not be on PATH until the next shell.
+if command -v pipx >/dev/null 2>&1; then PIPX="pipx"; else PIPX="python3 -m pipx"; fi
+
+# Remove any existing sushihub venv first. `pipx install --force` reuses the venv
+# it finds, which fails when that venv was built another way -- an editable
+# install from a checkout is the common case, and it is exactly what a
+# contributor upgrading to the published package has.
+if $PIPX list --short 2>/dev/null | grep -q '^sushihub'; then
+  log "Replacing the existing sushihub install"
+  $PIPX uninstall sushihub
+fi
+
+log "Installing the hub CLI from PyPI..."
+$PIPX install sushihub || err "Could not install sushihub from PyPI."
+
+PIPX_BIN_DIR=$($PIPX environment --value PIPX_BIN_DIR)
+
+# An install made before 2026-09-22 published the same CLI under another
+# distribution name, whose venv keeps its own `hub` shim.
+if $PIPX list --short 2>/dev/null | grep -q '^sushistack-cli'; then
+  log "Removing the sushistack-cli install this package was renamed from"
+  $PIPX uninstall sushistack-cli
+fi
 
 # An install from before the rename left a shim named ss, which shadows iproute2's.
 if [ -e "$PIPX_BIN_DIR/ss" ]; then
