@@ -84,8 +84,8 @@ def test_link_refuses_a_name_outside_the_catalog(cfg_dir, recorder, tmp_path):
     """An unknown module is reported with the catalog's choices and nothing is written."""
     assert modules.link("sushiwater", str(tmp_path)) == 1
     assert recorder.said("Unknown module 'sushiwater'. Choose from: sushiruntime, "
-                         "sushiengine, sushiai, sushiblas, sushidsp, sushitrack "
-                         "(or their aliases: sr, se, sa, sb, sd, st).")
+                         "sushiengine, sushiai, sushiblas "
+                         "(or their aliases: sr, se, sa, sb).")
     assert not (cfg_dir / MODULES_FILE).exists()
 
 

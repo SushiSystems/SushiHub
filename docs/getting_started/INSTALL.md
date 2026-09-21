@@ -44,19 +44,22 @@ modules declare. `hub install-cli <module…>` reinstalls a CLI on demand, for i
 
 `sushicore` used to be injected as an editable install pointing at `sushicore/` inside this
 checkout. That directory is gone, so **every** pipx environment that carried the injection now
-fails at startup with `ModuleNotFoundError: No module named 'sushicore'`. That is `hub` and all
-five module CLIs, not just `hub`: `sr`, `se`, `sa`, `sb` and `sd` each hold their own copy of the
+fails at startup with `ModuleNotFoundError: No module named 'sushicore'`. That was `hub` and every
+module CLI, not just `hub`: `sr`, `se`, `sa`, `sb`, `sd` and `st` each held their own copy of the
 dead link.
 
 Repair `hub` first, because the second command is `hub`:
 
 ```bash
 python sushihub/cli/install.py
-hub install-cli sushiruntime sushiengine sushiai sushiblas sushidsp
+hub install-cli sushiruntime sushiengine sushiai sushiblas
 ```
 
-Both resolve `sushicore` from PyPI this time. To check one environment rather than trust it, look
-for a dead editable marker:
+Both resolve `sushicore` from PyPI this time. `sushidsp` and `sushitrack` left the stack the same
+day (see below); reinstall their own CLI directly rather than through `hub`, from each checkout:
+`pipx install --force --editable sushidsp/cli` (and the same for `sushitrack/cli`).
+
+To check one environment rather than trust it, look for a dead editable marker:
 
 ```bash
 ls ~/pipx/venvs/sushiengine-cli/Lib/site-packages/__editable__.sushicore*
@@ -64,6 +67,14 @@ ls ~/pipx/venvs/sushiengine-cli/Lib/site-packages/__editable__.sushicore*
 
 A hit means that environment still points at the deleted directory; no such file, and a
 `sushicore/` directory beside it, means the published package is in place.
+
+### sushidsp and sushitrack left the stack on 2026-09-22
+
+They share no dependency with `sushiruntime`, `sushiblas`, `sushiai` and `sushiengine`, and are
+their own products with their own CLIs, `sd` and `st`. `hub` no longer knows them: `hub add
+sushidsp` reports an unknown module, and a `sushidsp` line left in
+`sushihub/cli/modules.local.toml` is ignored rather than honoured. Delete the line by hand; the
+checkout itself is untouched and `sd` keeps working.
 
 ## What `hub install` downloads
 

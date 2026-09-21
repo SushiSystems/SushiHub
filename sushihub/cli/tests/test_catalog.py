@@ -18,15 +18,13 @@ def recorder(monkeypatch):
     return spy
 
 
-def test_the_catalog_holds_the_six_modules_of_today():
-    """Six modules are registered; wave 2 drops sushidsp and sushitrack from this list."""
+def test_the_catalog_holds_the_four_stack_modules():
+    """Four modules are registered, in the order every command lists them."""
     assert CATALOG.names() == [
         "sushiruntime",
         "sushiengine",
         "sushiai",
         "sushiblas",
-        "sushidsp",
-        "sushitrack",
     ]
 
 
@@ -84,6 +82,14 @@ def test_the_gitignore_lines_cover_every_module_and_the_local_files():
         assert f"/{name}/" in lines
     assert "/sushihub/cli/config.local.toml" in lines
     assert "/sushihub/cli/modules.local.toml" in lines
+
+
+def test_sushidsp_and_sushitrack_are_not_stack_modules():
+    """The two products that share no dependency with the stack are not in the catalog."""
+    assert CATALOG.resolve("sushidsp") is None
+    assert CATALOG.resolve("sushitrack") is None
+    assert CATALOG.resolve("sd") is None
+    assert CATALOG.resolve("st") is None
 
 
 def test_the_catalog_resolves_a_name_and_an_alias_to_the_same_module():
