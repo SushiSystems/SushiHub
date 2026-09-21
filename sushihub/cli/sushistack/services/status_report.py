@@ -15,6 +15,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
 
+from .. import console
 from ..config import deps_dir, workspace_root
 from . import git_state, licence_file, links, session
 from .catalog import CATALOG
@@ -129,3 +130,32 @@ def build_status(check_updates: bool = False, *, home: Path | None = None,
         "dependencies": {"path": str(deps), "present": deps.is_dir() and any(deps.iterdir())},
     }
     return StatusReport(payload, warnings)
+
+
+def _branch_cell(source: dict | None) -> str:
+    """Return a checkout's branch and its distance from upstream as one table cell."""
+    if not source or not source["branch"]:
+        return "—"
+    counts = [f"{sign}{source[key]}" for key, sign in (("ahead", "+"), ("behind", "-"))
+              if source[key]]
+    return " ".join([source["branch"], *counts])
+
+
+def render(payload: dict) -> int:
+    """Print the status *payload* that :func:`build_status` built. Return exit code."""
+    console.header("SushiStack Status")
+    console.info(f"Workspace: {payload['workspace']}")
+    console.table(
+        ["Module", "Location", "State", "Branch"],
+        [[module["name"], module["location"] or "—",
+          "—" if module["state"] == "absent" else module["state"],
+          _branch_cell(module["source"])]
+         for module in payload["modules"]],
+        title="SushiStack Status",
+    )
+    deps = payload["dependencies"]
+    if deps["present"]:
+        console.info(f"Dependencies: {deps['path']} (present). Verify with `hub doctor`.")
+    else:
+        console.info(f"Dependencies: {deps['path']} (empty). Provision with `hub install`.")
+    return 0

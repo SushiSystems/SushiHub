@@ -315,35 +315,6 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     return 1 if failed else 0
 
 
-def _branch_cell(source: dict | None) -> str:
-    """Return a checkout's branch and its distance from upstream as one table cell."""
-    if not source or not source["branch"]:
-        return "—"
-    counts = [f"{sign}{source[key]}" for key, sign in (("ahead", "+"), ("behind", "-"))
-              if source[key]]
-    return " ".join([source["branch"], *counts])
-
-
-def status(payload: dict) -> int:
-    """Print the status *payload* that :func:`~.status_report.build_status` built. Return exit code."""
-    console.header("SushiStack Status")
-    console.info(f"Workspace: {payload['workspace']}")
-    console.table(
-        ["Module", "Location", "State", "Branch"],
-        [[module["name"], module["location"] or "—",
-          "—" if module["state"] == "absent" else module["state"],
-          _branch_cell(module["source"])]
-         for module in payload["modules"]],
-        title="SushiStack Status",
-    )
-    deps = payload["dependencies"]
-    if deps["present"]:
-        console.info(f"Dependencies: {deps['path']} (present). Verify with `hub doctor`.")
-    else:
-        console.info(f"Dependencies: {deps['path']} (empty). Provision with `hub install`.")
-    return 0
-
-
 def _self_update(root: Path, dry_run: bool) -> None:
     """Fast-forward the SushiStack workspace repo itself (the ``hub`` source tree).
 
