@@ -7,15 +7,15 @@
 
 # Local machine config written by `hub install` / `hub link`.
 /.sushistack/
-/sushihub/cli/config.local.toml
-/sushihub/cli/modules.local.toml
+/cli/config.local.toml
+/cli/modules.local.toml
 
 # Python / tooling cruft.
 __pycache__/
 *.egg-info/
 *.pyc
-/sushihub/cli/build/
-sushihub/cli/config.local.toml.bak
+/cli/build/
+cli/config.local.toml.bak
 
 # Scratch workspace for plan execution.
 .superpowers/

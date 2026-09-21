@@ -17,7 +17,7 @@ support. NVIDIA drops older architectures from ptxas across major releases, and 
 `sm_6x` outright. SushiRuntime's `SR_CUDA_ARCH` has no default; `cmake/gpu/Cuda.cmake` resolves
 it from `nvidia-smi`, so on a Pascal box it resolves to `61` on its own, and only a 12.x toolkit
 can compile that. `LinuxCudaLocator.provision` in
-`sushihub/cli/sushistack/setup/gpu_backends/cuda.py` therefore installs the pinned
+`cli/sushihub/setup/gpu_backends/cuda.py` therefore installs the pinned
 `cuda-toolkit-12-6` package, never the unversioned `cuda-toolkit` meta-package. The same reason
 drives `_cuda_repo_tag`, in the same file: NVIDIA's apt repos for Ubuntu releases newer than
 24.04 carry only CUDA 13.x, so an exact distro tag there 404s on the 12.6 package and the install
@@ -37,7 +37,7 @@ to rebuild the already-installed port with different features and asks for `--re
 
 **Cause.** vcpkg treats a feature change on an installed port as a removal plus a reinstall of
 everything depending on it, and only does that when told to with `--recurse`. `VcpkgManager.install`
-in `sushihub/cli/sushistack/setup/package_managers.py` runs a plain `vcpkg install <port>:<triplet>` with
+in `cli/sushihub/setup/package_managers.py` runs a plain `vcpkg install <port>:<triplet>` with
 no way to add that flag, and no `hub install` option exposes it.
 
 **Rule.** After a feature-set change, run the install once by hand with the workspace's vcpkg
@@ -58,7 +58,7 @@ way round, with no change in the code under test.
 
 **Cause.** Three different SYCL toolchains are in use. `hub install` downloads the newest
 intel/llvm nightly bundle at the time it runs (`install_intel_llvm` in
-`sushihub/cli/sushistack/setup/toolchains.py`), and the install is then reused forever unless
+`cli/sushihub/setup/toolchains.py`), and the install is then reused forever unless
 `--refresh-toolchains` is given, so two developer machines can differ from one another. The
 engine's CI job pins a specific nightly by date (`INTEL_LLVM_DATE` in
 `sushiengine/.github/workflows/ci.yml`). The runtime's CI job builds inside

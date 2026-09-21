@@ -22,15 +22,15 @@ from here. Facts about one component live in that component's own README, beside
 
 Each component's own facts live beside its code:
 
-- `../sushihub/cli/README.md` — the `hub` command: every subcommand, the files it reads and writes.
+- `../cli/README.md` — the `hub` command: every subcommand, the files it reads and writes.
 - `sushicore` — the shared CLI engine: presentation layer, config plumbing, the cmake driver, and
   how a Sushi CLI consumes it. It lives at `github.com/SushiSystems/SushiCore` and installs from
   PyPI; its manual is `docs/README.md` there.
-- `../sushihub/contract/README.md` — the JSON contract between `hub` and the desktop application:
+- `../contract/README.md` — the JSON contract between `hub` and the desktop application:
   event shapes and the command catalogue.
-- `../sushihub/gui/README.md` — the desktop application over `hub --json`: the four layers, the
+- `../gui/README.md` — the desktop application over `hub --json`: the four layers, the
   five hand-drawn screens, and the form generated for every other command.
-- `../sushihub/contract/sushi-account.md` — the four Sushi Account endpoints `hub` signs in and reads licences
+- `../contract/sushi-account.md` — the four Sushi Account endpoints `hub` signs in and reads licences
   through, and the device grant that walks between them.
 
 ## Guides

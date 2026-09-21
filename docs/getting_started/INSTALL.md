@@ -44,7 +44,7 @@ modules declare. `hub install-cli <module…>` reinstalls a CLI on demand, for i
 
 ## There is no desktop application in this install
 
-`hub gui build` and `hub gui run` build `sushihub/gui`, which lives in the SushiStack repository.
+`hub gui build` and `hub gui run` build `gui`, which lives in the SushiStack repository.
 An install made the way above never clones it, so those commands have nothing to build. Clone the
 repository yourself if you want the application:
 
@@ -52,7 +52,7 @@ repository yourself if you want the application:
 git clone https://github.com/sushisystems/sushistack.git
 ```
 
-Working on `hub` itself is the same clone, plus `python sushihub/cli/install.py`, which points the
+Working on `hub` itself is the same clone, plus `python cli/install.py`, which points the
 `hub` command at your checkout instead of the published package.
 
 ## Upgrading an install made before 2026-09-22
@@ -66,7 +66,7 @@ dead link.
 Repair `hub` first, because the second command is `hub`:
 
 ```bash
-python sushihub/cli/install.py
+python cli/install.py
 hub install-cli sushiruntime sushiengine sushiai sushiblas
 ```
 
@@ -102,7 +102,7 @@ for `sushitrack/cli`.
 ### The workspace moved its data on 2026-09-22
 
 `.sushistack` used to be an empty marker file, with the workspace's data in the checkout at
-`sushihub/cli/config.local.toml` and `sushihub/cli/modules.local.toml`. It is a directory now, and
+`cli/config.local.toml` and `cli/modules.local.toml`. It is a directory now, and
 both tables live in `.sushistack/workspace.toml`.
 
 Nothing is asked of you: the first `hub` command run in an old workspace converts it and says so.

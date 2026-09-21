@@ -17,8 +17,8 @@ The repository carries two things of its own:
 
 | Directory | What it is | Its README |
 |---|---|---|
-| `sushihub/cli/` | The `hub` command: dependency provisioning and module lifecycle. | `sushihub/cli/README.md` |
-| `sushihub/gui/` | The desktop application: a screen for every `hub` command, over `hub --json`. | `sushihub/gui/README.md` |
+| `cli/` | The `hub` command: dependency provisioning and module lifecycle. | `cli/README.md` |
+| `gui/` | The desktop application: a screen for every `hub` command, over `hub --json`. | `gui/README.md` |
 
 The engine under every Sushi CLI is `sushicore`, which lives in its own repository and installs
 from PyPI: console, config, workspace resolution and the cmake driver.

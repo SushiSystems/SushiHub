@@ -14,13 +14,13 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 |---|---|---|
 | 0 | Documentation skeleton and the hub design document. Landed 2026-09-05. | nothing |
 | 1a-core | `JsonRenderer` and the `table`, `progress`, `result`, `prompt` calls in `sushicore`. Plan: `../agent/plans/2026-09-05-wave-1a-core.md`. Landed 2026-09-05. | 0 |
-| 1a-cli | `hub --json` on every command, `hub --describe`, the schemas under `sushihub/contract/`. Plan: `../agent/plans/2026-09-05-wave-1a-cli.md`. Landed 2026-09-05. | 1a-core, 1b |
-| 1c | Move `cli/` to `sushihub/cli/` and repoint the installer, the workspace marker search and the docs. Landed 2026-09-05. | 1a-cli |
+| 1a-cli | `hub --json` on every command, `hub --describe`, the schemas under `contract/`. Plan: `../agent/plans/2026-09-05-wave-1a-cli.md`. Landed 2026-09-05. | 1a-core, 1b |
+| 1c | Move `cli/` to `cli/` and repoint the installer, the workspace marker search and the docs. Landed 2026-09-05. | 1a-cli |
 | 1b | Dependencies follow the modules (plan: `../agent/plans/2026-09-05-wave-1b-dependencies.md`): `build_pipeline` derives the toolchain selection from the present modules' fragments; `hub add` provisions what the new module needs; `hub doctor` reports by owner in dependency order; the install scripts stop running `hub install` before any module exists. Landed 2026-09-05. | 0 |
 | 1d | The command is `hub`, not `ss`, in every repository, and the installers offer `sh` as an interactive alias. Plan: `../agent/plans/2026-09-07-wave-1d-hub-command.md`. Landed 2026-09-07. | 1a-cli |
 | 2 | Binary presence read from `sushi-release.json` in `hub status` and everywhere `hub` looks; the marker in `ModuleProfile` (landed 2026-09-05); `hub login`, `hub logout`, `hub whoami`, `hub license` against a fake Sushi Account. Plan: `../agent/plans/2026-09-05-wave-2-presence-and-identity.md`. Landed 2026-09-05. | 1a-cli |
 | 3 | Sushi Account, in the sushiweb repository: device authorization grant, a licence query for a product, a signed download URL per release, a runtime licence check. Landed 2026-09-05 on sushiweb's branch `feat/device-grant-and-releases` (`docs/agent/specs/2026-09-05-device-grant-and-releases-design.md` there, three plans), rebased onto sushiweb's `main` on 2026-09-16 with its migrations renumbered to 0034 and 0035, both applied to production with the `releases` bucket; the deploy waits on the account project's JWT and Supabase storage variables, and the end-to-end check on a released engine. | none here |
-| 4 | `sushihub/gui/` (plan: `../agent/plans/2026-09-05-wave-4-gui.md`): the Dear ImGui application, the `hub` subprocess bridge over the JSON contract, hand-drawn screens for status, modules, dependencies, licence and projects, generated forms for the rest. Landed 2026-09-05; built through `hub gui build` (plan: `../agent/plans/2026-09-05-wave-4b-gui-through-ss.md`), first build the user's. | 1a-cli; 2 in parallel |
+| 4 | `gui/` (plan: `../agent/plans/2026-09-05-wave-4-gui.md`): the Dear ImGui application, the `hub` subprocess bridge over the JSON contract, hand-drawn screens for status, modules, dependencies, licence and projects, generated forms for the rest. Landed 2026-09-05; built through `hub gui build` (plan: `../agent/plans/2026-09-05-wave-4b-gui-through-ss.md`), first build the user's. | 1a-cli; 2 in parallel |
 | 4c | The desktop application's own window (plan: `../agent/plans/2026-09-07-wave-4c-hub-ui.md`): a title bar, a rail of four destinations, one activity strip every run reports through, and the Installs, Modules, Settings and Commands screens. Landed 2026-09-07 and built by the user on 2026-09-15. | 4 |
 | 4d | `hub status` reports a checkout's branch and distance from upstream, a binary's platform and licence expiry, and the `sh` alias; `--check-updates` is its one online form; the Installs card draws them. Plan: `../agent/plans/2026-09-15-wave-4d-status-fields.md`. Landed 2026-09-15; the GUI build and `hub gui test` are the user's. | 4c |
 | 5 | `hub add sushiengine` chooses source or binary from Git access and licence; downloads, verifies and unpacks the release; writes the licence file. Plan: `../agent/plans/2026-09-05-wave-5-binary-engine.md`. Landed 2026-09-05 against the fake Sushi Account; the real endpoints are wave 3's. The project registry it also built was removed on 2026-09-07, because a project is the engine's concept. | 2, 3 |
@@ -66,7 +66,7 @@ read from one place. Waves 0 through 6 landed on 2026-09-22, and wave 7 all but 
   deleted on 2026-09-22, so what is left is tidiness: a key that means nothing until
   `resolved_vcpkg` reads it, in a change that reaches seven CLIs.
 - **An install from PyPI has no desktop application.** `hub gui build` and `hub gui run` build
-  `sushihub/gui`, which only a clone of this repository carries, and the installers no longer
+  `gui`, which only a clone of this repository carries, and the installers no longer
   clone. A user who wants the application clones by hand today. Wave 5 owns how it is
   distributed.
 - **A `[cli]` theme in `workspace.toml` is not read.** `console.py` hands sushicore's
@@ -97,9 +97,9 @@ read from one place. Waves 0 through 6 landed on 2026-09-22, and wave 7 all but 
   component is on by default and Windows installs CUDA 12.6.3 through NVIDIA's silent installer,
   but neither has run on real hardware yet. R1 in SushiRuntime and E1 in SushiEngine are open.
 - **The sign-in code travels as text.** `hub login` prints the user code and the verification link as
-  `line` events; the desktop application scans them by shape (`sushihub/gui/src/ui/DeviceGrant.cpp`).
+  `line` events; the desktop application scans them by shape (`gui/src/ui/DeviceGrant.cpp`).
   A `prompt`-like structured event, or the two fields in the `result` payload, would end the scan.
-- **GUI fixtures are hand-written.** `sushihub/gui/tests/fixtures/` awaits one recorded `hub --json status`
+- **GUI fixtures are hand-written.** `gui/tests/fixtures/` awaits one recorded `hub --json status`
   and `hub --describe` run; the README there gives the two commands.
 
 - **A doubled progress line.** `InstallPipeline.run` emits `console.progress` beside its Rich progress bar, so a
@@ -110,15 +110,15 @@ read from one place. Waves 0 through 6 landed on 2026-09-22, and wave 7 all but 
 - **The consumer contract has no home.** `.github/workflows/ci.yml`'s `consumers` job ran the five
   consumer CLIs' suites against the `sushicore` under test. Wave 1 deleted it with the package. It
   had been broken since 2026-09-07 in one way and since it was written in another: it ran `pytest
-  sushihub/cli/tests` inside checkouts that hold `cli/tests`, and it checked the consumers out
+  cli/tests` inside checkouts that hold `cli/tests`, and it checked the consumers out
   assuming they are public, which all five are not. The same guard belongs in the SushiCore
   repository, where a change can be tested against its consumers before it is tagged, with a token
   that reads the private ones.
 
 - **`hub install-cli` has no test.** Wave 1 removed its `sushicore` lookup and pipx injection
-  (`sushihub/cli/sushistack/services/cli_install.py`) with nothing covering the command. The
+  (`cli/sushihub/services/cli_install.py`) with nothing covering the command. The
   removal was found by reading, not by a failing test: `hub install-cli` would have hard-failed
   on every module once `sushicore/` was deleted. The service needs fakes for pipx and
   `module_dest` the way `tests/test_cli_install.py` fakes them for `_install_module_cli`.
-- **`hub unlink`.** Removing a link means editing `sushihub/cli/modules.local.toml` by hand
+- **`hub unlink`.** Removing a link means editing `cli/modules.local.toml` by hand
   (`../guides/LINKING_CHECKOUTS.md`).

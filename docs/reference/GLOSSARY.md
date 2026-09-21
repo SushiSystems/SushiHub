@@ -5,7 +5,7 @@ Words this repository uses in a specific sense.
 **Workspace** — a directory with the `.sushistack` marker directory at its root, module
 checkouts directly under it and one `dependencies/` tree beside them. `docs/architecture/WORKSPACE.md`.
 
-**Module** — one of the stack's buildable repositories, named in `sushihub/cli/sushistack/catalog.toml`:
+**Module** — one of the stack's buildable repositories, named in `cli/sushihub/catalog.toml`:
 sushiruntime, sushiblas, sushiai, sushiengine. Each has a CLI (`sr`, `sb`, `sa`, `se`) and a dependency fragment
 `cli/sushistack.deps.toml`. `sushicore` is not a module: it is never built and ships inside this
 repository.
@@ -13,7 +13,7 @@ repository.
 **Presence** — the form in which a module exists in a workspace, read from disk: *cloned* (a checkout
 under the workspace root), *linked* (a checkout elsewhere, registered in `[modules]` in `.sushistack/workspace.toml`),
 *binary* (a downloaded release whose root holds `sushi-release.json`), or *absent*.
-`sushihub/cli/sushistack/services/presence.py` answers it; `hub status` shows it.
+`cli/sushihub/services/presence.py` answers it; `hub status` shows it.
 
 **Dependency fragment** — a `*.deps.toml` file naming packages per platform. This repository ships
 the base fragment inside the `sushistack` package's `manifests/`; each module ships its own. `hub install` merges them.
@@ -34,4 +34,4 @@ typing two letters instead of four; it changes typing only; `/bin/sh` is untouch
 
 **JSON contract** — the shape of what `hub` prints under `--json`, one event per line, and of what
 `hub --describe` says about its own commands. The desktop application consumes it; a schema under
-`sushihub/contract/` will bind both sides.
+`contract/` will bind both sides.
