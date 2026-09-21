@@ -40,8 +40,8 @@ read from one place. Waves 0 through 5 landed on 2026-09-22; waves 6, 7 and 8 ar
 | 3 | `.sushistack` became a directory holding the workspace's own data in one `workspace.toml`; the defaults and the dependency manifests moved into the package. Landed 2026-09-22. | 2 |
 | 4 | The installers drop the clone and take `sushihub` from PyPI. The module CLIs do not publish; they stay editable from a checkout. Landed 2026-09-22. | 3 |
 | 5 | `sushicore` left the status table, the fixtures were re-recorded, Linux stopped being pointed at `~/vcpkg`. Landed 2026-09-22. | 4 |
-| 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. | 2 |
-| 7 | `sushidsp` and `sushitrack` gain their own install paths. | 2 |
+| 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. Plan: `../agent/plans/2026-09-22-wave-6-a-module-describes-itself.md`. | 2 |
+| 7 | `sd setup` and `st setup` provision their repositories, with `hub` or without it; the fragment reader moves into `sushicore`. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md`. | 2, 6 |
 | 8 | The desktop application ships as `sushihub-gui`, reached as `pipx install "sushihub[gui]"`. | 5 |
 
 ## Outside the programme
