@@ -1,6 +1,6 @@
 # Decoupling the hub from the SushiStack checkout
 
-**Status:** designed 2026-09-21. Waves 0 through 4 landed 2026-09-22; waves 5 through 7 are open.
+**Status:** designed 2026-09-21. Waves 0 through 4 landed 2026-09-22; waves 5 through 8 are open.
 Each wave's plan is linked from its row in section 5, and the waves are mirrored into
 `REMAINING_WORK.md` so the order can be read from one place. Two breaking changes have shipped:
 wave 2 took `sushidsp` and `sushitrack` out of `hub add`, `hub link` and `hub install-cli`, and
@@ -106,6 +106,19 @@ and the module CLIs fail it. They stay installed editable from a checkout by `hu
 this only when a module CLI does useful work without a source tree, the way `hub add sushiengine`
 already fetches a release.
 
+The desktop application is distributed separately, decided by the owner on 2026-09-22. It goes to
+PyPI as its own `sushihub-gui` distribution with a wheel per platform, reached as
+`pipx install "sushihub[gui]"`, and it is versioned from the same tag as `sushihub` so the two
+never disagree about the `--describe` contract. `sushihub` itself stays `py3-none-any`: a
+platform we build no application for still installs the CLI. The product is about 3 MB
+(`sushihub_gui.exe` 2.4 MB plus `glfw3.dll` 484 KB), not the 262 MB build tree beside it.
+
+`hub gui run` keeps its meaning. It does not build today either -- it launches what the build
+tree holds -- so it gains a second place to look rather than a new job: the workspace's own build
+when the source is there, the installed application when it is not. `hub gui build` and
+`hub gui test` stay what they are, developer commands that need the source and say so plainly
+when there is none.
+
 `install.sh` and `install.ps1` stop cloning. They bootstrap Python, git and pipx, install
 `sushihub` from PyPI, then run `hub init` in the directory the user chose. A clone of SushiStack
 stops being a precondition and becomes what a contributor does, or a user who wants the desktop
@@ -148,9 +161,10 @@ those five and nothing else.
 | 2 | `ModuleCatalog` and `catalog.toml` inside the package, four entries. `BINARY_MODULE` becomes the `distribution` field. `sushidsp` and `sushitrack` leave the catalog. | 1 | Landed 2026-09-22: `hub add all` names four modules, `hub add sushidsp` reports an unknown module, and the suite is at 337 |
 | 3 | **Landed 2026-09-22.** `.sushistack` became a directory holding one `workspace.toml` with `[workspace]`, `[modules]` and `[tool]`; the owner chose one file rather than three. `defaults.toml` and `manifests/` moved into the package. Every `hub` command upgrades an old marker silently. Plan: `../agent/plans/2026-09-22-wave-3-workspace-directory.md` | 2 | Met: `hub init` then `hub install --dry-run` ran to completion in an empty directory with no `sushihub/` anywhere, and this workspace upgraded in place, keeping all five `[modules]` entries and eleven probed tool paths |
 | 4 | **Landed 2026-09-22.** `sushihub` publishes to PyPI; the installers bootstrap Python, git and pipx, install from the index and run `hub init`. The module CLIs stay out. `hub sync` upgrades `hub` the way it was installed. Plan: `../agent/plans/2026-09-22-wave-4-hub-on-pypi.md` | 3 | Met: `sushihub` 0.1.0 on PyPI; `install.ps1` ran end to end in a directory that was no checkout, installing from the index and provisioning; a venv install from the index ran `hub init` and `hub install --dry-run` with no `sushihub/` anywhere |
-| 5 | The desktop application draws the new fields, and `tests/fixtures/` is re-recorded from a real `hub --json status` and `hub --describe`. | 4 | `hub gui build` and `hub gui test` pass and the Installs screen draws the new workspace |
+| 5 | `sushicore` leaves the status table, the fixtures are re-recorded from a live `hub`, and Linux stops being pointed at a vcpkg tree it never uses. Measured 2026-09-22: the application already reads every field the payload carries, so "draws the new fields" is a measurement rather than work. Plan: `../agent/plans/2026-09-22-wave-5-the-application-sees-today.md` | 4 | `hub gui build` and `hub gui test` pass and the Installs screen draws four modules |
 | 6 | A reader for `sushi-module.toml` and the file in each of the four modules. The catalog becomes the fallback. | 2 | A checkout carrying a manifest is recognised with no catalog entry |
 | 7 | `sushidsp` and `sushitrack` gain their own install paths and leave SushiStack's documentation. | 2 | Both repositories stand on their own READMEs, `sd build` and `st build` work |
+| 8 | The desktop application is distributed: a separate `sushihub-gui` distribution with platform wheels, reached as `pipx install "sushihub[gui]"`, versioned from the same tag as `sushihub`. `hub gui run` prefers the workspace's own build tree and falls back to the installed one, the way `hub add sushiengine` chooses source or binary. | 5 | `pipx install "sushihub[gui]"` then `hub gui run` opens the application on a machine with no checkout |
 
 Waves 6 and 7 run beside the 3-4-5 chain; their file sets are disjoint from it.
 
