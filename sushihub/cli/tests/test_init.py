@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from sushicore.workspace import read_toml
-from sushistack.config import WORKSPACE_MARKER, workspace_file
-from sushistack.services import modules
+from sushihub.config import WORKSPACE_MARKER, workspace_file
+from sushihub.services import modules
 
 from .test_presence import Recorder
 

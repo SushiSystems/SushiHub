@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.services import modules
-from sushistack.services.catalog import CATALOG, load_catalog
+from sushihub.services import modules
+from sushihub.services.catalog import CATALOG, load_catalog
 
 from .test_presence import Recorder
 

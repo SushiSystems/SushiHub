@@ -1,4 +1,4 @@
-"""Layered configuration loading for the SushiStack CLI.
+"""Layered configuration loading for the SushiHub CLI.
 
 Precedence (lowest to highest):
     built-in defaults -> the package's defaults.toml -> .sushistack/workspace.toml
@@ -116,7 +116,7 @@ def packaged_defaults() -> Iterator[Path]:
     @pre The path is valid only inside the ``with`` block, because
         ``importlib.resources`` may have extracted it.
     """
-    with as_file(files("sushistack") / DEFAULTS_FILE) as path:
+    with as_file(files("sushihub") / DEFAULTS_FILE) as path:
         yield path
 
 

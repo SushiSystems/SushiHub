@@ -7,17 +7,17 @@ from types import SimpleNamespace
 
 import pytest
 
-from sushistack.setup import apt as apt_mod
-from sushistack.setup import package_managers
-from sushistack.setup.gpu_backends import cuda as cuda_mod
-from sushistack.setup.gpu_backends import level_zero as level_zero_mod
-from sushistack.setup.gpu_backends import rocm as rocm_mod
-from sushistack.setup.gpu_backends import windows_installer
-from sushistack.setup.gpu_backends.backend import NotProvided, ToolkitInstall
-from sushistack.setup.gpu_backends.cuda import CUDA
-from sushistack.setup.gpu_backends.level_zero import LEVEL_ZERO
-from sushistack.setup.gpu_backends.registry import Registry
-from sushistack.setup.gpu_backends.rocm import ROCM
+from sushihub.setup import apt as apt_mod
+from sushihub.setup import package_managers
+from sushihub.setup.gpu_backends import cuda as cuda_mod
+from sushihub.setup.gpu_backends import level_zero as level_zero_mod
+from sushihub.setup.gpu_backends import rocm as rocm_mod
+from sushihub.setup.gpu_backends import windows_installer
+from sushihub.setup.gpu_backends.backend import NotProvided, ToolkitInstall
+from sushihub.setup.gpu_backends.cuda import CUDA
+from sushihub.setup.gpu_backends.level_zero import LEVEL_ZERO
+from sushihub.setup.gpu_backends.registry import Registry
+from sushihub.setup.gpu_backends.rocm import ROCM
 
 
 # --------------------------------------------------------------------------- #
@@ -77,7 +77,7 @@ def _fake_console(**overrides):
     """Build a console stand-in that records calls instead of touching the real one.
 
     Rebinding a vendor module's own ``console`` name, rather than patching
-    :mod:`sushistack.console` itself, keeps its lazily built Rich console
+    :mod:`sushihub.console` itself, keeps its lazily built Rich console
     (and the stdout it captured at construction) untouched for every other
     test in the process, in particular the CLI's JSON-stream tests.
     """
@@ -182,7 +182,7 @@ class _RecordingLocator:
 
 
 def test_install_gpu_stack_dispatches_through_the_registry(monkeypatch):
-    from sushistack.setup.gpu_backends.backend import GpuBackendSpec
+    from sushihub.setup.gpu_backends.backend import GpuBackendSpec
 
     locator = _RecordingLocator()
     fake_spec = GpuBackendSpec(

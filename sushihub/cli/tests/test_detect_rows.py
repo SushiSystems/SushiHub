@@ -1,7 +1,7 @@
 """What `hub doctor` says, and in what order."""
 
-from sushistack.setup.pipeline import InstallContext
-from sushistack.setup.steps import DetectStep
+from sushihub.setup.pipeline import InstallContext
+from sushihub.setup.steps import DetectStep
 
 from .conftest import MemorySource, dep
 

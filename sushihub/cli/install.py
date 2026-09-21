@@ -93,14 +93,14 @@ def remove_legacy_package(pipx: list[str]) -> None:
 	"""Uninstall the distribution under the name it carried before 2026-09-22.
 
 	pipx keys a venv by distribution name, so the rename to `sushihub` leaves an
-	earlier `sushistack-cli` venv in place, owning a `hub` shim of its own. Which
+	earlier `sushihub-cli` venv in place, owning a `hub` shim of its own. Which
 	one PATH resolves is then an accident.
 	"""
 	probe = subprocess.run([*pipx, "list", "--short"], capture_output=True, text=True)
-	if probe.returncode != 0 or "sushistack-cli" not in probe.stdout:
+	if probe.returncode != 0 or "sushihub-cli" not in probe.stdout:
 		return
-	print("[INFO] Removing the sushistack-cli install this package was renamed from.")
-	run([*pipx, "uninstall", "sushistack-cli"])
+	print("[INFO] Removing the sushihub-cli install this package was renamed from.")
+	run([*pipx, "uninstall", "sushihub-cli"])
 
 
 def install() -> int:
@@ -126,7 +126,7 @@ def uninstall() -> int:
 
 
 def main() -> None:
-	parser = argparse.ArgumentParser(description="Install the SushiStack `hub` CLI.")
+	parser = argparse.ArgumentParser(description="Install the SushiHub `hub` CLI.")
 	parser.add_argument("--uninstall", action="store_true",
 	                    help="Uninstall the CLI instead of installing.")
 	args = parser.parse_args()

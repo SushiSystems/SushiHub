@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from sushistack.services.hub_install import ALIAS_MARKER, read_hub_install
+from sushihub.services.hub_install import ALIAS_MARKER, read_hub_install
 
 
 def _write(path: Path, text: str) -> None:

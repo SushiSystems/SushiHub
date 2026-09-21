@@ -4,11 +4,11 @@ import json
 
 import sushicore.profile
 
-from sushistack.services import binary, git_ops, modules, pipx, presence, status_report
-from sushistack.services.presence import Presence
-from sushistack.setup import dependency_source, steps
-from sushistack.setup.pipeline import InstallContext
-from sushistack.setup.steps import DetectStep
+from sushihub.services import binary, git_ops, modules, pipx, presence, status_report
+from sushihub.services.presence import Presence
+from sushihub.setup import dependency_source, steps
+from sushihub.setup.pipeline import InstallContext
+from sushihub.setup.steps import DetectStep
 
 from .conftest import MemorySource, dep
 

@@ -11,10 +11,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from sushistack.setup import probe
-from sushistack.setup.gpu_backends import cuda as cuda_mod
-from sushistack.setup.gpu_backends import windows_installer as wi
-from sushistack.setup.gpu_backends.cuda import WindowsCudaLocator
+from sushihub.setup import probe
+from sushihub.setup.gpu_backends import cuda as cuda_mod
+from sushihub.setup.gpu_backends import windows_installer as wi
+from sushihub.setup.gpu_backends.cuda import WindowsCudaLocator
 
 _ARGS = ("-s", "nvcc_12.6", "cudart_12.6", "nvml_dev_12.6", "-n")
 _CFG = SimpleNamespace(platform="windows")
@@ -425,9 +425,9 @@ def test_linux_detection_reads_lspci(monkeypatch):
 ])
 def test_no_discrete_gpu_prints_only_without_a_known_vendor(monkeypatch, capsys, adapters,
                                                             printed):
-    from sushistack import console
-    from sushistack.config import Config
-    from sushistack.setup.package_managers import install_gpu_stack
+    from sushihub import console
+    from sushihub.config import Config
+    from sushihub.setup.package_managers import install_gpu_stack
 
     console.set_machine(False)
     monkeypatch.setattr(probe.shutil, "which", lambda name: None)

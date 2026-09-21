@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import pytest
 
-from sushistack.setup.dependency_source import SHARED_OWNER, _parse_manifest
+from sushihub.setup.dependency_source import SHARED_OWNER, _parse_manifest
 
 
 def _fragment(tmp_path, text: str):
@@ -67,7 +67,7 @@ def test_a_dependency_that_names_no_owner_belongs_to_the_shared_set(tmp_path):
 
 def test_the_fragments_this_package_ships_all_read():
     """A shipped fragment that stopped parsing would break every install."""
-    from sushistack.setup.dependency_source import packaged_manifests
+    from sushihub.setup.dependency_source import packaged_manifests
 
     with packaged_manifests() as directory:
         for fragment in sorted(directory.glob("*.deps.toml")):

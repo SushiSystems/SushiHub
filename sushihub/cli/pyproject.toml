@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sushihub"
-version = "0.1.0"
-description = "SushiStack CLI — shared dependency provisioning and module manager for the stack"
+version = "1.0.0"
+description = "SushiHub CLI — shared dependency provisioning and module manager for the stack"
 readme = "README.md"
 authors = [{ name = "Mustafa Garip", email = "mustafagarip@sushisystems.io" }]
 requires-python = ">=3.10"
@@ -25,16 +25,16 @@ dependencies = [
 test = ["pytest>=7.0", "jsonschema>=4.0"]
 
 [project.scripts]
-hub = "sushistack.cli:app"
-sushihub = "sushistack.cli:app"
+hub = "sushihub.cli:app"
+sushihub = "sushihub.cli:app"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["sushistack*"]
+include = ["sushihub*"]
 
 # The tool's own data travels with the tool: the module catalog, the committed
 # defaults and the dependency fragments every workspace shares. A workspace is
 # no longer a checkout, so none of these can be read out of one.
 
 [tool.setuptools.package-data]
-sushistack = ["py.typed", "catalog.toml", "defaults.toml", "manifests/*.deps.toml"]
+sushihub = ["py.typed", "catalog.toml", "defaults.toml", "manifests/*.deps.toml"]

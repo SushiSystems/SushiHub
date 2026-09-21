@@ -2,8 +2,8 @@
 
 One class over the six endpoints written down in
 ``sushihub/contract/sushi-account.md``. It prints nothing and asks nothing: the
-commands in ``sushistack.services.session`` own the terminal, and the credential
-store arrives as a :class:`~sushistack.services.token_store.TokenStore`. The
+commands in ``sushihub.services.session`` own the terminal, and the credential
+store arrives as a :class:`~sushihub.services.token_store.TokenStore`. The
 clock, the sleep and the HTTP opener are constructor arguments so a test can run
 the whole grant against a fake server in a thread with no wall-clock wait.
 """
@@ -235,7 +235,7 @@ class SushiAccount:
         Args:
             product: The product slug, which is the module name.
             platform: The platform string
-                :func:`~sushistack.services.releases.host_platform` derives.
+                :func:`~sushihub.services.releases.host_platform` derives.
             version: The release to resolve; the latest one when None.
 
         Raises:

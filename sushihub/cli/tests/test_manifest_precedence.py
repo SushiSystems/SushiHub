@@ -10,9 +10,9 @@ from pathlib import Path
 
 import pytest
 
-from sushistack.services import links, modules, presence
-from sushistack.services.catalog import CATALOG
-from sushistack.services.module_manifest import MANIFEST_FILE
+from sushihub.services import links, modules, presence
+from sushihub.services.catalog import CATALOG
+from sushihub.services.module_manifest import MANIFEST_FILE
 
 
 def _describes(directory: Path, name: str, alias: str, distribution: str = "source") -> Path:

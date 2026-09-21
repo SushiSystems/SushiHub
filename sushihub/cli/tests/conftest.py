@@ -4,8 +4,8 @@
 manifest, touches the network, or writes into ``dependencies/``. ``fake_cfg``
 gives the steps a Linux :class:`Config` whose every tool path is empty.
 
-Two things happen before ``sushistack`` is imported. ``SUSHISTACK_HOME`` is
-pinned to the repository root, because ``sushistack.console`` resolves the
+Two things happen before ``sushihub`` is imported. ``SUSHISTACK_HOME`` is
+pinned to the repository root, because ``sushihub.console`` resolves the
 workspace at import time and pytest may run from outside one. The repository
 root leaves ``sys.path``, because its ``sushicore/`` directory shadows the
 installed ``sushicore`` distribution as a namespace package.
@@ -24,8 +24,8 @@ os.environ.setdefault("SUSHISTACK_HOME", str(_REPO_ROOT))
 sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != _REPO_ROOT]
 sys.modules.pop("sushicore", None)
 
-from sushistack.config import Config  # noqa: E402
-from sushistack.setup.dependency_source import (  # noqa: E402
+from sushihub.config import Config  # noqa: E402
+from sushihub.setup.dependency_source import (  # noqa: E402
     SHARED_OWNER,
     Dependency,
     IDependencySource,

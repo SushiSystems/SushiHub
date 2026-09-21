@@ -1,4 +1,4 @@
-"""CLI output for the SushiStack CLI.
+"""CLI output for the SushiHub CLI.
 
 Thin wrapper around :mod:`sushicore` — the actual theme/icon/renderer logic
 (and its `[cli]` config schema) lives there and is shared with every module

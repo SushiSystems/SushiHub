@@ -1,4 +1,4 @@
-"""SushiStack developer CLI package.
+"""SushiHub developer CLI package.
 
 ``__version__`` is read from the installed distribution, so ``pyproject.toml``
 is the one place the version is written.

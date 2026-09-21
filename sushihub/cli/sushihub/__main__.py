@@ -1,4 +1,4 @@
-"""Enable `python3 -m sushistack` as an entry point."""
+"""Enable `python3 -m sushihub` as an entry point."""
 
 from .cli import app
 

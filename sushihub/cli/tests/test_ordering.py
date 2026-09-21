@@ -2,7 +2,7 @@
 
 import pytest
 
-from sushistack.setup.ordering import owner_order
+from sushihub.setup.ordering import owner_order
 
 from .conftest import MemorySource, dep
 

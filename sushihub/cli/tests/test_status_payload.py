@@ -9,10 +9,10 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from sushistack.services import status_report
-from sushistack.services.hub_install import ALIAS_MARKER
-from sushistack.services.identity import SushiAccount
-from sushistack.services.token_store import MemoryStore
+from sushihub.services import status_report
+from sushihub.services.hub_install import ALIAS_MARKER
+from sushihub.services.identity import SushiAccount
+from sushihub.services.token_store import MemoryStore
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_identity import _signed_in
@@ -61,7 +61,7 @@ def test_the_module_list_carries_the_catalog_and_nothing_else(tmp_path, monkeypa
     It had a row until 2026-09-22, reporting `missing` on every machine that took
     sushicore from the index, which is every machine.
     """
-    from sushistack.services.catalog import CATALOG
+    from sushihub.services.catalog import CATALOG
 
     root = workspace(tmp_path / "ws", monkeypatch)
     _real_checkout(root / "sushiruntime")

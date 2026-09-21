@@ -5,13 +5,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from sushistack.setup.gpu_backends.backend import (
+from sushihub.setup.gpu_backends.backend import (
     GpuBackendSpec,
     NotProvided,
     PlatformLocator,
     ToolkitInstall,
 )
-from sushistack.setup.gpu_backends.registry import Registry
+from sushihub.setup.gpu_backends.registry import Registry
 
 
 class _FakeLocator:

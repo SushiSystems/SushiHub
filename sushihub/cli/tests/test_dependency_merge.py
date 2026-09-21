@@ -8,7 +8,7 @@ its SDL2 the moment `sushidsp`'s fragment became readable.
 
 from __future__ import annotations
 
-from sushistack.setup.dependency_source import Dependency, _merge, _merge_ports
+from sushihub.setup.dependency_source import Dependency, _merge, _merge_ports
 
 
 def _dep(owner: str, **overrides) -> Dependency:
@@ -83,7 +83,7 @@ def test_the_aggregation_keeps_the_feature_across_two_fragments(tmp_path):
     The fragments are written here rather than read from the linked checkouts,
     so the test says the same thing on a machine that has none.
     """
-    from sushistack.setup.dependency_source import TomlDependencySource
+    from sushihub.setup.dependency_source import TomlDependencySource
 
     dsp = tmp_path / "dsp.deps.toml"
     dsp.write_text('[sdl2]\nrequired = true\nwindows_vcpkg = ["sdl2"]\n', encoding="utf-8")

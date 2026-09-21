@@ -3,6 +3,7 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Renamed the CLI's Python package from `sushistack` to `sushihub`, so the tool's name is the tool's (`sushihub/cli/sushihub/`).
 - 2026-09-22 — Provisioned sushidsp with or without a SushiStack workspace, and described it in its own manifest (`sushidsp`).
 - 2026-09-22 — Read dependency fragments through `sushicore`, so one schema has one reader (`sushihub/cli/sushistack/setup/dependency_source.py`).
 - 2026-09-22 — Recognised a checkout that carries its own `sushi-module.toml` (`sushihub/cli/sushistack/services/module_manifest.py`).

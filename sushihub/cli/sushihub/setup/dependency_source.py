@@ -6,7 +6,7 @@ The installer must not hard-code package names. Instead it asks an
 SushiStack owns no single manifest. Each module declares what it needs, and the
 installer aggregates those fragments into one shared dependency set:
 
-  * ``sushistack/manifests/*.deps.toml`` — base fragments shipped inside this
+  * ``sushihub/manifests/*.deps.toml`` — base fragments shipped inside this
     package (the module-independent build/toolchain infrastructure).
   * ``<module>/cli/sushistack.deps.toml`` — a fragment a module contributes from
     its own repo (kept under cli/, not the repo root).
@@ -201,7 +201,7 @@ def packaged_manifests() -> Iterator[Path]:
     @pre The path is valid only inside the ``with`` block, because
         ``importlib.resources`` may have extracted it.
     """
-    with as_file(files("sushistack") / MANIFESTS_DIR) as path:
+    with as_file(files("sushihub") / MANIFESTS_DIR) as path:
         yield path
 
 
@@ -298,7 +298,7 @@ class TomlDependencySource(IDependencySource):
         if not self._sources:
             raise FileNotFoundError(
                 "No dependency manifests found. Expected at least "
-                "manifests/*.deps.toml inside the installed sushistack package."
+                "manifests/*.deps.toml inside the installed sushihub package."
             )
         merged: dict[str, Dependency] = {}
         for path, owner in self._sources:

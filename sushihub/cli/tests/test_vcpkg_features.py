@@ -4,9 +4,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from sushistack.config import Config
-from sushistack.setup import package_managers
-from sushistack.setup.package_managers import VcpkgManager
+from sushihub.config import Config
+from sushihub.setup import package_managers
+from sushihub.setup.package_managers import VcpkgManager
 
 #: One line of `vcpkg list --triplet x64-windows` output for an installed imgui.
 LISTED = "imgui:x64-windows                        1.92.8    Dear ImGui\n"

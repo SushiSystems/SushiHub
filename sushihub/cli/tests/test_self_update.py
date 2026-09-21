@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from sushistack.services import git_ops, modules, pipx
+from sushihub.services import git_ops, modules, pipx
 
 
 class Recorder:

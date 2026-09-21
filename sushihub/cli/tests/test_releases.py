@@ -10,9 +10,9 @@ import zipfile
 
 import pytest
 
-from sushistack.services import releases
-from sushistack.services.presence import RELEASE_MANIFEST, Release
-from sushistack.services.releases import ReleaseCorrupt
+from sushihub.services import releases
+from sushihub.services.presence import RELEASE_MANIFEST, Release
+from sushihub.services.releases import ReleaseCorrupt
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_identity import _signed_in

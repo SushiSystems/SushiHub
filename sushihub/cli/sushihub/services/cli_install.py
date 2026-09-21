@@ -1,7 +1,7 @@
 """`hub install-cli` service: install a module's own developer CLI.
 
 One program name per module — `sr`, `se`, `sa`, `sb`, `sd` — resolved from
-the catalog in :mod:`sushistack.services.catalog`, which is the single place
+the catalog in :mod:`sushihub.services.catalog`, which is the single place
 that knows what the stack contains. Nothing here is per-module: the logic reads
 the distribution name out of the module's own ``cli/pyproject.toml``, so a
 module added to that registry works the day it is added, with no change to this
@@ -65,7 +65,7 @@ def install_cli(names: list[str] | None, dry_run: bool = False) -> int:
     later `git pull`s on the module silently stop reaching the installed
     `sr`/`se`/`sa`/`sb` until someone thinks to reinstall by hand.
     """
-    console.header("SushiStack Install-CLI")
+    console.header("SushiHub Install-CLI")
     resolved = _resolve_names(names)
     if resolved is None:
         return 1

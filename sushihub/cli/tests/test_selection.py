@@ -1,6 +1,6 @@
 """A toolchain is selected because a present module asked for it."""
 
-from sushistack.setup.selection import ToolchainSelection, selection_from_source
+from sushihub.setup.selection import ToolchainSelection, selection_from_source
 
 from .conftest import MemorySource, dep
 
@@ -39,14 +39,14 @@ def test_merged_applies_known_keys_only():
 
 
 def test_build_pipeline_defaults_to_the_derived_selection(fake_cfg):
-    from sushistack.setup.factory import build_pipeline
+    from sushihub.setup.factory import build_pipeline
     src = MemorySource([dep("cmake"), dep("intel-llvm", "sushiruntime")])
     _pipeline, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[])
     assert ctx.install_intel_llvm and not ctx.install_acpp and not ctx.oneapi and ctx.gpu
 
 
 def test_build_pipeline_merges_an_explicit_selection_over_the_derived_one(fake_cfg):
-    from sushistack.setup.factory import build_pipeline
+    from sushihub.setup.factory import build_pipeline
     src = MemorySource([dep("intel-llvm", "sushiruntime")])
     _p, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[],
                              selection={"install_intel_llvm": False, "oneapi": True})
@@ -56,14 +56,14 @@ def test_build_pipeline_merges_an_explicit_selection_over_the_derived_one(fake_c
 def test_a_shipped_fragment_is_owned_by_the_name_in_its_filename():
     from pathlib import Path
 
-    from sushistack.setup.dependency_source import SHARED_OWNER, _owner_for_shipped
+    from sushihub.setup.dependency_source import SHARED_OWNER, _owner_for_shipped
 
     assert _owner_for_shipped(Path("manifests/base.deps.toml")) == SHARED_OWNER
     assert _owner_for_shipped(Path("manifests/gui.deps.toml")) == "gui"
 
 
 def test_build_pipeline_honours_the_gpu_turned_off_in_customize(fake_cfg):
-    from sushistack.setup.factory import build_pipeline
+    from sushihub.setup.factory import build_pipeline
     src = MemorySource([dep("intel-llvm", "sushiruntime")])
     _p, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[],
                              selection={"gpu": False})

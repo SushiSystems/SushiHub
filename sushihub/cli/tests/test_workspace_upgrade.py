@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from sushicore.workspace import read_toml
-from sushistack.config import CHECKOUT_CLI_DIR, WORKSPACE_MARKER, upgrade_workspace, workspace_file
+from sushihub.config import CHECKOUT_CLI_DIR, WORKSPACE_MARKER, upgrade_workspace, workspace_file
 
 
 def _old_workspace(root):
@@ -66,7 +66,7 @@ def test_a_workspace_with_no_old_data_still_upgrades(tmp_path):
 
 def test_a_link_written_after_an_upgrade_keeps_the_tool_paths(tmp_path, monkeypatch):
     """The two writers share one file, so neither erases what the other stored."""
-    from sushistack.services import links
+    from sushihub.services import links
 
     _old_workspace(tmp_path)
     upgrade_workspace(tmp_path)
@@ -80,9 +80,9 @@ def test_a_link_written_after_an_upgrade_keeps_the_tool_paths(tmp_path, monkeypa
 
 def test_hub_remove_empties_the_tool_table_and_keeps_the_registry(tmp_path, monkeypatch):
     """`hub remove` reclaims what the install wrote and leaves the links alone."""
-    from sushistack.config import Config
-    from sushistack.setup.pipeline import InstallContext
-    from sushistack.setup.steps import UninstallStep
+    from sushihub.config import Config
+    from sushihub.setup.pipeline import InstallContext
+    from sushihub.setup.steps import UninstallStep
 
     _old_workspace(tmp_path)
     upgrade_workspace(tmp_path)
@@ -97,9 +97,9 @@ def test_hub_remove_empties_the_tool_table_and_keeps_the_registry(tmp_path, monk
 
 def test_a_dry_run_of_hub_remove_leaves_the_tool_table(tmp_path, monkeypatch):
     """The dry run reports the section it would clear and writes nothing."""
-    from sushistack.config import Config
-    from sushistack.setup.pipeline import InstallContext
-    from sushistack.setup.steps import UninstallStep
+    from sushihub.config import Config
+    from sushihub.setup.pipeline import InstallContext
+    from sushihub.setup.steps import UninstallStep
 
     _old_workspace(tmp_path)
     upgrade_workspace(tmp_path)

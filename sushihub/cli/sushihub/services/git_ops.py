@@ -3,7 +3,7 @@
 Every module checkout `hub` manages goes through these two calls, so a caller
 never shells out to git on its own. The policy above them — what to pull, when
 to fall back to a binary release — stays with its callers in
-:mod:`sushistack.services.modules`.
+:mod:`sushihub.services.modules`.
 """
 
 from __future__ import annotations
