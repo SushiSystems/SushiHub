@@ -70,5 +70,10 @@ read from one place. Wave 0 landed on 2026-09-22; waves 1 through 7 are open.
 
 - **A source-comment checker.** Every repository carries `tools/documentation/check_source_comments.py`
   to hold the docstring rules in `../CONTRIBUTING.md`. This one does not yet.
+- **`hub install-cli` has no test.** Wave 1 removed its `sushicore` lookup and pipx injection
+  (`sushihub/cli/sushistack/services/cli_install.py`) with nothing covering the command. The
+  removal was found by reading, not by a failing test: `hub install-cli` would have hard-failed
+  on every module once `sushicore/` was deleted. The service needs fakes for pipx and
+  `module_dest` the way `tests/test_cli_install.py` fakes them for `_install_module_cli`.
 - **`hub unlink`.** Removing a link means editing `sushihub/cli/modules.local.toml` by hand
   (`../guides/LINKING_CHECKOUTS.md`).
