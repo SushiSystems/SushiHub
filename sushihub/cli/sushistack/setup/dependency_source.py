@@ -21,14 +21,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
+from dataclasses import fields as dc_fields
 from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Iterator
 
-try:
-    import tomllib  # Python 3.11+
-except ModuleNotFoundError:  # Python 3.10 fallback
-    import tomli as tomllib
+from sushicore import deps_fragment
+from sushicore.deps_fragment import Dependency as FragmentDependency
 
 from .. import console
 from ..config import workspace_root
@@ -52,27 +51,23 @@ SHIPPED_MANIFEST_SUFFIX = ".deps.toml"
 SHARED_MANIFEST_STEM = "base"
 
 #: Reserved table name a fragment uses to declare module-level metadata
-#: (currently ``depends_on``) rather than a dependency.
-MODULE_META_TABLE = "module"
+#: (currently ``depends_on``) rather than a dependency. Owned by
+#: :mod:`sushicore.deps_fragment`, re-exported here for the callers that name it.
+MODULE_META_TABLE = deps_fragment.MODULE_TABLE
 
 
 @dataclass(frozen=True)
-class Dependency:
-    """One entry from the manifest, normalized."""
+class Dependency(FragmentDependency):
+    """A fragment's entry plus the module that contributed it.
 
-    name: str
-    description: str
-    required: bool
-    gpu_only: bool
-    linux_apt: list[str]
-    windows_vcpkg: list[str]
-    check_cmd: list[str]
-    owner: str = SHARED_OWNER  # which module contributed this dependency
-    provides: str = ""  # capability tag; deps sharing one are any-of alternatives
+    The fields and their meaning are :mod:`sushicore.deps_fragment`'s, read once
+    for every CLI that reads this format. What `hub` adds is ownership, which is
+    the installer's business rather than the file's: a fragment says what it
+    needs, not who is asking.
+    """
 
-    def packages_for(self, platform: str) -> list[str]:
-        """Package names for the given platform ('windows' | other = linux)."""
-        return self.windows_vcpkg if platform == "windows" else self.linux_apt
+    #: Which module contributed this dependency.
+    owner: str = SHARED_OWNER
 
     def vcpkg_fallback_ports(self, platform: str) -> list[str]:
         """Vcpkg ports to install on Linux when this dep has no apt package.
@@ -257,44 +252,22 @@ def manifest_paths() -> list[Path]:
 def _parse_manifest(path: Path, owner: str) -> tuple[list[Dependency], list[str]]:
     """Return this fragment's dependencies and its ``[module] depends_on`` list.
 
-    The reserved ``[module]`` table carries module metadata (currently the
-    ``depends_on`` list) rather than a dependency, so it is pulled out here and
-    never becomes a :class:`Dependency`.
+    The file is read by :mod:`sushicore.deps_fragment`, the one reader of this
+    format; all this adds is the owner, which the file does not carry and the
+    installer needs.
 
     Raises:
-        ValueError: A top-level key holds something other than a table. Skipping
-            it is how sushidsp's whole fragment went unread; a fragment shape
-            this function does not understand is a defect to report, not to
-            ignore.
+        ValueError: The reader refused the file. A shape it does not understand
+            is a defect to report: skipping one is how sushidsp's whole fragment
+            went unread until 2026-09-22.
     """
-    with path.open("rb") as fh:
-        doc = tomllib.load(fh)
-    depends_on: list[str] = []
-    deps: list[Dependency] = []
-    for name, table in doc.items():
-        if not isinstance(table, dict):
-            raise ValueError(
-                f"{path}: '{name}' is a {type(table).__name__}, and a fragment declares one "
-                f"table per dependency. An array of [[{name}]] tables reads as a list here and "
-                f"was skipped in silence until 2026-09-22, which lost every dependency the file "
-                f"declared.")
-        if name == MODULE_META_TABLE:
-            depends_on = [str(m) for m in table.get("depends_on", [])]
-            continue
-        deps.append(
-            Dependency(
-                name=name,
-                description=str(table.get("description", "")),
-                required=bool(table.get("required", True)),
-                gpu_only=bool(table.get("gpu_only", False)),
-                linux_apt=list(table.get("linux_apt", [])),
-                windows_vcpkg=list(table.get("windows_vcpkg", [])),
-                check_cmd=list(table.get("check_cmd", [])),
-                owner=owner,
-                provides=str(table.get("provides", "")),
-            )
-        )
-    return deps, depends_on
+    fragment = deps_fragment.read(path)
+    owned = [
+        Dependency(**{f.name: getattr(dep, f.name) for f in dc_fields(FragmentDependency)},
+                   owner=owner)
+        for dep in fragment.dependencies
+    ]
+    return owned, fragment.depends_on
 
 
 class TomlDependencySource(IDependencySource):

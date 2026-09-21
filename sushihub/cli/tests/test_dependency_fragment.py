@@ -1,16 +1,17 @@
-"""How a `sushistack.deps.toml` fragment is read.
+"""What `hub` adds when it reads a fragment, and what it still refuses.
 
-A fragment is written by hand in another repository, so the reader meets shapes
-it did not choose. Until 2026-09-22 it skipped every top-level key that was not
-a table, which is how sushidsp's whole fragment -- a required `sdl2` among it --
-went unprovisioned without a word.
+The format itself is `sushicore.deps_fragment`'s and is tested there. What is
+left here is `hub`'s own part — the owner it attaches — and the two contracts a
+caller of `hub` depends on: the fragments this package ships all read, and a
+shape the reader cannot understand still stops `hub` rather than being skipped.
+That silence is what lost sushidsp's fragment until 2026-09-22.
 """
 
 from __future__ import annotations
 
 import pytest
 
-from sushistack.setup.dependency_source import _parse_manifest
+from sushistack.setup.dependency_source import SHARED_OWNER, _parse_manifest
 
 
 def _fragment(tmp_path, text: str):
@@ -20,33 +21,24 @@ def _fragment(tmp_path, text: str):
     return path
 
 
-def test_one_table_per_dependency_is_the_shape(tmp_path):
-    """Each top-level table becomes a dependency keyed by its name."""
+def test_every_dependency_carries_the_module_that_declared_it(tmp_path):
+    """Ownership is `hub`'s question: the file says what, not who is asking."""
     path = _fragment(tmp_path, """
 [sdl2]
 description = "Audio device backend."
-required = true
 linux_apt = ["libsdl2-dev"]
-windows_vcpkg = ["sdl2"]
 """)
 
-    deps, depends_on = _parse_manifest(path, "sushidsp")
+    deps, _ = _parse_manifest(path, "sushidsp")
 
     assert [d.name for d in deps] == ["sdl2"]
-    assert deps[0].required is True
+    assert deps[0].owner == "sushidsp"
     assert deps[0].linux_apt == ["libsdl2-dev"]
-    assert depends_on == []
 
 
-def test_the_module_table_is_metadata_rather_than_a_dependency(tmp_path):
-    """[module] carries depends_on and never becomes a Dependency of its own."""
-    path = _fragment(tmp_path, """
-[module]
-depends_on = ["sushiruntime"]
-
-[hwloc]
-description = "Topology."
-""")
+def test_the_module_table_still_yields_depends_on(tmp_path):
+    """`hub` reads the metadata table through the same reader as everything else."""
+    path = _fragment(tmp_path, '[module]\ndepends_on = ["sushiruntime"]\n\n[hwloc]\n')
 
     deps, depends_on = _parse_manifest(path, "sushiblas")
 
@@ -54,32 +46,27 @@ description = "Topology."
     assert depends_on == ["sushiruntime"]
 
 
-def test_an_array_of_tables_is_refused_rather_than_skipped(tmp_path):
-    """The shape that used to lose a fragment silently now names itself."""
-    path = _fragment(tmp_path, """
-[[dependency]]
-name = "sdl2"
-required = true
-linux_apt = ["libsdl2-dev"]
-""")
+def test_a_shape_the_reader_refuses_still_stops_hub(tmp_path):
+    """Delegating must not turn a refusal back into a silent skip."""
+    path = _fragment(tmp_path, '[[dependency]]\nname = "sdl2"\n')
 
     with pytest.raises(ValueError) as caught:
         _parse_manifest(path, "sushidsp")
 
-    assert "dependency" in str(caught.value)
     assert str(path) in str(caught.value)
 
 
-def test_a_scalar_at_the_top_level_is_refused_too(tmp_path):
-    """Any non-table top-level key is a shape the reader does not understand."""
-    path = _fragment(tmp_path, 'version = "1"\n\n[sdl2]\ndescription = "x"\n')
+def test_a_dependency_that_names_no_owner_belongs_to_the_shared_set(tmp_path):
+    """The packaged fragments have no module behind them; SHARED_OWNER says so."""
+    path = _fragment(tmp_path, "[cmake]\n")
 
-    with pytest.raises(ValueError):
-        _parse_manifest(path, "sushidsp")
+    deps, _ = _parse_manifest(path, SHARED_OWNER)
+
+    assert deps[0].owner == SHARED_OWNER
 
 
-def test_the_repository_fragments_all_parse(tmp_path):
-    """Every fragment this package ships reads without raising."""
+def test_the_fragments_this_package_ships_all_read():
+    """A shipped fragment that stopped parsing would break every install."""
     from sushistack.setup.dependency_source import packaged_manifests
 
     with packaged_manifests() as directory:
