@@ -368,8 +368,7 @@ class DetectStep(Step):
         from ..config import workspace_root
         from ..services import links
         from ..services.catalog import CATALOG
-        from ..services.modules import module_dest
-        from ..services.presence import Presence, describe, presence_of
+        from ..services.presence import Presence, describe, module_dir, presence_of
 
         try:
             root = workspace_root()
@@ -379,7 +378,7 @@ class DetectStep(Step):
         linked = links.registered()
         console.info("Module readiness:")
         for name in owner_order(self._source, CATALOG):
-            dest = module_dest(root, name)
+            dest = module_dir(root, name, linked)
             state = presence_of(root, name, linked)
             if state is Presence.BINARY:
                 _, text = describe(root, name, linked)
