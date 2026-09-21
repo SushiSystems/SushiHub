@@ -365,7 +365,8 @@ class DetectStep(Step):
         dependencies it needs (its own plus the modules it builds on) are
         present. A binary install builds nothing, so it needs nothing.
         """
-        from ..config import registered_modules, workspace_root
+        from ..config import workspace_root
+        from ..services import links
         from ..services.catalog import CATALOG
         from ..services.modules import module_dest
         from ..services.presence import Presence, describe, presence_of
@@ -375,7 +376,7 @@ class DetectStep(Step):
         except SystemExit:
             return
 
-        linked = registered_modules()
+        linked = links.registered()
         console.info("Module readiness:")
         for name in owner_order(self._source, CATALOG):
             dest = module_dest(root, name)

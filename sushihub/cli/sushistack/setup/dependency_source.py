@@ -28,7 +28,8 @@ except ModuleNotFoundError:  # Python 3.10 fallback
     import tomli as tomllib
 
 from .. import console
-from ..config import config_dir, registered_modules, workspace_root
+from ..config import config_dir, workspace_root
+from ..services import links
 from ..services.presence import is_binary
 
 #: Path, relative to a module's repo root, of the fragment it contributes.
@@ -162,7 +163,7 @@ def manifest_sources() -> list[tuple[Path, str]]:
     # Modules linked to external checkouts (a developer's working repos that live
     # outside the workspace tree) contribute their fragment too.
     seen = {p for p, _ in sources}
-    for name, module_path in registered_modules().items():
+    for name, module_path in links.registered().items():
         fragment = Path(module_path) / MODULE_MANIFEST_REL
         if fragment.is_file() and fragment not in seen:
             sources.append((fragment, name))

@@ -14,16 +14,9 @@ import subprocess
 from pathlib import Path
 
 from .. import console
-from ..config import (
-    MODULES_FILE,
-    WORKSPACE_MARKER,
-    config_dir,
-    deps_dir,
-    registered_modules,
-    workspace_root,
-)
+from ..config import WORKSPACE_MARKER, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
-from . import licence_file, releases, session
+from . import licence_file, links, releases, session
 from .catalog import CATALOG
 from .identity import ReleaseInfo, SushiAccount, SushiAccountError
 from .presence import Presence, describe, presence_of, read_release
@@ -59,7 +52,7 @@ def module_dest(root: Path, name: str) -> Path:
     A module registered via ``hub link`` resolves to that checkout; otherwise it is
     the conventional ``<workspace>/<directory>`` that ``hub add`` clones into.
     """
-    linked = registered_modules().get(name)
+    linked = links.registered().get(name)
     if linked:
         return Path(linked)
     return root / CATALOG[name].directory
@@ -75,24 +68,6 @@ def sushicore_dir(root: Path) -> Path | None:
     """
     pkg = root / SUSHICORE_NAME
     return pkg if (pkg / "pyproject.toml").is_file() else None
-
-
-def _write_link(name: str, path: Path) -> None:
-    """Record (or update) a module->path entry in modules.local.toml."""
-    registry = dict(registered_modules())
-    registry[name] = str(path)
-    target = config_dir() / MODULES_FILE
-    lines = [
-        "# Managed by `hub link`: modules pointed at existing checkouts outside the",
-        "# workspace tree. `hub` reads these to aggregate their dependency fragments",
-        "# and track them alongside cloned modules.",
-        "",
-        "[modules]",
-    ]
-    for key in sorted(registry):
-        lines.append(f'{key} = "{str(registry[key]).replace(chr(92), "/")}"')
-    lines.append("")
-    target.write_text("\n".join(lines), encoding="utf-8")
 
 
 def _run_git(args: list[str], cwd: Path) -> int:
@@ -325,7 +300,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
         console.info("Dry-run: showing actions without cloning or installing.")
 
     provision = provision or _provision
-    linked = registered_modules()
+    linked = links.registered()
     brought_in = False
     failed = False
     for name in resolved:
@@ -418,13 +393,13 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
         return 1
     if not (target / ".git").is_dir():
         console.warn(f"{target} is not a git checkout; linking anyway.")
-    already_linked = registered_modules().get(name) == str(target)
+    already_linked = links.registered().get(name) == str(target)
     if dry_run:
         console.info(f"(dry-run) would link {name} -> {target}")
         if already_linked or skip_install:
             return 0
         return provision(True)
-    _write_link(name, target)
+    links.write(name, target)
     console.success(f"Linked {name} -> {target}")
     fragment = target / MODULE_MANIFEST_REL
     if not fragment.is_file():
@@ -456,7 +431,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     # stale until someone remembers to pull the umbrella by hand.
     _self_update(root, dry_run=dry_run)
 
-    linked = registered_modules()
+    linked = links.registered()
     failed = False
     any_present = False
     for name in resolved:

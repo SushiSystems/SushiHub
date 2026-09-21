@@ -7,7 +7,7 @@ import json
 
 import pytest
 
-from sushistack.services import licence_file, modules, session
+from sushistack.services import licence_file, links, modules, session
 from sushistack.services.identity import SushiAccount
 from sushistack.services.licence_file import LICENCE_FILE
 from sushistack.services.presence import RELEASE_MANIFEST
@@ -22,7 +22,7 @@ from .test_releases import release_members, zip_bytes
 def workspace(tmp_path, monkeypatch):
     """Point `hub add` at a throwaway root where nothing is cloned or linked."""
     monkeypatch.setattr(modules, "workspace_root", lambda: tmp_path)
-    monkeypatch.setattr(modules, "registered_modules", lambda: {})
+    monkeypatch.setattr(links, "registered", lambda: {})
     monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
     monkeypatch.setattr(modules, "_run_git",
                         lambda args, cwd: pytest.fail(f"git ran: {args}"))

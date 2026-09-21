@@ -5,8 +5,8 @@ from __future__ import annotations
 import pytest
 
 from sushicore.workspace import WORKSPACE_CLI_DIR
-from sushistack.config import MODULES_FILE, registered_modules
-from sushistack.services import modules
+from sushistack.config import MODULES_FILE
+from sushistack.services import links, modules
 
 from .test_presence import Recorder
 
@@ -16,7 +16,7 @@ def cfg_dir(tmp_path, monkeypatch):
     """Point the link registry at a throwaway sushihub/cli directory.
 
     SUSHISTACK_HOME moves with it. Patching ``config_dir`` alone is not enough:
-    ``_write_link`` merges onto whatever ``registered_modules()`` answers, and that
+    ``links.write`` merges onto whatever ``links.registered()`` answers, and that
     reads the workspace root rather than ``config_dir()``. Left pinned to the
     repository root by the suite's conftest, every write here would merge onto the
     developer's own modules.local.toml -- green on a machine that happens to have
@@ -25,7 +25,7 @@ def cfg_dir(tmp_path, monkeypatch):
     target = tmp_path / WORKSPACE_CLI_DIR
     target.mkdir(parents=True)
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    monkeypatch.setattr(modules, "config_dir", lambda: target)
+    monkeypatch.setattr(links, "config_dir", lambda: target)
     return target
 
 
@@ -38,8 +38,8 @@ def recorder(monkeypatch):
 
 
 def test_the_registry_file_carries_a_modules_table(cfg_dir, tmp_path):
-    """_write_link writes a commented [modules] table naming the checkout."""
-    modules._write_link("sushiruntime", tmp_path / "checkouts" / "sushiruntime")
+    """links.write writes a commented [modules] table naming the checkout."""
+    links.write("sushiruntime", tmp_path / "checkouts" / "sushiruntime")
     text = (cfg_dir / MODULES_FILE).read_text(encoding="utf-8")
     assert "[modules]" in text
     assert "Managed by `hub link`" in text
@@ -48,26 +48,26 @@ def test_the_registry_file_carries_a_modules_table(cfg_dir, tmp_path):
 
 def test_entries_are_written_in_name_order(cfg_dir, tmp_path):
     """Two links land sorted by module name, whatever order they were written in."""
-    modules._write_link("sushiruntime", tmp_path / "a")
-    modules._write_link("sushiai", tmp_path / "b")
+    links.write("sushiruntime", tmp_path / "a")
+    links.write("sushiai", tmp_path / "b")
     body = (cfg_dir / MODULES_FILE).read_text(encoding="utf-8")
     assert body.index("sushiai") < body.index("sushiruntime")
 
 
 def test_relinking_replaces_the_path_rather_than_repeating_it(cfg_dir, tmp_path):
     """Linking the same module twice leaves one entry, pointing at the newer path."""
-    modules._write_link("sushiblas", tmp_path / "old")
-    modules._write_link("sushiblas", tmp_path / "new")
+    links.write("sushiblas", tmp_path / "old")
+    links.write("sushiblas", tmp_path / "new")
     text = (cfg_dir / MODULES_FILE).read_text(encoding="utf-8")
     assert text.count("sushiblas") == 1
     assert "new" in text
 
 
 def test_the_registry_reads_back_what_link_wrote(cfg_dir, tmp_path):
-    """registered_modules returns the name-to-path map _write_link recorded."""
+    """links.registered returns the name-to-path map links.write recorded."""
     checkout = tmp_path / "checkouts" / "sushiai"
-    modules._write_link("sushiai", checkout)
-    assert registered_modules() == {"sushiai": str(checkout).replace("\\", "/")}
+    links.write("sushiai", checkout)
+    assert links.registered() == {"sushiai": str(checkout).replace("\\", "/")}
 
 
 def test_link_refuses_sushicore(cfg_dir, recorder, tmp_path):
