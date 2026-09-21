@@ -20,7 +20,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Iterator
@@ -87,6 +87,68 @@ class Dependency:
         if platform == "windows" or self.linux_apt:
             return []
         return self.windows_vcpkg
+
+
+def _merge_ports(first: list[str], second: list[str]) -> list[str]:
+    """Union two package lists, keeping one entry per port with all its features.
+
+    A vcpkg port carries its feature set in brackets, so ``sdl2`` and
+    ``sdl2[vulkan]`` name one port at two strengths. Taking either alone would
+    drop a feature a module needs; the union keeps both.
+
+    Returns:
+        The ports in the order first met, each carrying every feature either
+        list asked for.
+    """
+    features: dict[str, list[str]] = {}
+    for port in [*first, *second]:
+        name, _, rest = port.partition("[")
+        wanted = [f.strip() for f in rest.rstrip("]").split(",") if f.strip()]
+        for feature in wanted:
+            if feature not in features.setdefault(name, []):
+                features[name].append(feature)
+        features.setdefault(name, [])
+    return [name + (f"[{','.join(f)}]" if f else "") for name, f in features.items()]
+
+
+def _merge(existing: Dependency, incoming: Dependency) -> tuple[Dependency, str]:
+    """Combine two declarations of one dependency without losing either.
+
+    Modules declare what they need, not what the workspace installs, so two
+    modules naming the same dependency differently are both right. The merge
+    takes the stronger of every field: required if either requires it, every
+    package either asks for, and GPU-only only when both say so. Ownership goes
+    to the first module that required it, because that is the module whose
+    absence would make the dependency unnecessary.
+
+    Returns:
+        The merged dependency, and a warning to print when a field could not be
+        merged and one had to be chosen; empty when nothing was lost.
+    """
+    lost = []
+    for field in ("check_cmd", "provides"):
+        one, two = getattr(existing, field), getattr(incoming, field)
+        if one and two and one != two:
+            lost.append(field)
+    owner = existing.owner
+    if incoming.required and not existing.required:
+        owner = incoming.owner
+    merged = replace(
+        existing,
+        owner=owner,
+        description=existing.description or incoming.description,
+        required=existing.required or incoming.required,
+        gpu_only=existing.gpu_only and incoming.gpu_only,
+        linux_apt=_merge_ports(existing.linux_apt, incoming.linux_apt),
+        windows_vcpkg=_merge_ports(existing.windows_vcpkg, incoming.windows_vcpkg),
+        check_cmd=existing.check_cmd or incoming.check_cmd,
+        provides=existing.provides or incoming.provides,
+    )
+    if not lost:
+        return merged, ""
+    return merged, (
+        f"{existing.owner} and {incoming.owner} declare '{existing.name}' with different "
+        f"{' and '.join(lost)}; {existing.owner}'s is the one used.")
 
 
 class IDependencySource(ABC):
@@ -249,8 +311,17 @@ class TomlDependencySource(IDependencySource):
     def __init__(self, sources: list[tuple[Path, str]] | None = None) -> None:
         self._sources = sources if sources is not None else manifest_sources()
         self._depends_on: dict[str, list[str]] = {}
+        self._merged: list[Dependency] | None = None
 
     def all(self) -> list[Dependency]:
+        """Return every declared dependency, merged first-wins by name.
+
+        Read once and kept: several steps of one run ask for the set, the files
+        do not change under them, and a duplicate would otherwise be reported
+        again for each asking.
+        """
+        if self._merged is not None:
+            return list(self._merged)
         if not self._sources:
             raise FileNotFoundError(
                 "No dependency manifests found. Expected at least "
@@ -265,13 +336,13 @@ class TomlDependencySource(IDependencySource):
                 self._depends_on.setdefault(owner, []).extend(depends_on)
             for dep in deps:
                 if dep.name in merged:
-                    console.warn(
-                        f"Duplicate dependency '{dep.name}' in {path.name} "
-                        "ignored; the first fragment to declare it wins."
-                    )
+                    merged[dep.name], warning = _merge(merged[dep.name], dep)
+                    if warning:
+                        console.warn(warning)
                     continue
                 merged[dep.name] = dep
-        return list(merged.values())
+        self._merged = list(merged.values())
+        return list(self._merged)
 
     def depends_on(self, module: str) -> list[str]:
         """Modules the given module directly builds on (``[module] depends_on``).
