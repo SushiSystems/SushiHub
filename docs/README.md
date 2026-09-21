@@ -42,6 +42,8 @@ Each component's own facts live beside its code:
 
 - `reference/CHANGELOG.md` — one line per meaningful change, newest first.
 - `reference/GLOSSARY.md` — the words this repository uses in a specific sense.
+- `reference/MODULE_MANIFEST.md` — `sushi-module.toml`, the file a module writes to say what
+  it is, and what `hub` does when it is absent.
 - `reference/KNOWN_ISSUES.md` — failures that turn out to be a toolchain, a package manager or a
   vendor, with the symptom, the cause and the rule for each.
 
