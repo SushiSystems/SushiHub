@@ -37,9 +37,17 @@ code: `manifests/base.deps.toml` holds the shared tools and each module declares
 by walking up for a marker rather than from the package location, which is what makes the rest
 of this design cheap.
 
-`sushidsp` and `sushitrack` carry no `sushistack.deps.toml` and name `sushiruntime` in no cmake
-file. The dependency graph is `sushiruntime <- sushiblas <- sushiai <- sushiengine`; the other
-two stand beside it rather than in it.
+`sushidsp` and `sushitrack` name `sushiruntime` in no cmake file, and they share none of the
+stack's weight. Measured 2026-09-22: no file in either repository mentions SYCL, so the shared
+toolchain tree -- the reason the stack exists -- buys them nothing. The dependency graph is
+`sushiruntime <- sushiblas <- sushiai <- sushiengine`; the other two stand beside it rather than
+in it.
+
+Both do carry a `sushistack.deps.toml`, contrary to what this section claimed until 2026-09-22,
+and what they declare is small: `sushitrack` asks for GoogleTest, `sushidsp` for SDL2 and,
+optionally, intel/llvm's clang++ as a plain C++ compiler. `sushidsp`'s fragment was written as an
+array of `[[dependency]]` tables, a shape the reader skipped without a word, so none of it was
+ever provisioned. The fragment was rewritten and the reader now refuses a shape it cannot read.
 
 ## 2. What is decided
 
