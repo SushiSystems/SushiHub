@@ -55,6 +55,24 @@ def test_the_offline_payload_matches_the_schema(tmp_path, monkeypatch):
     assert report.warnings == []
 
 
+def test_the_module_list_carries_the_catalog_and_nothing_else(tmp_path, monkeypatch):
+    """sushicore is a PyPI dependency of `hub`, so it is not one of the rows.
+
+    It had a row until 2026-09-22, reporting `missing` on every machine that took
+    sushicore from the index, which is every machine.
+    """
+    from sushistack.services.catalog import CATALOG
+
+    root = workspace(tmp_path / "ws", monkeypatch)
+    _real_checkout(root / "sushiruntime")
+
+    names = [r["name"] for r in status_report.build_status(
+        home=tmp_path, client_factory=_never_called).payload["modules"]]
+
+    assert names == list(CATALOG.names())
+    assert "sushicore" not in names
+
+
 def test_a_checkout_row_carries_its_branch_and_no_binary(tmp_path, monkeypatch):
     root = workspace(tmp_path / "ws", monkeypatch)
     _real_checkout(root / "sushiruntime")

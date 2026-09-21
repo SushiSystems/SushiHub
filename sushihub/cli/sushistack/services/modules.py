@@ -38,18 +38,6 @@ _GITIGNORE_LINES = [
 ]
 
 
-def sushicore_dir(root: Path) -> Path | None:
-    """Resolve the in-repo sushicore package, or None if it is missing.
-
-    sushicore ships inside this repository, so this is a fixed path, not a
-    search: ``<workspace>/sushicore``. :mod:`.status_report` uses it to report
-    whether the checkout is present; it is no longer used to locate anything to
-    inject, since ``sushicore`` is now an ordinary PyPI dependency.
-    """
-    pkg = root / SUSHICORE_NAME
-    return pkg if (pkg / "pyproject.toml").is_file() else None
-
-
 def _install_module_cli(name: str, dest: Path) -> bool:
     """Install a cloned module's own CLI (`sr`, `se`, …) so it is ready to use.
 
