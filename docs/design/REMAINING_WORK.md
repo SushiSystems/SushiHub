@@ -47,6 +47,11 @@ read from one place. Waves 0 through 6 landed on 2026-09-22, and wave 7 all but 
 
 ## Outside the programme
 
+- **SushiTrack's CLI carries what `sushicore` already provides.** Measured 2026-09-22: it
+  imports four `sushicore` modules where its siblings import nine to eleven, and keeps its own
+  `proc.py` (132 lines) and `env.py` (133) doing work `sushicore.proc` and `sushicore.build_env`
+  do. `sushiruntime`'s `env.py` carries the same debt at 188 lines. Plan:
+  `../agent/plans/2026-09-22-sushitrack-alignment.md`.
 - **`sushitrack`'s CLI has no tests, so `st setup` waits.** The command that creates its conda
   environment from `environment.yml` is designed and deferred: `cli/sushitrack_cli/` carries no
   pytest suite, no configuration and no `test` extra, and deciding what such a suite covers is
