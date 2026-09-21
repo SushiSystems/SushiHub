@@ -40,9 +40,9 @@ def test_every_entry_names_its_repository_and_directory():
 
 
 def test_sushiengine_is_the_one_module_sold_as_a_binary():
-    """BINARY_MODULE names sushiengine and nothing else."""
-    assert modules.BINARY_MODULE == "sushiengine"
-    assert modules.BINARY_MODULE in CATALOG
+    """Exactly one entry carries distribution = binary, and it is sushiengine."""
+    sold = [n for n in CATALOG if CATALOG[n].is_binary]
+    assert sold == ["sushiengine"]
 
 
 def test_sushicore_is_not_a_catalog_member():

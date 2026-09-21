@@ -36,12 +36,6 @@ from .releases import ReleaseCorrupt
 # checkout for anyone to manage -- cloning SushiStack already produced it.
 SUSHICORE_NAME = "sushicore"
 
-# The one module sold rather than published: it is cloned by whoever has access
-# to its repository and downloaded as a compiled release by everyone else. The
-# other five are open source and have a single path, the clone. See
-# docs/agent/specs/2026-09-05-hub-design.md, §3.
-BINARY_MODULE = "sushiengine"
-
 # How long `git ls-remote` may take to answer before the source counts as out of
 # reach, in seconds.
 REACHABLE_TIMEOUT = 15
@@ -352,7 +346,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             if not dry_run:
                 _install_module_cli(name, dest)
             continue
-        if name == BINARY_MODULE and (binary or not _source_reachable(mod.repo)):
+        if mod.is_binary and (binary or not _source_reachable(mod.repo)):
             if dry_run:
                 console.info(f"{name}: (dry-run) would install its release -> {dest}")
                 continue
@@ -360,7 +354,8 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
                 failed = True
             continue
         if binary:
-            console.error(f"{name}: only {BINARY_MODULE} is sold as a binary; every "
+            sold = [n for n in CATALOG if CATALOG[n].is_binary]
+            console.error(f"{name}: only {', '.join(sold)} is sold as a binary; every "
                           "other module is cloned. Drop --binary.")
             failed = True
             continue
