@@ -3,6 +3,8 @@
 One line per meaningful change, newest first. Format: date, a past-tense verb, what changed, and
 where, in backticks. No why; the reason lives in a design document the entry may link.
 
+- 2026-09-22 — Renamed the distribution to `sushihub` (`sushihub/cli/pyproject.toml`).
+- 2026-09-22 — Published `hub` to PyPI from a tag (`.github/workflows/release.yml`).
 - 2026-09-22 — Moved the workspace's own data into `.sushistack/workspace.toml` (`sushihub/cli/sushistack/config.py`).
 - 2026-09-22 — Shipped the tool's defaults and dependency manifests inside the package (`sushihub/cli/sushistack/defaults.toml`, `sushihub/cli/sushistack/manifests/`).
 - 2026-09-22 — Emptied `[tool]` rather than deleting the file under `hub remove`, which now shares it (`sushihub/cli/sushistack/setup/steps.py`).
