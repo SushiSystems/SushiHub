@@ -134,12 +134,17 @@ Then reinstall and check the version resolves through the new name:
 
 ```bash
 python sushihub/cli/install.py
-hub --version
-python -c "import sushistack; print(sushistack.__version__)"
+python -m pipx list --short
+hub --describe | python -c "import sys,json;print(json.load(sys.stdin)['version'])"
 ```
 
-`__version__` printing `0` means `version("sushihub")` did not find the distribution; that is a
-failure, not a warning.
+`pipx list` must show `sushihub` and no `sushistack-cli`. `--describe` must print `0.1.0`; `"0"`
+there means `version("sushihub")` did not find the distribution, which is a failure, not a
+warning. There is no `hub --version` flag — the describe payload is where the version lives.
+
+`python -c "import sushistack; print(sushistack.__version__)"` outside the pipx venv prints `0`
+and that is correct: the interpreter imports the source tree and has no installed distribution to
+read. Do not chase it.
 
 - [ ] **Step 5: Test and commit**
 

@@ -7,6 +7,6 @@ is the one place the version is written.
 from importlib.metadata import PackageNotFoundError, version
 
 try:
-    __version__ = version("sushistack-cli")
+    __version__ = version("sushihub")
 except PackageNotFoundError:
     __version__ = "0"

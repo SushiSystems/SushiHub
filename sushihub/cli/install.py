@@ -26,7 +26,7 @@ import sys
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-PACKAGE_NAME = "sushistack-cli"
+PACKAGE_NAME = "sushihub"
 
 
 def find_package_dir() -> Path:
@@ -85,10 +85,25 @@ def remove_legacy_shim(pipx: list[str]) -> None:
 		print(f"[INFO] Removed the old shim {shim}")
 
 
+def remove_legacy_package(pipx: list[str]) -> None:
+	"""Uninstall the distribution under the name it carried before 2026-09-22.
+
+	pipx keys a venv by distribution name, so the rename to `sushihub` leaves an
+	earlier `sushistack-cli` venv in place, owning a `hub` shim of its own. Which
+	one PATH resolves is then an accident.
+	"""
+	probe = subprocess.run([*pipx, "list", "--short"], capture_output=True, text=True)
+	if probe.returncode != 0 or "sushistack-cli" not in probe.stdout:
+		return
+	print("[INFO] Removing the sushistack-cli install this package was renamed from.")
+	run([*pipx, "uninstall", "sushistack-cli"])
+
+
 def install() -> int:
 	pkg_dir = find_package_dir()
 
 	pipx = ensure_pipx().split()
+	remove_legacy_package(pipx)
 	rc = run([*pipx, "install", "--force", "--editable", str(pkg_dir)])
 
 	if rc == 0:

@@ -21,7 +21,7 @@ CONTRACT_VERSION = "1"
 ALL_PRESENCE = ("cloned", "linked", "binary")
 
 #: Distribution whose version the catalogue reports.
-_DISTRIBUTION = "sushistack-cli"
+_DISTRIBUTION = "sushihub"
 
 
 def _plain(text: str) -> str:

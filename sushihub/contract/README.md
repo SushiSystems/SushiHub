@@ -97,9 +97,11 @@ desktop application without desktop code.
 
 `type` is one of `string`, `boolean`, `integer`, `number`, `path`, `choice`; a `choice` parameter
 carries its values in `choices`, and every other kind leaves that null. `version` is the installed
-`sushistack-cli` distribution's version, or `"0"` when `hub` runs from a source tree that was never
-installed. `contract` is the version of this document and these schemas; it changes when a key
-changes meaning.
+`sushihub` distribution's version, or `"0"` when `hub` runs from a source tree that was never
+installed. The distribution was called `sushistack-cli` until 2026-09-22; a consumer still asking
+for that name reads `"0"` rather than failing, so check this name before trusting a `"0"`.
+`contract` is the version of this document and these schemas; it changes when a key changes
+meaning.
 
 `applies_to` names the forms of module presence a command works on. Every command in this contract
 version lists all three, because none of them yet refuses one: `binary` is the form the sushiengine
