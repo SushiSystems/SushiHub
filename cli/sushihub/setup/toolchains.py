@@ -267,7 +267,7 @@ def install_intel_llvm(cfg: Config, dry_run: bool,
             console.warn(
                 "This bundle ships no compiler-rt sanitizer runtimes, so "
                 "`sr build --type asan` cannot link. Current bundles do carry "
-                "them — run [bold cyan]hub install --refresh-toolchains[/bold cyan] "
+                "them — run [bold][cmd]hub install --refresh-toolchains[/cmd][/bold] "
                 "to replace it. (A newer bundle is the fix; a separate LLVM "
                 "install is not.)")
         return str(root)
@@ -516,7 +516,7 @@ def _explain_acpp_skip(cfg: Config) -> None:
     console.warn("AdaptiveCpp (acpp) was skipped — it builds from source and its "
                  "LLVM development dependency is not available.")
     if cfg.is_windows:
-        console.info("Install it anytime with [bold cyan]sr setup acpp[/bold cyan] — "
+        console.info("Install it anytime with [bold][cmd]sr setup acpp[/cmd][/bold] — "
                      f"that downloads LLVM {LLVM_WINDOWS_VERSION} (~2-3 GB) into the "
                      "deps folder and builds acpp, no prompt.")
         console.info("Note: the intel/llvm bundle cannot supply this LLVM — it ships "

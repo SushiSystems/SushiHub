@@ -90,7 +90,7 @@ def _confirm(items, checked) -> bool:
     if chosen:
         console.console.print("[bold]The following dependencies will be downloaded:[/bold]")
         for key, label in chosen:
-            console.console.print(f"  [green]•[/green] [green]{key}[/green] — {label}")
+            console.console.print(f"  [success]•[/success] [success]{key}[/success] — {label}")
         console.console.print()
     else:
         console.warn("Nothing selected — this installs no toolchains.")

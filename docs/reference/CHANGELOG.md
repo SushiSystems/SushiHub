@@ -8,6 +8,8 @@ Releases are sectioned newest first. Sections older than the current release mov
 
 ## Unreleased
 
+- 2026-09-22 — Replaced raw Rich colour names with sushicore theme tokens in printed markup (`cli/sushihub/`).
+
 ## v0.2.0 — 2026-09-22
 
 - 2026-09-22 — Grouped the `hub doctor` table by owner and listed what is missing after it (`cli/sushihub/setup/steps.py`).
