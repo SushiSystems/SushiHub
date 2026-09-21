@@ -30,7 +30,7 @@ Each wave names what it waits on. Waves that wait on the same thing run in paral
 ## The decoupling programme
 
 Designed in `WORKSPACE_DECOUPLING.md`; the waves below are its §5, kept here so the order can be
-read from one place. Waves 0 through 4 landed on 2026-09-22; waves 5 through 7 are open.
+read from one place. Waves 0 through 4 landed on 2026-09-22; waves 5 through 8 are open.
 
 | Wave | Work | Waits on |
 |---|---|---|
@@ -39,9 +39,10 @@ read from one place. Waves 0 through 4 landed on 2026-09-22; waves 5 through 7 a
 | 2 | `ModuleCatalog` and a packaged `catalog.toml`; `sushidsp` and `sushitrack` leave the catalog. Landed 2026-09-22. | 1 |
 | 3 | `.sushistack` became a directory holding the workspace's own data in one `workspace.toml`; the defaults and the dependency manifests moved into the package. Landed 2026-09-22. | 2 |
 | 4 | The installers drop the clone and take `sushihub` from PyPI. The module CLIs do not publish; they stay editable from a checkout. Landed 2026-09-22. | 3 |
-| 5 | The desktop application draws the new fields and its fixtures are re-recorded. | 4 |
+| 5 | `sushicore` leaves the status table, the fixtures are re-recorded, Linux stops being pointed at `~/vcpkg`. Plan: `../agent/plans/2026-09-22-wave-5-the-application-sees-today.md`. | 4 |
 | 6 | `sushi-module.toml` and its reader; the catalog becomes the fallback. | 2 |
 | 7 | `sushidsp` and `sushitrack` gain their own install paths. | 2 |
+| 8 | The desktop application ships as `sushihub-gui`, reached as `pipx install "sushihub[gui]"`. | 5 |
 
 ## Outside the programme
 
