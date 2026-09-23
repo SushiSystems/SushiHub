@@ -18,10 +18,12 @@ import sys
 from typing import List, Optional
 
 import typer
+from sushicore import provision
+from sushicore.provision import home as provision_home
 from sushicore.typer_help import help_group
 
 from . import console
-from .config import upgrade_workspace, workspace_root
+from .config import deps_dir, upgrade_workspace, workspace_root
 from .describe import catalogue
 from .services.catalog import CATALOG
 from .services import gui as gui_svc
@@ -56,6 +58,8 @@ def _root(
         help="Print the command catalogue as JSON and exit."),
 ):
     """Select the output mode before any command body runs."""
+    provision.bind_console(console.current)
+    provision_home.bind_root(deps_dir)
     console.set_machine(json_output)
     if describe:
         # The catalogue is UTF-8 whatever the console's code page, like every JSON event.
