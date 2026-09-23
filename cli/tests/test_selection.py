@@ -1,6 +1,6 @@
 """A toolchain is selected because a present module asked for it."""
 
-from sushihub.setup.selection import ToolchainSelection, selection_from_source
+from sushihub.setup.selection import ToolchainSelection, components, selection_from_source
 
 from .conftest import MemorySource, dep
 
@@ -29,7 +29,7 @@ def test_a_shared_fragment_cannot_select_a_toolchain():
 
 def test_components_lists_selected_keys_in_catalogue_order():
     src = MemorySource([dep("oneapi", "sushiruntime"), dep("intel-llvm", "sushiruntime")])
-    assert selection_from_source(src).components() == ["intel-llvm", "oneapi", "gpu"]
+    assert components(selection_from_source(src)) == ["intel-llvm", "oneapi", "gpu"]
 
 
 def test_merged_applies_known_keys_only():
@@ -42,7 +42,8 @@ def test_build_pipeline_defaults_to_the_derived_selection(fake_cfg):
     from sushihub.setup.factory import build_pipeline
     src = MemorySource([dep("cmake"), dep("intel-llvm", "sushiruntime")])
     _pipeline, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[])
-    assert ctx.install_intel_llvm and not ctx.install_acpp and not ctx.oneapi and ctx.gpu
+    sel = ctx.selection
+    assert sel.install_intel_llvm and not sel.install_acpp and not sel.oneapi and ctx.gpu
 
 
 def test_build_pipeline_merges_an_explicit_selection_over_the_derived_one(fake_cfg):
@@ -50,7 +51,7 @@ def test_build_pipeline_merges_an_explicit_selection_over_the_derived_one(fake_c
     src = MemorySource([dep("intel-llvm", "sushiruntime")])
     _p, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[],
                              selection={"install_intel_llvm": False, "oneapi": True})
-    assert not ctx.install_intel_llvm and ctx.oneapi
+    assert not ctx.selection.install_intel_llvm and ctx.selection.oneapi
 
 
 def test_a_shipped_fragment_is_owned_by_the_name_in_its_filename():

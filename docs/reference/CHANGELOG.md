@@ -8,6 +8,7 @@ Releases are sectioned newest first. Sections older than the current release mov
 
 ## Unreleased
 
+- 2026-09-23 — Ran `hub install` and `hub remove` through sushicore.provision's pipeline and steps (`cli/sushihub/setup/`, `cli/pyproject.toml`).
 - 2026-09-22 — Replaced raw Rich colour names with sushicore theme tokens in printed markup (`cli/sushihub/`).
 
 ## v0.2.0 — 2026-09-22

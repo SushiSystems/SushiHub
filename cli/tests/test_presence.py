@@ -8,7 +8,6 @@ from sushihub.services import binary, git_ops, modules, pipx, presence, status_r
 from sushihub.services.presence import Presence
 from sushihub.setup import dependency_source, steps
 from sushihub.setup.pipeline import InstallContext
-from sushihub.setup.steps import DetectStep
 
 from .conftest import MemorySource, dep
 
@@ -193,11 +192,9 @@ def test_readiness_says_a_binary_module_has_nothing_to_build(tmp_path, monkeypat
     root = workspace(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     source = MemorySource([dep("cmake"), dep("vulkan", "sushiengine")])
-    step = DetectStep(source, managers=[],
-                      toolchain_status=lambda cfg, gpu: [], gpu_vendor=lambda: "none")
     recorder = Recorder()
     monkeypatch.setattr(steps, "console", recorder)
-    step._report_readiness(InstallContext(cfg=fake_cfg), source.all())
+    steps.report_readiness(source, InstallContext(cfg=fake_cfg), source.all())
     assert recorder.said("sushiengine: binary 1.4.2, nothing to build")
 
 

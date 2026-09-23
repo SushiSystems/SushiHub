@@ -35,7 +35,9 @@ from sushicore.config_base import (
 )
 from sushicore.workspace import (
     WORKSPACE_FILE,
+    WORKSPACE_HEADER,
     WORKSPACE_MARKER,
+    WORKSPACE_VERSION,
     has_marker,
     read_toml,
     resolve_env_path,
@@ -56,20 +58,6 @@ LEGACY_TOOL_FILE = "config.local.toml"
 
 #: The file `hub link` wrote its ``[modules]`` registry into before 2026-09-22.
 LEGACY_MODULES_FILE = "modules.local.toml"
-
-#: The value written into ``[workspace] version``, as a string so it can become "1.1".
-WORKSPACE_VERSION = "1"
-
-#: The comment block every writer puts at the top of ``workspace.toml``.
-WORKSPACE_HEADER = [
-    "# The SushiStack workspace's own data. `hub` locates this directory by walking up from the",
-    "# working directory, and everything it records about this machine lives in this one file.",
-    "#",
-    "# [workspace] version  the format's version, so a later `hub` can migrate this file.",
-    "# [modules]            name = path, written by `hub link`.",
-    "# [tool]               tool paths and the selected toolchain, written by `hub install`.",
-]
-
 
 def workspace_root(start: Path | None = None) -> Path:
     """Locate the SushiStack workspace root.

@@ -8,7 +8,11 @@ happens here, not in the steps.
 
 from __future__ import annotations
 
-from ..config import DEFAULT_ACTIVE_TOOLCHAIN, Config, load_config
+from functools import partial
+
+from sushicore.provision.sinks import WorkspaceSink
+
+from ..config import DEFAULT_ACTIVE_TOOLCHAIN, TOOLCHAINS, Config, load_config, workspace_root
 from .dependency_source import IDependencySource, TomlDependencySource
 from .package_managers import (
     AptManager,
@@ -21,7 +25,7 @@ from .package_managers import (
     YumManager,
     ZypperManager,
 )
-from .pipeline import InstallContext, InstallPipeline
+from .pipeline import InstallContext, InstallPipeline, ToolchainSelection
 from .selection import selection_from_source
 from .steps import (
     ConfigureStep,
@@ -29,12 +33,21 @@ from .steps import (
     InstallDepsStep,
     UninstallStep,
     VerifyStep,
+    report_readiness,
 )
 
 STEP_NAMES = ("detect", "install", "configure", "verify", "provision", "all")
 
 
+def _validated_toolchain(toolchain: str) -> str:
+    """Return *toolchain*, or raise ``ValueError`` when it is not one of ``TOOLCHAINS``."""
+    if toolchain not in TOOLCHAINS:
+        raise ValueError(f"Unknown toolchain '{toolchain}'. Choose one of {', '.join(TOOLCHAINS)}.")
+    return toolchain
+
+
 def _managers_for(cfg: Config) -> list[IPackageManager]:
+    """Return the package managers this platform installs through, in preference order."""
     if cfg.is_windows:
         return [WingetManager(), DirectDownloadWindowsManager(), VcpkgManager(cfg)]
     # VcpkgManager also serves Linux: it is the only route for ports with no apt
@@ -68,11 +81,13 @@ def build_pipeline(
 
     derived = selection_from_source(source)
     sel = (derived.merged(selection) if selection else derived).as_dict()
+    active_toolchain = _validated_toolchain(DEFAULT_ACTIVE_TOOLCHAIN)
 
     all_steps = {
-        "detect":    DetectStep(source, managers),
+        "detect":    DetectStep(source, managers,
+                                after_inventory=partial(report_readiness, source)),
         "install":   InstallDepsStep(source, managers),
-        "configure": ConfigureStep(),
+        "configure": ConfigureStep(WorkspaceSink(workspace_root())),
         "verify":    VerifyStep(),
     }
 
@@ -99,10 +114,9 @@ def build_pipeline(
         raise ValueError(f"Unknown step '{only}'. Choose from {STEP_NAMES}.")
 
     ctx = InstallContext(
-        cfg=cfg, gpu=sel["gpu"], dry_run=dry_run, oneapi=sel["oneapi"],
-        install_intel_llvm=sel["install_intel_llvm"], install_acpp=sel["install_acpp"],
-        active_toolchain=DEFAULT_ACTIVE_TOOLCHAIN,
-        refresh_toolchains=refresh_toolchains,
+        cfg=cfg, selection=ToolchainSelection(**sel), consumer="sushistack",
+        active_toolchain=active_toolchain,
+        refresh_toolchains=refresh_toolchains, dry_run=dry_run,
     )
     return InstallPipeline(ordered), ctx
 
@@ -121,6 +135,7 @@ def build_uninstall_pipeline(
     source = source or TomlDependencySource()
     managers = managers if managers is not None else _managers_for(cfg)
 
-    step = UninstallStep(source, managers)
-    ctx = InstallContext(cfg=cfg, gpu=gpu, dry_run=dry_run, everything=everything)
+    step = UninstallStep(source, managers, WorkspaceSink(workspace_root()))
+    ctx = InstallContext(cfg=cfg, selection=ToolchainSelection(gpu=gpu), consumer="sushistack",
+                         dry_run=dry_run, everything=everything)
     return InstallPipeline([step]), ctx
