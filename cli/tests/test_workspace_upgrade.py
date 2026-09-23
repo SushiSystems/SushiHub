@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from sushicore.provision.sinks import WorkspaceSink
 from sushicore.workspace import read_toml
 from sushihub.config import CHECKOUT_CLI_DIR, WORKSPACE_MARKER, upgrade_workspace, workspace_file
 
@@ -87,7 +88,7 @@ def test_hub_remove_empties_the_tool_table_and_keeps_the_registry(tmp_path, monk
     _old_workspace(tmp_path)
     upgrade_workspace(tmp_path)
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    UninstallStep(source=None, managers=[])._remove_config(
+    UninstallStep(source=None, managers=[], sink=WorkspaceSink(tmp_path))._remove_config(
         InstallContext(cfg=Config(platform="windows")))
     doc = read_toml(workspace_file(tmp_path))
     assert doc["tool"] == {}
@@ -105,6 +106,6 @@ def test_a_dry_run_of_hub_remove_leaves_the_tool_table(tmp_path, monkeypatch):
     upgrade_workspace(tmp_path)
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
     before = workspace_file(tmp_path).read_text(encoding="utf-8")
-    UninstallStep(source=None, managers=[])._remove_config(
+    UninstallStep(source=None, managers=[], sink=WorkspaceSink(tmp_path))._remove_config(
         InstallContext(cfg=Config(platform="windows"), dry_run=True))
     assert workspace_file(tmp_path).read_text(encoding="utf-8") == before

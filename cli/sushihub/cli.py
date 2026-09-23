@@ -58,7 +58,7 @@ def _root(
         help="Print the command catalogue as JSON and exit."),
 ):
     """Select the output mode before any command body runs."""
-    provision.bind_console(console.current)
+    provision.bind_console(lambda: console)
     provision_home.bind_root(deps_dir)
     console.set_machine(json_output)
     if describe:

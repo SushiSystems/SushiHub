@@ -1,57 +1,24 @@
 """Which heavy toolchains a run provisions, derived from the present modules.
 
-The workspace ships no toolchain list of its own: a toolchain component is
-wanted when a module's fragment declares a dependency of that name. The shared
-base fragments cannot select one, since they belong to no module. The rule is
-in `docs/agent/specs/2026-09-05-hub-design.md` §3. The GPU component is the
-exception: it provisions whatever GPU the machine has, so it is on unless the
-user turns it off (`docs/design/GPU_BACKEND_PROVISIONING.md` §3).
+The rule is in `docs/agent/specs/2026-09-05-hub-design.md` §3; the GPU
+component's exception is in `docs/design/GPU_BACKEND_PROVISIONING.md` §3.
 """
 
 from __future__ import annotations
 
-from dataclasses import dataclass, fields
-from typing import TYPE_CHECKING
+from sushicore.provision.pipeline import ToolchainSelection  # noqa: F401
 
 from ..config import CUSTOMIZABLE_COMPONENTS
 from .dependency_source import SHARED_OWNER, IDependencySource
-
-if TYPE_CHECKING:
-    from .pipeline import InstallContext
-
 
 #: Component fields that are on by default, whatever the modules declare.
 MACHINE_COMPONENTS = frozenset({"gpu"})
 
 
-@dataclass(frozen=True)
-class ToolchainSelection:
-    """The four customizable components of one install run, on or off."""
-
-    install_intel_llvm: bool
-    install_acpp: bool
-    oneapi: bool
-    gpu: bool
-
-    @classmethod
-    def from_context(cls, ctx: "InstallContext") -> "ToolchainSelection":
-        """Read the selection back off an install context."""
-        return cls(**{f.name: bool(getattr(ctx, f.name)) for f in fields(cls)})
-
-    def as_dict(self) -> dict[str, bool]:
-        """Return the selection as ``InstallContext`` field name -> value."""
-        return {f.name: bool(getattr(self, f.name)) for f in fields(self)}
-
-    def components(self) -> list[str]:
-        """List the selected component keys in ``CUSTOMIZABLE_COMPONENTS`` order."""
-        return [key for key, _label, field in CUSTOMIZABLE_COMPONENTS
-                if getattr(self, field)]
-
-    def merged(self, overrides: dict[str, bool]) -> "ToolchainSelection":
-        """Return a copy with the known field names in *overrides* applied."""
-        values = self.as_dict()
-        values.update({k: bool(v) for k, v in overrides.items() if k in values})
-        return ToolchainSelection(**values)
+def components(selection: ToolchainSelection) -> list[str]:
+    """List the component keys *selection* turns on, in ``CUSTOMIZABLE_COMPONENTS`` order."""
+    return [key for key, _label, field in CUSTOMIZABLE_COMPONENTS
+            if getattr(selection, field)]
 
 
 def selection_from_source(source: IDependencySource) -> ToolchainSelection:

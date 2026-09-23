@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from .. import console
 from ..setup import build_pipeline, build_uninstall_pipeline
-from ..setup.selection import ToolchainSelection
+from ..setup.selection import components
 
 
 def run(step: str = "all", dry_run: bool = False,
@@ -35,12 +35,12 @@ def run(step: str = "all", dry_run: bool = False,
         return 1
 
     if not detect_only:
-        names = ToolchainSelection.from_context(ctx).components()
+        names = components(ctx.selection)
         console.info(f"Installing: {', '.join(names) or 'base tools only'}.")
 
     # Gather consent for the heavy Windows LLVM download up front — before the
     # progress spinner starts — so the prompt is actually answerable.
-    if (not dry_run and step in ("all", "install", "provision") and ctx.install_acpp
+    if (not dry_run and step in ("all", "install", "provision") and ctx.selection.install_acpp
             and ctx.cfg.is_windows):
         from ..setup.toolchains import (
             LLVM_WINDOWS_VERSION, _confirm_timeout, _find_windows_llvm,

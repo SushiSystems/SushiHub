@@ -7,10 +7,10 @@ import re
 
 import pytest
 from sushicore import build_console
+from sushicore.provision import home as provision_home
+from sushicore.provision import steps as provision_steps
 
-from sushihub import config as hub_config
 from sushihub import console as hub_console
-from sushihub.setup import steps as steps_module
 from sushihub.setup.pipeline import InstallContext
 from sushihub.setup.steps import DetectStep
 
@@ -32,6 +32,10 @@ class _FixedConsole:
         """Hold the console to serve and whether it renders JSON events."""
         self._built = built
         self.machine = machine
+
+    def get(self):
+        """Return the console built by the test, as ``LazyConsole.get`` does."""
+        return self._built
 
     def attribute(self, name: str):
         """Resolve a console attribute the way ``LazyConsole.attribute`` does."""
@@ -56,9 +60,8 @@ def run_doctor(monkeypatch, fake_cfg):
     def run(rows):
         """Run the step over *rows* and return its result."""
         monkeypatch.setattr(DetectStep, "inventory_rows", lambda self, ctx, all_deps: list(rows))
-        monkeypatch.setattr(DetectStep, "_report_readiness", lambda self, ctx, all_deps: None)
-        monkeypatch.setattr(steps_module, "refresh_windows_path", lambda: None)
-        monkeypatch.setattr(hub_config, "deps_dir", lambda: "/deps")
+        monkeypatch.setattr(provision_steps, "refresh_windows_path", lambda: None)
+        monkeypatch.setattr(provision_home, "root", lambda: "/deps")
         return DetectStep(MemorySource([])).run(InstallContext(cfg=fake_cfg))
 
     return run

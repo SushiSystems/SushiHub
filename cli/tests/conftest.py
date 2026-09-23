@@ -44,7 +44,7 @@ def _bind_provision_console():
     it, any test that reaches real (unmocked) sushicore provisioning code fails
     with "sushicore.provision has no console".
     """
-    provision.bind_console(console.current)
+    provision.bind_console(lambda: console)
     yield
     provision.bind_console(None)
 
