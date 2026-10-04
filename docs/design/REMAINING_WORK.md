@@ -56,7 +56,7 @@ Designed 2026-10-04 in the SushiCore repository
 |---|---|---|
 | 1 | sushicore 0.7.0: the selection rule, the `depends_on` closure, the base fragment, a probe that reads legacy dependency trees. | Landed 2026-10-04, unpublished. |
 | 2 | `sd` and `st` take the new `setup` options. | Landed 2026-10-04. |
-| 2 | `sr`, `sb`, `sa` and `se` register the four commands. | Open. Waits on the owner installing the editable sushicore into those four pipx environments. |
+| 2 | `sr`, `sb`, `sa` and `se` register the four commands. | Landed 2026-10-04. |
 | 3 | Hub reads the rule and the base fragment from sushicore; a bare `hub install` installs one SYCL toolchain. | Landed 2026-10-04. |
 | 4 | The owner runs the real `setup` and build of each module, then tags and publishes sushicore 0.7.0. | Open. |
 
