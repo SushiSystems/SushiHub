@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from functools import partial
 
+from sushicore.provision import probe, selection
 from sushicore.provision.sinks import WorkspaceSink
 
 from ..config import DEFAULT_ACTIVE_TOOLCHAIN, TOOLCHAINS, Config, load_config, workspace_root
@@ -26,7 +27,6 @@ from .package_managers import (
     ZypperManager,
 )
 from .pipeline import InstallContext, InstallPipeline, ToolchainSelection
-from .selection import selection_from_source
 from .steps import (
     ConfigureStep,
     DetectStep,
@@ -56,6 +56,16 @@ def _managers_for(cfg: Config) -> list[IPackageManager]:
             VcpkgManager(cfg)]
 
 
+def derived_selection(source: IDependencySource, cfg: Config) -> ToolchainSelection:
+    """Return what a bare ``hub install`` installs for *source* on this machine.
+
+    The toolchains follow sushicore's rule. The GPU component is on whatever the
+    modules declare; ``docs/design/GPU_BACKEND_PROVISIONING.md`` §3 says why.
+    """
+    present = {name: found for name, found, _detail in probe.toolchain_status(cfg, False)}
+    return selection.derive(source, present).merged({"gpu": True})
+
+
 def build_pipeline(
     *,
     only: str = "all",
@@ -69,8 +79,9 @@ def build_pipeline(
     """Build the installer pipeline and its execution context.
 
     ``only`` selects a single step ('detect'|'install'|'configure'|'verify') or a
-    combo ('provision'|'all'). By default the toolchains the present modules
-    declare are provisioned, and nothing else. ``selection`` overrides that per
+    combo ('provision'|'all'). By default one toolchain per capability the present
+    modules require is provisioned, and none when the machine already holds one.
+    ``selection`` overrides that per
     component (keys: ``install_intel_llvm``, ``install_acpp``, ``oneapi``,
     ``gpu``), as gathered by ``hub install --customize``. ``source``/``managers``
     can be injected for tests.
@@ -79,7 +90,7 @@ def build_pipeline(
     source = source or TomlDependencySource()
     managers = managers if managers is not None else _managers_for(cfg)
 
-    derived = selection_from_source(source)
+    derived = derived_selection(source, cfg)
     sel = (derived.merged(selection) if selection else derived).as_dict()
     active_toolchain = _validated_toolchain(DEFAULT_ACTIVE_TOOLCHAIN)
 

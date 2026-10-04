@@ -291,8 +291,9 @@ def install(
     if customize:
         from .services import customize as customize_svc
         from .setup.dependency_source import TomlDependencySource
-        from .setup.selection import selection_from_source
-        defaults = selection_from_source(TomlDependencySource()).as_dict()
+        from .config import load_config
+        from .setup.factory import derived_selection
+        defaults = derived_selection(TomlDependencySource(), load_config()).as_dict()
         selection = customize_svc.choose_components(defaults)
         if selection is None:
             _finish(1)

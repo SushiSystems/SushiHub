@@ -37,7 +37,7 @@ Four things hold the coupling in place.
 - `install.sh:130` and `install.ps1:184` clone the repository before anything else runs.
 
 Two things are already decoupled and stay that way. No dependency name appears in installer
-code: `manifests/base.deps.toml` holds the shared tools and each module declares its own in a
+code: the base fragment (in sushicore since 2026-10-04) holds the shared tools and each module declares its own in a
 `sushistack.deps.toml` that `hub install` aggregates. And `config.py:35` resolves the workspace
 by walking up for a marker rather than from the package location, which is what makes the rest
 of this design cheap.
@@ -78,6 +78,12 @@ ever provisioned. The fragment was rewritten and the reader now refuses a shape 
   holding six.
 - `sushicore` moves to its own repository and both it and `sushihub` publish to PyPI.
 - The binary distribution of `sushiengine` does not change.
+- Decided 2026-10-04: `hub` is optional for building a module. Every module CLI provisions
+  itself through `sushicore.provision` and `hub` runs the same code over a whole workspace. The
+  toolchain selection rule and the base fragment left this repository for sushicore that day,
+  and a bare `hub install` installs one SYCL toolchain where it installed three. The engine's
+  binary still arrives through `hub` and a licence. Design: the SushiCore repository's
+  `docs/agent/specs/2026-10-04-standalone-provision-design.md`.
 
 ## 3. The bricks
 
@@ -106,7 +112,7 @@ falls back to the catalog entry. The four modules adopt the file at their own pa
 
 The marker `.sushistack` becomes a directory and holds what belongs to the workspace:
 `workspace.toml`, `modules.toml` and `config.local.toml`. The committed defaults belong to the
-tool rather than to the workspace, so `config.toml`, `manifests/base.deps.toml` and
+tool rather than to the workspace, so `config.toml`, the base fragment and
 `manifests/gui.deps.toml` move into the `sushihub` package. `WORKSPACE_CLI_DIR` leaves
 `sushicore`, and `workspace_root` stops accepting the manifests tree as a marker.
 

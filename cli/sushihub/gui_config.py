@@ -21,7 +21,7 @@ from sushicore.config_base import load_tool_config
 from sushicore.profile import ModuleProfile
 from sushicore.stack_config import StackConfig
 
-from .config import deps_dir, packaged_defaults, workspace_file, workspace_root
+from .config import packaged_defaults, workspace_file, workspace_root
 
 #: How the desktop application describes itself to the shared build machinery.
 #: Read by the environment snapshot's cache key and by the run target, so the
@@ -88,18 +88,6 @@ class GuiConfig(StackConfig):
             The expanded ``cxx`` when one is configured, else the empty string.
         """
         return self.expand(self.cxx) if self.cxx else ""
-
-    def standalone_deps_dir(self, root: Path) -> Path:
-        """Return the dependency tree to use when no workspace marker is found.
-
-        The application ships inside the workspace, so this is reached only when
-        the marker is gone; ``hub``'s own fallback is then the single answer both
-        halves of the CLI give.
-
-        Args:
-            root: The application's source directory.
-        """
-        return deps_dir()
 
 
 def load_gui_config() -> GuiConfig:

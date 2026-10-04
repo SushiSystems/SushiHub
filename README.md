@@ -22,7 +22,12 @@ The repository carries two things of its own:
 | `gui/` | The desktop application: a screen for every `hub` command, over `hub --json`. | `gui/README.md` |
 
 The engine under every Sushi CLI is `sushicore`, which lives in its own repository and installs
-from PyPI: console, config, workspace resolution and the cmake driver.
+from PyPI: console, config, workspace resolution, the cmake driver and dependency provisioning.
+
+`hub` is not required to build a module. A module CLI provisions its own checkout with
+`setup` and reports on it with `doctor`, through the same `sushicore` code `hub install` runs.
+`hub` is what does that for several checkouts at once, and what fetches the engine's binary.
+`sd` and `st` have the two commands today; `docs/design/REMAINING_WORK.md` tracks the rest.
 
 Everything else under the workspace root is a module checkout `hub add` produces, or the
 `dependencies/` tree `hub install` fills. Neither is tracked here.
