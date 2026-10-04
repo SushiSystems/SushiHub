@@ -45,6 +45,16 @@ read from one place. Waves 0 through 6 landed on 2026-09-22, and wave 7 all but 
 | 7 | `sd setup` provisions sushidsp with `hub` or without it, and the fragment reader moved into `sushicore` 0.3.0. Landed 2026-09-22 except `st setup`, deferred until sushitrack's CLI can be tested. | 2 |
 | 8 | The desktop application ships as `sushihub-gui`, reached as `pipx install "sushihub[gui]"`. | 5 |
 
+## The standalone programme
+
+Designed 2026-10-04 in the SushiCore repository,
+`docs/agent/specs/2026-10-04-standalone-provision-design.md` there; draft, awaiting the owner's
+review. Every module CLI gains `setup`, `doctor`, `link` and `unlink` from `sushicore.provision`
+and hub stops being a precondition for building a module. Hub's share: `setup/selection.py` and
+the shared `manifests/base.deps.toml` move into sushicore, and a bare `hub install` installs one
+SYCL toolchain where it installed three. The move of `dependencies/` to `~/.sushisystems` waits
+on it.
+
 ## Outside the programme
 
 - **SushiTrack's CLI carries what `sushicore` already provides.** Measured 2026-09-22: it
