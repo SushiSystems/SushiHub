@@ -23,7 +23,7 @@ from rich.table import Table
 from rich.text import Text
 
 from .. import console
-from ..config import CUSTOMIZABLE_COMPONENTS
+from sushicore.provision.selection import COMPONENTS
 
 
 def _getch() -> tuple[str, str]:
@@ -81,7 +81,7 @@ def _render(items, checked, focus):
 
 def _selection_from_checked(items, checked) -> dict[str, bool]:
     enabled = {items[i][2] for i in range(len(items)) if checked[i]}
-    return {field: (field in enabled) for _k, _l, field in CUSTOMIZABLE_COMPONENTS}
+    return {component.field: (component.field in enabled) for component in COMPONENTS}
 
 
 def _confirm(items, checked) -> bool:
@@ -115,7 +115,7 @@ def choose_components(defaults: dict[str, bool] | None = None) -> dict[str, bool
     """
     from rich.live import Live
 
-    items = list(CUSTOMIZABLE_COMPONENTS)
+    items = [(component.key, component.label, component.field) for component in COMPONENTS]
     checked = _initial_checks(items, defaults)
     if not sys.stdin.isatty():
         console.warn("Not a TTY; --customize needs an interactive terminal. "

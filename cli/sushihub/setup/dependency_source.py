@@ -6,8 +6,9 @@ The installer must not hard-code package names. Instead it asks an
 SushiStack owns no single manifest. Each module declares what it needs, and the
 installer aggregates those fragments into one shared dependency set:
 
-  * ``sushihub/manifests/*.deps.toml`` — base fragments shipped inside this
-    package (the module-independent build/toolchain infrastructure).
+  * sushicore's base fragment — the build infrastructure every module shares.
+  * ``sushihub/manifests/*.deps.toml`` — fragments for the components this
+    package ships, such as the desktop application.
   * ``<module>/cli/sushistack.deps.toml`` — a fragment a module contributes from
     its own repo (kept under cli/, not the repo root).
 
@@ -23,6 +24,7 @@ from pathlib import Path
 from typing import Iterator
 
 from sushicore import deps_fragment
+from sushicore.provision import manifests
 from sushicore.provision.fragments import (  # noqa: F401
     Dependency,
     IDependencySource,
@@ -44,9 +46,6 @@ MANIFESTS_DIR = "manifests"
 #: Suffix every shipped fragment's filename carries; what precedes it names the owner.
 SHIPPED_MANIFEST_SUFFIX = ".deps.toml"
 
-#: Stem of the shipped fragment that belongs to no single component.
-SHARED_MANIFEST_STEM = "base"
-
 #: Reserved table name a fragment uses to declare module-level metadata
 #: (currently ``depends_on``) rather than a dependency. Owned by
 #: :mod:`sushicore.deps_fragment`, re-exported here for the callers that name it.
@@ -54,13 +53,11 @@ MODULE_META_TABLE = deps_fragment.MODULE_TABLE
 
 
 def _owner_for_shipped(path: Path) -> str:
-    """Name the component a shipped fragment belongs to.
+    """Name the component a fragment this package ships belongs to.
 
-    ``base.deps.toml`` is the infrastructure every module shares and is owned by
-    :data:`SHARED_OWNER`; every other fragment this repository ships belongs to
-    the component its filename names, so ``gui.deps.toml`` is the desktop
-    application's alone. The distinction is what keeps a component's ports out
-    of the shared set that decides which toolchains get provisioned.
+    Every fragment hub ships belongs to the component its filename names, so
+    ``gui.deps.toml`` is the desktop application's alone. That keeps a
+    component's ports out of the shared set every module reads.
 
     Args:
         path: A fragment under the package's ``manifests/`` directory.
@@ -68,9 +65,9 @@ def _owner_for_shipped(path: Path) -> str:
     Returns:
         The owner label the dependencies read from *path* carry.
     """
-    stem = path.name[: -len(SHIPPED_MANIFEST_SUFFIX)] if path.name.endswith(
-        SHIPPED_MANIFEST_SUFFIX) else path.stem
-    return SHARED_OWNER if stem == SHARED_MANIFEST_STEM else stem
+    if path.name.endswith(SHIPPED_MANIFEST_SUFFIX):
+        return path.name[: -len(SHIPPED_MANIFEST_SUFFIX)]
+    return path.stem
 
 
 @contextmanager
@@ -87,17 +84,17 @@ def packaged_manifests() -> Iterator[Path]:
 def manifest_sources() -> list[tuple[Path, str]]:
     """Every dependency fragment plus the module that owns it.
 
-    Each entry is ``(path, owner)``: a fragment this package ships is owned as
-    :func:`_owner_for_shipped` says;
-    a module's ``cli/sushistack.deps.toml`` is owned by the module's directory
-    name. Shipped fragments come first (sorted, stable order), then modules in
-    the workspace, then linked external checkouts.
+    Each entry is ``(path, owner)``. sushicore's base fragment comes first, owned
+    by :data:`SHARED_OWNER`; a fragment this package ships is owned as
+    :func:`_owner_for_shipped` says; a module's ``cli/sushistack.deps.toml`` is
+    owned by the module's directory name. Shipped fragments are sorted, then
+    come the modules in the workspace, then linked external checkouts.
 
     A binary install is skipped: the release carries the libraries it was built
     against, so a fragment left in its tree declares nothing this workspace has
     to provision.
     """
-    sources: list[tuple[Path, str]] = []
+    sources: list[tuple[Path, str]] = [(manifests.base_fragment(), manifests.BASE_OWNER)]
     with packaged_manifests() as manifests_dir:
         sources.extend((p, _owner_for_shipped(p))
                        for p in sorted(manifests_dir.glob("*" + SHIPPED_MANIFEST_SUFFIX)))

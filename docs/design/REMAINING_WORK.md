@@ -47,13 +47,20 @@ read from one place. Waves 0 through 6 landed on 2026-09-22, and wave 7 all but 
 
 ## The standalone programme
 
-Designed 2026-10-04 in the SushiCore repository,
-`docs/agent/specs/2026-10-04-standalone-provision-design.md` there; draft, awaiting the owner's
-review. Every module CLI gains `setup`, `doctor`, `link` and `unlink` from `sushicore.provision`
-and hub stops being a precondition for building a module. Hub's share: `setup/selection.py` and
-the shared `manifests/base.deps.toml` move into sushicore, and a bare `hub install` installs one
-SYCL toolchain where it installed three. The move of `dependencies/` to `~/.sushisystems` waits
-on it.
+Designed 2026-10-04 in the SushiCore repository
+(`docs/agent/specs/2026-10-04-standalone-provision-design.md` there, plan beside it under
+`docs/agent/plans/`). Every module CLI gains `setup`, `doctor`, `link` and `unlink` from
+`sushicore.provision` and hub stops being a precondition for building a module.
+
+| Wave | Work | State |
+|---|---|---|
+| 1 | sushicore 0.7.0: the selection rule, the `depends_on` closure, the base fragment, a probe that reads legacy dependency trees. | Landed 2026-10-04, unpublished. |
+| 2 | `sd` and `st` take the new `setup` options. | Landed 2026-10-04. |
+| 2 | `sr`, `sb`, `sa` and `se` register the four commands. | Open. Waits on the owner installing the editable sushicore into those four pipx environments. |
+| 3 | Hub reads the rule and the base fragment from sushicore; a bare `hub install` installs one SYCL toolchain. | Landed 2026-10-04. |
+| 4 | The owner runs the real `setup` and build of each module, then tags and publishes sushicore 0.7.0. | Open. |
+
+The move of `dependencies/` to `~/.sushisystems` waits on wave 4.
 
 ## Outside the programme
 

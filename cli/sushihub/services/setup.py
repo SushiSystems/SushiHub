@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from .. import console
 from ..setup import build_pipeline, build_uninstall_pipeline
-from ..setup.selection import components
+from sushicore.provision.selection import enabled_keys
 
 
 def run(step: str = "all", dry_run: bool = False,
@@ -35,7 +35,7 @@ def run(step: str = "all", dry_run: bool = False,
         return 1
 
     if not detect_only:
-        names = components(ctx.selection)
+        names = enabled_keys(ctx.selection)
         console.info(f"Installing: {', '.join(names) or 'base tools only'}.")
 
     # Gather consent for the heavy Windows LLVM download up front — before the

@@ -33,6 +33,7 @@ from sushicore.config_base import (
     write_toml_document,
     write_tool_section,
 )
+from sushicore.provision import selection
 from sushicore.workspace import (
     WORKSPACE_FILE,
     WORKSPACE_HEADER,
@@ -214,7 +215,7 @@ def deps_dir() -> Path:
 
 # The SYCL toolchains a user can select. Must match SR_SYCL_TOOLCHAIN in
 # CMakeLists.txt: intel-llvm (primary), adaptivecpp (secondary), oneapi (supported).
-TOOLCHAINS = ("intel-llvm", "adaptivecpp", "oneapi")
+TOOLCHAINS = selection.toolchain_keys()
 
 # Default compiler pair (cc, cxx) per toolchain. Used when the config does not
 # pin an explicit compiler, so `sr toolchain <name>` is enough to switch.
@@ -226,22 +227,9 @@ TOOLCHAIN_COMPILERS = {
     "oneapi": ("icx", "icpx"),
 }
 
-# `hub install` provisions EVERYTHING by default — all three SYCL toolchains
-# (intel/llvm, AdaptiveCpp, oneAPI) plus the detected GPU's toolkit. SYCL is
-# a heavy ecosystem by nature, so there is no footprint-vs-breadth profile to choose: a user who is
-# missing a toolchain will blame us, not their own narrowing. `hub install
-# --customize` is the escape hatch — a picker for users who deliberately want a
-# subset. ``active`` is written as the default SR_SYCL_TOOLCHAIN.
+# The toolchain ``hub install`` pins as the default SR_SYCL_TOOLCHAIN. Which toolchains a
+# run installs is sushicore's rule (``sushicore.provision.selection``).
 DEFAULT_ACTIVE_TOOLCHAIN = "intel-llvm"
-
-# The customizable, weighty components `hub install --customize` lets a user pick.
-# key -> (label, InstallContext field it gates). All default ON.
-CUSTOMIZABLE_COMPONENTS = (
-    ("intel-llvm",  "intel/llvm SYCL toolchain (clang++ -fsycl) — primary", "install_intel_llvm"),
-    ("adaptivecpp", "AdaptiveCpp (acpp) — secondary SYCL toolchain",        "install_acpp"),
-    ("oneapi",      "Intel oneAPI DPC++ (icx/icpx) — heavy, several GB",    "oneapi"),
-    ("gpu",         "Toolkit for this machine's GPU, detected automatically", "gpu"),
-)
 
 # Maps a Config field to the SR_* env var that overrides it.
 _ENV_OVERRIDES = {

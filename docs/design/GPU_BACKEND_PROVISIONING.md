@@ -56,7 +56,7 @@ A package `cli/sushihub/setup/gpu_backends/`, one responsibility per file.
 | `provisioning.py` | `provision_gpu_adapters`: reads the installed toolchain's commit once, then asks every registered spec's locator for its toolkit and hands a found one to `adapter_builder.build`. Reports every outcome through console and never raises. |
 
 The GPU component of `hub install` is on unless the user turns it off in `--customize`; no
-module has to declare a dependency for it (`setup/selection.py`, `MACHINE_COMPONENTS`). It means
+module has to declare a dependency for it (`setup/factory.py`, `derived_selection`). It means
 "provision whatever GPU this machine has": `probe.detect_gpu_vendor` asks `nvidia-smi` or
 `rocminfo` first, then classifies the display adapters, read from `lspci` on Linux and from
 `Win32_VideoController` through PowerShell on Windows. A discrete adapter wins over an integrated

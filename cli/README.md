@@ -118,21 +118,22 @@ the versions match, and downloads the new one and writes the licence file again 
 
 ## How dependencies are chosen
 
-`hub install` merges every `*.deps.toml` fragment the `sushistack` package ships with each present
-module's own
-`cli/sushistack.deps.toml`, keeps the entries that name a package for the current platform, and
-installs the ones that are missing. No dependency name lives in the installer code. The SYCL
-toolchains are sushiruntime's entries, not this repository's; the GPU toolkit is on for every
-workspace and follows the detected GPU vendor (`sushihub/setup/selection.py`); the base fragment carries
-only cmake, ninja, gtest, opencl and pkgconf.
+`hub install` merges sushicore's base fragment, every `*.deps.toml` fragment the `sushihub`
+package ships and each present module's own `cli/sushistack.deps.toml`, keeps the entries that
+name a package for the current platform, and installs the ones that are missing. No dependency
+name lives in the installer code. The SYCL toolchains are sushiruntime's entries, not this
+repository's; the GPU toolkit is on for every workspace and follows the detected GPU vendor
+(`sushihub/setup/factory.py`, `derived_selection`); the base fragment carries only cmake, ninja,
+gtest, opencl and pkgconf and ships in `sushicore.provision.manifests`.
 
-A shipped fragment is owned by the name in its filename, with `base.deps.toml` the exception
-that owns nothing and is owned by `shared`. So `gui.deps.toml`, which names the desktop
-application's imgui, glfw3 and nlohmann-json, is owned by `gui` and `hub doctor` groups those
-three rows under it.
+A fragment this package ships is owned by the name in its filename. So `gui.deps.toml`, which
+names the desktop application's imgui, glfw3 and nlohmann-json, is owned by `gui` and
+`hub doctor` groups those three rows under it. The base fragment's entries are owned by `shared`.
 
-The toolchain selection follows the same rule: a component is installed when a present module's
-fragment declares a dependency of that name, so an empty workspace gets the base tools alone.
+The toolchain selection is sushicore's rule (`sushicore.provision.selection`): for each
+capability a present module requires, nothing installs when the machine already holds a
+toolchain that provides it, and otherwise the first one the fragment declares installs. An
+empty workspace gets the base tools alone.
 `hub add` and `hub link` run the provision pipeline for the module they bring in, unless you pass
 `--skip-install`.
 

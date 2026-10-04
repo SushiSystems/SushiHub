@@ -91,10 +91,11 @@ module: neither is in the catalog, so neither can be cloned by name.
 
 They are not cut off, though. A checkout carrying `sushi-module.toml` is recognised without a
 catalog entry, so `hub link sushidsp <path>` works, `hub status` lists it, and `hub install`
-provisions what its dependency fragment declares. Each also provisions itself: `sd setup` reports
-what it needs and installs it under `--install`, handing the job to `hub install` when a
-workspace is there. `st setup` is designed and not yet written; until then `sushitrack` uses
-`conda env create -f environment.yml` as its own README says.
+provisions what its dependency fragment declares. Each also provisions itself without `hub`:
+`sd setup` and `st setup` install what the module's fragment declares into `~/.sushisystems`,
+and `sd doctor` and `st doctor` report what is still missing. `--dry-run` shows the run first.
+`sushitrack`'s Python environment is still made by hand, with
+`conda env create -f environment.yml`, as its own README says.
 
 Install each CLI from its checkout: `pipx install --force --editable sushidsp/cli`, and the same
 for `sushitrack/cli`.
@@ -114,13 +115,24 @@ an empty folder is enough.
 
 ## What `hub install` downloads
 
-What the modules in the workspace declare. In an empty workspace that is the base fragment
-alone: cmake, ninja, gtest, opencl and pkgconf. A toolchain arrives with the module that asks
-for it, so `hub add sushiruntime` is what pulls the intel/llvm SYCL bundle, AdaptiveCpp with the
-LLVM it builds against and oneAPI. The toolkit for this machine's GPU is the exception: `hub install`
-detects the GPU and installs its toolkit without being asked, and on Windows the CUDA installer
-asks once for administrator rights. Pass `--skip-install` to `hub add` or `hub link` to defer
-that, and `hub install --customize` to add or drop a component by hand, the GPU toolkit included.
+What the modules in the workspace need to build. In an empty workspace that is the base
+fragment alone: cmake, ninja, gtest, opencl and pkgconf. A toolchain arrives with the module that
+requires it, so `hub add sushiruntime` is what brings a SYCL toolchain.
+
+`sushiruntime` declares three toolchains that provide the same capability: intel/llvm,
+AdaptiveCpp and oneAPI. One is enough to build. When the machine already holds one, `hub install`
+downloads none; otherwise it installs the first the fragment declares, intel/llvm. Before
+2026-10-04 it installed all three. `hub install --customize` adds the others, and nothing already
+installed is removed.
+
+The toolkit for this machine's GPU is the exception: `hub install` detects the GPU and installs
+its toolkit without being asked, and on Windows the CUDA installer asks once for administrator
+rights. Pass `--skip-install` to `hub add` or `hub link` to defer that, and use `--customize` to
+drop it.
+
+The rule and the base fragment live in `sushicore.provision`, so a module CLI's own `setup`
+follows them too. `sd` and `st` have that command today; `sr`, `sb`, `sa` and `se` are next
+(`../design/REMAINING_WORK.md`).
 
 ## Checking the result
 
