@@ -14,12 +14,14 @@ place. The endpoints are in ``contract/sushi-account.md``.
 
 from __future__ import annotations
 
+import functools
 import webbrowser
 from typing import Callable, NamedTuple
 
 from .. import console
 from ..config import identity_url
-from .identity import Account, LoginError, SushiAccount
+from ..errors import SushiAccountError
+from .identity import Account, SushiAccount
 from .token_store import KeyringStore
 
 # The label every progress event of the login carries.
@@ -33,11 +35,26 @@ class Outcome(NamedTuple):
     payload: dict
 
 
+def _reported(command: Callable[..., Outcome]) -> Callable[..., Outcome]:
+    """Returns *command* wrapped to end a Sushi Account failure in one error line and code 1."""
+    @functools.wraps(command)
+    def wrapper(*args, **kwargs) -> Outcome:
+        """Runs the command and reports the failure it raised."""
+        try:
+            return command(*args, **kwargs)
+        except SushiAccountError as error:
+            console.error(str(error))
+            return Outcome(1, {})
+
+    return wrapper
+
+
 def client() -> SushiAccount:
     """Build the client every Sushi Account call uses: the configured server, the keyring."""
     return SushiAccount(identity_url(), KeyringStore())
 
 
+@_reported
 def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
     """Run the device grant to its end and store the session.
 
@@ -49,22 +66,14 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
             when None.
     """
     id_client = client()
-    try:
-        code = id_client.start_device_login()
-    except LoginError as error:
-        console.error(str(error))
-        return Outcome(1, {})
+    code = id_client.start_device_login()
 
     console.info(f"Your Sushi Account code is {code.user_code}.")
     console.info(f"Open {code.verification_uri} and enter it.")
     (open_browser or webbrowser.open)(code.verification_uri)
 
-    try:
-        id_client.wait_for_token(
-            code, on_poll=lambda polls: console.progress(LOGIN_LABEL, polls, 0, None))
-    except LoginError as error:
-        console.error(str(error))
-        return Outcome(1, {})
+    id_client.wait_for_token(
+        code, on_poll=lambda polls: console.progress(LOGIN_LABEL, polls, 0, None))
 
     account = id_client.me()
     email = account.email if account else ""
@@ -72,6 +81,7 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
     return Outcome(0, {"email": email})
 
 
+@_reported
 def logout() -> Outcome:
     """Forget the stored session, whether or not there was one."""
     client().logout()
@@ -79,6 +89,7 @@ def logout() -> Outcome:
     return Outcome(0, {})
 
 
+@_reported
 def whoami() -> Outcome:
     """Print the signed-in account as a two-column table."""
     account = client().me()
@@ -95,6 +106,7 @@ def whoami() -> Outcome:
     return Outcome(0, _payload(account))
 
 
+@_reported
 def license() -> Outcome:
     """Print the licences the signed-in account holds, one row each."""
     account = client().me()

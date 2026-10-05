@@ -3,7 +3,7 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Hub's pipeline steps: sushicore's shared steps, hub's verify step and readiness report."""
+"""Hub's pipeline steps: sushicore's shared steps and hub's readiness report."""
 
 from __future__ import annotations
 
@@ -17,7 +17,7 @@ from sushicore.provision.steps import (  # noqa: F401
 from .. import console
 from .dependency_source import SHARED_OWNER, Dependency, IDependencySource
 from .ordering import owner_order
-from .pipeline import InstallContext, Step, StepResult
+from .pipeline import InstallContext
 
 
 def _effective_required(source: IDependencySource, module: str,
@@ -77,14 +77,13 @@ def report_readiness(source: IDependencySource, ctx: InstallContext,
     Args:
         source: The dependency source whose ``all()`` produced *all_deps*.
     """
-    from ..config import workspace_root
+    from ..config import find_workspace_root
     from ..services import links
     from ..services.catalog import CATALOG
     from ..services.presence import Presence, describe, module_dir, presence_of
 
-    try:
-        root = workspace_root()
-    except SystemExit:
+    root = find_workspace_root()
+    if root is None:
         return
 
     linked = links.registered()
@@ -109,33 +108,3 @@ def report_readiness(source: IDependencySource, ctx: InstallContext,
         else:
             console.console.print(f"  [success]{name}: ready to build[/success]")
 
-
-class VerifyStep(Step):
-    """Build and smoke-test through the existing project service."""
-
-    name = "verify"
-
-    def run(self, ctx: InstallContext) -> StepResult:
-        """Build a release and run the functional suite, failing on either error."""
-        if ctx.dry_run:
-            console.info("(dry-run) skipping build/verify.")
-            return StepResult.SKIPPED
-
-        from ..services import project as project_svc
-        from ..services.project import BuildType, Suite
-
-        no_cuda = not ctx.gpu and ctx.cfg.platform != "windows"
-        rc = project_svc.build(BuildType.release, distributed=False,
-                               no_cuda=no_cuda, clean=False)
-        if rc != 0:
-            console.error("Build failed during verification.")
-            return StepResult.FAILED
-
-        rc = project_svc.test(Suite.functional, distributed=False,
-                              filter=None, asan=False, repeat=0)
-        if rc != 0:
-            console.warn("Functional smoke test reported failures.")
-            return StepResult.FAILED
-
-        console.success("Build + smoke test passed. Project is ready.")
-        return StepResult.OK

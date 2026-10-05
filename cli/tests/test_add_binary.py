@@ -16,7 +16,7 @@ from sushihub.services import binary, git_ops, licence_file, links, modules, pip
 from sushihub.services.identity import SushiAccount
 from sushihub.services.licence_file import LICENCE_FILE
 from sushihub.services.presence import RELEASE_MANIFEST
-from sushihub.services.token_store import MemoryStore, Tokens
+from sushihub.services.token_store import CredentialStoreError, MemoryStore, Tokens
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_presence import Recorder
@@ -247,3 +247,25 @@ def test_read_licence_expiry_is_none_when_the_token_is_not_a_jwt(tmp_path):
 def test_read_licence_expiry_is_none_when_the_payload_names_no_expiry(tmp_path):
     (tmp_path / LICENCE_FILE).write_text("header.eyJzdWIiOiAiYSJ9.sig", encoding="utf-8")
     assert licence_file.read_licence_expiry(tmp_path) is None
+
+
+class _UnusableStore:
+    """A credential store that cannot be read, as on a machine with no keyring backend."""
+
+    def load(self):
+        """Fails the way the keyring store does when the backend is missing."""
+        raise CredentialStoreError("The credential store is unusable: no backend.")
+
+
+@pytest.mark.parametrize("act", [
+    lambda dest: binary.add("sushiengine", dest, requested=True),
+    lambda dest: binary.update("sushiengine", dest),
+])
+def test_a_binary_install_reports_a_credential_store_it_cannot_read(
+        workspace, recorder, monkeypatch, act):
+    """add and update name the module, print the failure once and return False."""
+    client = SushiAccount("http://127.0.0.1:9", _UnusableStore(), now=lambda: 0.0)
+    monkeypatch.setattr(session, "client", lambda: client)
+
+    assert act(workspace / "sushiengine") is False
+    assert recorder.said("sushiengine: The credential store is unusable")

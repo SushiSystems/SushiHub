@@ -9,23 +9,27 @@ to the workspace rather than to a module. Every module has its own CLI: `sr` (su
 
 ```
 cli/
-  sushistack/            the Python package behind `hub`
-    cli.py               the Typer application: one function per subcommand
+  sushihub/              the Python package behind `hub`
+    cli.py               the Typer application, one function per subcommand, and `main()`
     config.py            workspace root, the workspace file, the packaged defaults
+    console.py           the console, and the failure line `main()` prints
+    describe.py          what `hub` adds to sushicore's `--describe` catalogue
+    errors.py            the failures `hub` reports as one line
     gui_config.py        the desktop application's profile, config and root
     gui_env.py           its build environment, vcvars snapshot included
     services/            module lifecycle, Sushi Account, releases, the licence file, the gui build policy
-    setup/               the dependency engine: manifests, package managers, toolchains, the pipeline
+    setup/               the dependency sources and the pipeline wiring over `sushicore.provision`
     defaults.toml        defaults for the [tool], [cli] and [identity] tables
     manifests/           dependency fragments this package ships (*.deps.toml)
-  install.py             installs `hub` into a pipx venv and injects sushicore
+  install.py             installs `hub` from this checkout into a pipx venv, editable
   pyproject.toml
 ```
 
 ## Commands
 
-`--json` and `--describe` are global: they go before the subcommand, and no row below repeats
-them. See "Machine-readable output".
+`--json`, `--describe` and `--version` are global: they go before the subcommand, and no row
+below repeats them. `hub --version` prints `sushihub` and its installed version. For the other
+two see "Machine-readable output".
 
 | Command | What it does |
 |---|---|
@@ -33,9 +37,9 @@ them. See "Machine-readable output".
 | `hub install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker over the toolchains and the GPU toolkit, which is on by default. `--yes` answers the LLVM-download prompt for unattended runs. `--refresh-toolchains` re-downloads an installed SYCL toolchain, which is otherwise reused forever; reused installs report the release they came from and say when they carry no sanitizer runtime. |
 | `hub add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|all> [--dry-run] [--skip-install] [--binary]` | Bring one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `hub install`. `--binary` installs sushiengine from its release rather than its source; see "Binary installs". Aliases: `sr`, `se`, `sa`, `sb`. |
 | `hub link <module> <path> [--dry-run] [--skip-install]` | Register an existing checkout outside the workspace as a module, without cloning, then provision what it declares. `--skip-install` leaves that to a later `hub install`. Same names and aliases as `hub add`. |
-| `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv and inject `sushicore`. Always editable. Same names, aliases and `all` as `hub add`. |
-| `hub update [module…] [--dry-run]` | Run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi Account for the latest release and downloads it when the version differs. No arguments means all. |
-| `hub sync [--dry-run]` | Install missing dependencies, then update every module. |
+| `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv; `sushicore` arrives from PyPI as its dependency. Always editable. Same names, aliases and `all` as `hub add`. |
+| `hub update [module…] [--dry-run]` | Upgrade `hub` itself, then run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi Account for the latest release and downloads it when the version differs. No arguments means all. |
+| `hub sync [--dry-run]` | Update every module, then install missing dependencies. |
 | `hub status [--json] [--check-updates]` | Which modules are present, in which form, on which branch and how far from upstream, and whether dependencies are installed. It reads the disk only; `--check-updates` first fetches every checkout and asks Sushi Account for each binary install's latest release. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `hub doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `hub remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
@@ -51,9 +55,18 @@ them. See "Machine-readable output".
 
 `hub --help` groups the commands under Workspace, Modules, Dependencies, Account and Desktop app,
 and each command's own help ends with examples. On a colour terminal the root screen shows the
-logo. On a dark terminal add `[cli]` and `background = "dark"` to `config.local.toml` in the
-`hub` checkout to give it a glow; `COLORFGBG` is read when the terminal sets it, and Windows
-Terminal does not.
+logo. On a dark terminal set `SUSHI_CLI_BACKGROUND=dark` to give it a glow; `COLORFGBG` is read
+when the terminal sets it, and Windows Terminal does not. The `[cli]` table is read from
+`<workspace>/sushihub/cli/config.toml` and `config.local.toml`, a directory only a workspace made
+before 2026-09-22 has.
+
+## Failures
+
+A failure you can act on is one error line and exit code 1: a command run outside a workspace, a
+configuration file that does not parse, Sushi Account out of reach or slow to answer, a machine
+with no usable credential store. Under `--json` that line is a `line` event of level `error`,
+followed by the `result` event with `ok` false. Anything else is a defect and keeps its traceback.
+A usage error is Click's: exit code 2 and no `result` event.
 
 Tab completion: run `hub --install-completion` once.
 
@@ -76,17 +89,18 @@ shapes, the stdout rule and the prompt rule for whoever is on the other end.
 
 ## Signing in
 
-sushiengine is sold; the other modules are not. `hub login` is how a machine proves a licence,
+sushiengine is sold; the other three modules are not. `hub login` is how a machine proves a licence,
 and nothing else in `hub` needs it: cloning a source-available module asks only for a Git identity.
 
 `hub login` asks Sushi Account for a device code, prints it with the page to type it into, opens that page
 in the browser, and polls until you approve it there. What comes back — an access token, a refresh
 token and an expiry — goes into the operating system's credential store through `keyring`, under
-service `sushistack` and username `sushi-account`. A later command that needs the account refreshes the
+service `sushihub` and username `sushi-account`. A later command that needs the account refreshes the
 access token when it is within 30 seconds of expiry; when the refresh is refused, the stored session
 is dropped and the command says nobody is signed in.
 
-Sushi Account lives at `https://account.sushisystems.io`, from `[identity] url` in `config.toml`.
+Sushi Account lives at `https://account.sushisystems.io`, from `[identity] url` in the packaged
+`defaults.toml`; the same key in `.sushistack/workspace.toml` wins over it.
 `SUSHI_ACCOUNT_URL` overrides it, which is how the tests point every Sushi Account call at a fake server on
 `127.0.0.1`. The six endpoints are written out in `../contract/sushi-account.md`; sushiweb has not built
 them yet.
@@ -146,11 +160,12 @@ empty workspace gets the base tools alone.
 | `<workspace>/sushiengine/sushi-release.json` | the release | Product, version, platform and what the package bundles. Its presence is what makes the directory a binary install. |
 | `<workspace>/sushiengine/sushi-licence.jwt` | `hub add`, `hub update` | The licence token the engine reads at start-up. Nothing but the token. |
 | `<workspace>/dependencies/` | `hub install`, `hub remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |
-| OS credential store, `sushistack` / `sushi-account` | `hub login`, `hub logout` | The Sushi Account session as one JSON document: both tokens and the access token's expiry. |
+| OS credential store, `sushihub` / `sushi-account` | `hub login`, `hub logout` | The Sushi Account session as one JSON document: both tokens and the access token's expiry. |
 
 ## Where sushicore comes from
 
-`hub` imports `sushicore` for its console, its config schema and its workspace helpers. The package
-is not on any index; `install.py` injects the checkout under `<workspace>/sushicore` into the
-pipx venv, editable. `SUSHICORE_DIR` or `hub link sushicore <path>` points it elsewhere. See
-`../../sushicore/docs/README.md`.
+`hub` imports `sushicore` for its console, its config schema, its workspace helpers, the provision
+pipeline, the `--describe` catalogue, `--version` and the entry point. It is an ordinary PyPI
+dependency (`sushicore>=0.7.0` in `pyproject.toml`), resolved by the same pipx install that
+installs `hub`. It is not a module: `hub link sushicore <path>` is refused. To work on both, install
+your sushicore checkout editable into `hub`'s venv, as `../docs/guides/LINKING_CHECKOUTS.md` says.

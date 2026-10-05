@@ -8,16 +8,19 @@
 from __future__ import annotations
 
 import pytest
+from sushicore.errors import SushiCoreError
 
 from sushihub.config import (
     CHECKOUT_CLI_DIR,
     DEFAULTS_FILE,
     WORKSPACE_MARKER,
     deps_dir,
+    find_workspace_root,
     packaged_defaults,
     workspace_file,
     workspace_root,
 )
+from sushihub.errors import WorkspaceNotFoundError
 
 
 @pytest.fixture
@@ -54,15 +57,27 @@ def test_the_old_marker_file_still_resolves(unpinned):
 def test_the_manifests_tree_no_longer_marks_a_workspace(unpinned):
     """A workspace is no longer a checkout, so cli/manifests marks nothing."""
     (unpinned / CHECKOUT_CLI_DIR / "manifests").mkdir(parents=True)
-    with pytest.raises(SystemExit):
+    with pytest.raises(WorkspaceNotFoundError):
         workspace_root(unpinned)
 
 
-def test_no_marker_anywhere_exits(unpinned):
-    """Resolution outside a workspace raises SystemExit naming the marker."""
-    with pytest.raises(SystemExit) as caught:
+def test_no_marker_anywhere_is_an_error_the_entry_point_reports(unpinned):
+    """Resolution outside a workspace raises a sushicore error naming the marker."""
+    with pytest.raises(WorkspaceNotFoundError) as caught:
         workspace_root(unpinned)
     assert WORKSPACE_MARKER in str(caught.value)
+    assert isinstance(caught.value, SushiCoreError)
+
+
+def test_find_workspace_root_answers_none_outside_a_workspace(unpinned):
+    """The query form reports absence as a value, for callers that have a fallback."""
+    assert find_workspace_root(unpinned) is None
+
+
+def test_find_workspace_root_finds_the_marker(unpinned):
+    """The query form resolves the same root the raising form does."""
+    (unpinned / WORKSPACE_MARKER).mkdir()
+    assert find_workspace_root(unpinned) == workspace_root(unpinned)
 
 
 def test_the_workspace_file_sits_inside_the_marker_directory(unpinned):

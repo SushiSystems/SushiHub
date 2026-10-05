@@ -10,6 +10,7 @@ from __future__ import annotations
 import hashlib
 import json
 import threading
+import urllib.error
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from types import SimpleNamespace
 
@@ -17,6 +18,7 @@ import keyring
 import keyring.backend
 import keyring.errors
 import pytest
+from sushicore.errors import SushiCoreError
 
 from sushihub.config import (
     DEFAULT_IDENTITY_URL,
@@ -27,6 +29,7 @@ from sushihub.config import (
 from sushihub.services import session
 from sushihub.services.identity import (
     Account,
+    AccountUnreachable,
     Licence,
     LicenceToken,
     LoginDenied,
@@ -41,6 +44,7 @@ from sushihub.services.identity import (
 from sushihub.services.token_store import (
     KEYRING_SERVICE,
     KEYRING_USERNAME,
+    CredentialStoreError,
     KeyringStore,
     MemoryStore,
     Tokens,
@@ -147,6 +151,106 @@ def test_keyring_store_reads_a_corrupt_entry_as_absent(backend):
 def test_keyring_store_clear_is_quiet_when_nothing_is_stored(backend):
     KeyringStore().clear()
     assert backend.passwords == {}
+
+
+class BrokenBackend(keyring.backend.KeyringBackend):
+    """A credential store whose every call fails, as on a machine with no backend."""
+
+    priority = 1
+
+    def get_password(self, service: str, username: str) -> str | None:
+        """Fails the way keyring does when no backend is installed."""
+        raise keyring.errors.NoKeyringError("No recommended backend was available.")
+
+    def set_password(self, service: str, username: str, password: str) -> None:
+        """Fails the way a refused write does."""
+        raise keyring.errors.PasswordSetError("refused")
+
+    def delete_password(self, service: str, username: str) -> None:
+        """Fails the way a locked store does."""
+        raise keyring.errors.KeyringLocked("locked")
+
+
+@pytest.fixture
+def broken_backend():
+    """Install the failing backend for one test and restore the real one after."""
+    previous = keyring.get_keyring()
+    keyring.set_keyring(BrokenBackend())
+    try:
+        yield
+    finally:
+        keyring.set_keyring(previous)
+
+
+def test_every_keyring_failure_is_a_credential_store_error(broken_backend):
+    """Reading, writing and clearing each wrap keyring's own error, cause kept."""
+    store = KeyringStore()
+    with pytest.raises(CredentialStoreError) as loading:
+        store.load()
+    assert isinstance(loading.value.__cause__, keyring.errors.NoKeyringError)
+    with pytest.raises(CredentialStoreError):
+        store.save(Tokens(access_token="a", refresh_token="r", expires_at=1.0))
+    with pytest.raises(CredentialStoreError):
+        store.clear()
+
+
+def test_the_account_errors_share_the_base_the_entry_point_catches():
+    """Every account failure derives from the error sushicore's entry point reports."""
+    assert issubclass(SushiAccountError, SushiCoreError)
+    assert issubclass(CredentialStoreError, SushiAccountError)
+    assert issubclass(AccountUnreachable, SushiAccountError)
+
+
+def _signed_in_over(http) -> SushiAccount:
+    """Return a client with a live session whose requests go through *http*."""
+    return SushiAccount("http://account.invalid",
+                        MemoryStore(Tokens("access-1", "refresh-1", 1e12)),
+                        http=http, now=lambda: 0.0)
+
+
+def test_a_refused_connection_is_reported_as_unreachable():
+    """A URLError becomes AccountUnreachable with the original as its cause."""
+    def refuse(request, timeout):
+        """Fails the way urlopen does when nothing listens."""
+        raise urllib.error.URLError("connection refused")
+
+    with pytest.raises(AccountUnreachable) as caught:
+        _signed_in_over(refuse).me()
+    assert "unreachable" in str(caught.value)
+    assert isinstance(caught.value.__cause__, urllib.error.URLError)
+
+
+def test_a_connect_timeout_is_reported_as_unreachable():
+    """A timeout while connecting becomes AccountUnreachable."""
+    def stall(request, timeout):
+        """Fails the way a socket does when the server never answers."""
+        raise TimeoutError("timed out")
+
+    with pytest.raises(AccountUnreachable):
+        _signed_in_over(stall).me()
+
+
+def test_a_read_timeout_is_reported_as_unreachable():
+    """A timeout while reading the answer becomes AccountUnreachable."""
+    class Stalled:
+        """An open response whose body never arrives."""
+
+        status = 200
+
+        def __enter__(self):
+            """Returns the response itself, as urlopen's does."""
+            return self
+
+        def __exit__(self, *exc) -> None:
+            """Closes nothing."""
+
+        def read(self) -> bytes:
+            """Fails the way a socket read does when the server goes quiet."""
+            raise TimeoutError("The read operation timed out")
+
+    with pytest.raises(AccountUnreachable) as caught:
+        _signed_in_over(lambda request, timeout: Stalled()).me()
+    assert isinstance(caught.value.__cause__, TimeoutError)
 
 
 class FakeIdState:
@@ -522,3 +626,42 @@ def test_license_says_so_when_the_account_holds_none(fake_id, monkeypatch):
     fake_id.state.licenses = []
     _bind(monkeypatch, fake_id, MemoryStore(Tokens("access-1", "refresh-1", 1e12)))
     assert session.license() == session.Outcome(0, {"licenses": []})
+
+
+@pytest.fixture
+def said(monkeypatch) -> list[str]:
+    """Collect every error line the account commands print."""
+    lines: list[str] = []
+    monkeypatch.setattr(session.console, "error", lines.append, raising=False)
+    return lines
+
+
+@pytest.mark.parametrize("command", [session.logout, session.whoami, session.license])
+def test_an_account_command_reports_a_failing_credential_store(
+        fake_id, monkeypatch, broken_backend, said, command):
+    """logout, whoami and license print one error line and return code 1."""
+    client = SushiAccount(fake_id.url, KeyringStore())
+    monkeypatch.setattr(session, "client", lambda: client)
+
+    assert command() == session.Outcome(1, {})
+    assert len(said) == 1 and "credential store" in said[0]
+
+
+def test_login_reports_a_session_it_could_not_store(fake_id, monkeypatch, broken_backend, said):
+    """A grant whose tokens cannot be stored ends login in one error line and code 1."""
+    client = SushiAccount(fake_id.url, KeyringStore(),
+                          sleep=lambda seconds: setattr(fake_id.state, "approved", True))
+    monkeypatch.setattr(session, "client", lambda: client)
+
+    assert session.login(open_browser=lambda uri: True) == session.Outcome(1, {})
+    assert len(said) == 1 and "credential store" in said[0]
+
+
+def test_whoami_reports_an_unreachable_server(monkeypatch, said):
+    """whoami prints one error line when Sushi Account does not answer."""
+    client = SushiAccount("http://127.0.0.1:9",
+                          MemoryStore(Tokens("access-1", "refresh-1", 1e12)), now=lambda: 0.0)
+    monkeypatch.setattr(session, "client", lambda: client)
+
+    assert session.whoami() == session.Outcome(1, {})
+    assert len(said) == 1 and "unreachable" in said[0]

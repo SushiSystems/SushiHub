@@ -93,3 +93,21 @@ def test_build_pipeline_honours_the_gpu_turned_off_in_customize(fake_cfg, bare_m
     _p, ctx = build_pipeline(only="detect", cfg=fake_cfg, source=src, managers=[],
                              selection={"gpu": False})
     assert not ctx.gpu
+
+
+@pytest.mark.parametrize("step", ["verify", "all"])
+def test_build_pipeline_knows_no_step_that_builds_a_module(fake_cfg, bare_machine, step):
+    """The verify and all steps are gone from the names and refused by the factory."""
+    from sushihub.setup.factory import STEP_NAMES, build_pipeline
+    assert step not in STEP_NAMES
+    with pytest.raises(ValueError):
+        build_pipeline(only=step, cfg=fake_cfg, source=MemorySource([dep("cmake")]), managers=[])
+
+
+def test_every_named_step_builds_a_pipeline(fake_cfg, bare_machine):
+    """Each name in STEP_NAMES yields a pipeline."""
+    from sushihub.setup.factory import STEP_NAMES, build_pipeline
+    for step in STEP_NAMES:
+        pipeline, _ctx = build_pipeline(only=step, cfg=fake_cfg,
+                                        source=MemorySource([dep("cmake")]), managers=[])
+        assert pipeline is not None

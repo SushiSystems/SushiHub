@@ -26,8 +26,8 @@ dependencies = [
 test = ["pytest>=7.0", "jsonschema>=4.0"]
 
 [project.scripts]
-hub = "sushihub.cli:app"
-sushihub = "sushihub.cli:app"
+hub = "sushihub.cli:main"
+sushihub = "sushihub.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]

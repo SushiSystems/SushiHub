@@ -27,6 +27,7 @@ from sushicore.profile import ModuleProfile
 from sushicore.stack_config import StackConfig
 
 from .config import packaged_defaults, workspace_file, workspace_root
+from .errors import GuiSourcesMissingError
 
 #: How the desktop application describes itself to the shared build machinery.
 #: Read by the environment snapshot's cache key and by the run target, so the
@@ -42,6 +43,9 @@ GUI_PROFILE = ModuleProfile(
 #: The application's directory, relative to the workspace root.
 GUI_DIR = Path("gui")
 
+#: The clone URL of the checkout that carries the application's sources.
+K_REPOSITORY_URL = "https://github.com/sushisystems/sushistack.git"
+
 
 def gui_root(workspace: Path | None = None) -> Path:
     """Locate the desktop application's source directory.
@@ -54,15 +58,15 @@ def gui_root(workspace: Path | None = None) -> Path:
         The directory holding the application's CMakeLists.txt.
 
     Raises:
-        SystemExit: When that directory carries no CMakeLists.txt, which is what
-            a workspace checked out without the application looks like.
+        GuiSourcesMissingError: That directory carries no CMakeLists.txt, which is
+            what a workspace made by `hub init` looks like.
     """
     root = (workspace or workspace_root()) / GUI_DIR
     if not (root / GUI_PROFILE.root_marker).is_file():
-        raise SystemExit(
+        raise GuiSourcesMissingError(
             f"No {GUI_PROFILE.name} sources at {root}: the workspace carries no "
-            f"{GUI_PROFILE.root_marker} there. Update the workspace checkout "
-            "(`hub update`) and try again.")
+            f"{GUI_PROFILE.root_marker} there. A workspace made by `hub init` does not "
+            f"carry it; `git clone {K_REPOSITORY_URL}` and run `hub gui` from that clone.")
     return root
 
 

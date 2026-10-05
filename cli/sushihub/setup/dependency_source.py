@@ -38,7 +38,7 @@ from sushicore.provision.fragments import (  # noqa: F401
     _parse_manifest,
 )
 
-from ..config import workspace_root
+from ..config import find_workspace_root
 from ..services import links
 from ..services.presence import is_binary
 
@@ -103,10 +103,7 @@ def manifest_sources() -> list[tuple[Path, str]]:
     with packaged_manifests() as manifests_dir:
         sources.extend((p, _owner_for_shipped(p))
                        for p in sorted(manifests_dir.glob("*" + SHIPPED_MANIFEST_SUFFIX)))
-    try:
-        root = workspace_root()
-    except SystemExit:
-        root = None
+    root = find_workspace_root()
     if root is not None:
         for module in sorted(p for p in root.iterdir() if p.is_dir()):
             if is_binary(module):
