@@ -12,7 +12,7 @@ the module's own and moved over it last, so a download that fails leaves the
 install that was there untouched.
 
 The shapes this reads are in ``contract/sushi-account.md``; the reason a
-binary install exists at all is docs/agent/specs/2026-09-05-hub-design.md, §5.
+binary install exists at all is docs/design/HUB.md, §5.
 """
 
 from __future__ import annotations

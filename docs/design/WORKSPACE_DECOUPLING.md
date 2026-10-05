@@ -1,15 +1,19 @@
 # Decoupling the hub from the SushiStack checkout
 
-**Status:** designed 2026-09-21. Waves 0 through 6 landed 2026-09-22, and wave 7 all but its
-`st setup` task; wave 8 is open.
-Each wave's plan is linked from its row in section 5, and the waves are mirrored into
+**Status:** Open — waves 0 to 7 landed; wave 8 is open.
+
+Designed 2026-09-21. Waves 0 through 6 landed 2026-09-22, and wave 7 all but its `st setup`
+task. Each wave's plan is named in its row in section 5, and the waves are mirrored into
 `REMAINING_WORK.md` so the order can be read from one place. Three breaking changes have shipped:
 wave 2 took `sushidsp` and `sushitrack` out of `hub add`, `hub link` and `hub install-cli`;
 wave 3 moved the workspace's data into `.sushistack/workspace.toml`; and the third was the
-tool's own name. The import package became `sushihub` and the CLI, the
-application and the contract moved to the repository root. `hub` went to 0.2.0: below 1.0 a
-breaking change is a minor bump, and 1.0.0 would declare the interface settled, which it is not.
-See `docs/agent/plans/2026-09-22-rename-to-sushihub.md`.
+tool's own name. The import package became `sushihub` and the CLI, the application and the
+contract moved to the repository root. `hub` went to 0.2.0: below 1.0 a breaking change is a
+minor bump, and 1.0.0 would declare the interface settled, which it is not.
+See `docs/archive/agent/plans/2026-09-22-rename-to-sushihub.md`.
+
+Sections 1 and 3 describe the code as it stood on 2026-09-21, before the waves landed. The file
+and line references in them are those of that date.
 
 ## 1. The problem
 
@@ -44,7 +48,7 @@ of this design cheap.
 
 `sushidsp` and `sushitrack` name `sushiruntime` in no cmake file, and they share none of the
 stack's weight. Measured 2026-09-22: no file in either repository mentions SYCL, so the shared
-toolchain tree -- the reason the stack exists -- buys them nothing. The dependency graph is
+toolchain tree, the reason the stack exists, buys them nothing. The dependency graph is
 `sushiruntime <- sushiblas <- sushiai <- sushiengine`; the other two stand beside it rather than
 in it.
 
@@ -68,11 +72,11 @@ ever provisioned. The fragment was rewritten and the reader now refuses a shape 
   door stays open without reopening the catalog.
 
   Why they are outside, measured rather than assumed: no file in either repository mentions
-  SYCL, so the shared toolchain tree -- the reason the stack exists -- buys them nothing.
+  SYCL, so the shared toolchain tree, the reason the stack exists, buys them nothing.
   `sushidsp`'s real-time path stays on the CPU for two reasons the owner named on 2026-09-22:
   the circuit solve is sample-serial, so there is no parallelism along the axis a GPU wants,
   and a nonlinearity inside a feedback loop would not survive floating point that differs
-  between machines. An offline path -- rendering, parameter fitting, batches -- is where
+  between machines. An offline path (rendering, parameter fitting, batches) is where
   `sushiruntime` could pay, and is a separate design if it is ever wanted.
 - `hub` is a tool and a workspace is data. A single checkout is a workspace; so is a directory
   holding six.
@@ -83,7 +87,7 @@ ever provisioned. The fragment was rewritten and the reader now refuses a shape 
   toolchain selection rule and the base fragment left this repository for sushicore that day,
   and a bare `hub install` installs one SYCL toolchain where it installed three. The engine's
   binary still arrives through `hub` and a licence. Design: the SushiCore repository's
-  `docs/agent/specs/2026-10-04-standalone-provision-design.md`.
+  `docs/design/STANDALONE_PROVISIONING.md`.
 
 ## 3. The bricks
 
@@ -110,8 +114,9 @@ falls back to the catalog entry. The four modules adopt the file at their own pa
 
 ### 3.3 The workspace directory
 
-The marker `.sushistack` becomes a directory and holds what belongs to the workspace:
-`workspace.toml`, `modules.toml` and `config.local.toml`. The committed defaults belong to the
+The marker `.sushistack` becomes a directory and holds what belongs to the workspace. The design
+named three files, `workspace.toml`, `modules.toml` and `config.local.toml`; wave 3 landed one,
+`workspace.toml`, with `[workspace]`, `[modules]` and `[tool]` tables. The committed defaults belong to the
 tool rather than to the workspace, so `config.toml`, the base fragment and
 `manifests/gui.deps.toml` move into the `sushihub` package. `WORKSPACE_CLI_DIR` leaves
 `sushicore`, and `workspace_root` stops accepting the manifests tree as a marker.
@@ -145,8 +150,8 @@ never disagree about the `--describe` contract. `sushihub` itself stays `py3-non
 platform we build no application for still installs the CLI. The product is about 3 MB
 (`sushihub_gui.exe` 2.4 MB plus `glfw3.dll` 484 KB), not the 262 MB build tree beside it.
 
-`hub gui run` keeps its meaning. It does not build today either -- it launches what the build
-tree holds -- so it gains a second place to look rather than a new job: the workspace's own build
+`hub gui run` keeps its meaning. It does not build today either (it launches what the build
+tree holds), so it gains a second place to look rather than a new job: the workspace's own build
 when the source is there, the installed application when it is not. `hub gui build` and
 `hub gui test` stay what they are, developer commands that need the source and say so plainly
 when there is none.
@@ -191,11 +196,11 @@ those five and nothing else.
 | 0 | Tests for the five uncovered seams: `workspace_root` and `config_dir` resolution, the `MODULES` catalog and its aliases, `hub init`'s marker and `.gitignore` lines, `hub link`'s write to `modules.local.toml`, and the `sushicore` injection in `_install_module_cli`. | nothing | Landed 2026-09-22: 37 tests across five modules, the suite at 334 |
 | 1 | `sushicore` moves to its own repository and publishes to PyPI. All seven consumer CLIs depend on the published package; the path injection is deleted. | 0 | Landed 2026-09-22: `sushicore==0.1.0` on PyPI, installed from the index by `hub` and by all six consumer repositories |
 | 2 | `ModuleCatalog` and `catalog.toml` inside the package, four entries. `BINARY_MODULE` becomes the `distribution` field. `sushidsp` and `sushitrack` leave the catalog. | 1 | Landed 2026-09-22: `hub add all` names four modules, `hub add sushidsp` reports an unknown module, and the suite is at 337 |
-| 3 | **Landed 2026-09-22.** `.sushistack` became a directory holding one `workspace.toml` with `[workspace]`, `[modules]` and `[tool]`; the owner chose one file rather than three. `defaults.toml` and `manifests/` moved into the package. Every `hub` command upgrades an old marker silently. Plan: `../agent/plans/2026-09-22-wave-3-workspace-directory.md` | 2 | Met: `hub init` then `hub install --dry-run` ran to completion in an empty directory with no `sushihub/` anywhere, and this workspace upgraded in place, keeping all five `[modules]` entries and eleven probed tool paths |
-| 4 | **Landed 2026-09-22.** `sushihub` publishes to PyPI; the installers bootstrap Python, git and pipx, install from the index and run `hub init`. The module CLIs stay out. `hub sync` upgrades `hub` the way it was installed. Plan: `../agent/plans/2026-09-22-wave-4-hub-on-pypi.md` | 3 | Met: `sushihub` 0.1.0 on PyPI; `install.ps1` ran end to end in a directory that was no checkout, installing from the index and provisioning; a venv install from the index ran `hub init` and `hub install --dry-run` with no `sushihub/` anywhere |
-| 5 | **Landed 2026-09-22.** `sushicore` left the status table, the fixtures were re-recorded from a live `hub`, and Linux stopped being pointed at a vcpkg tree it never uses. The application needed no change: it already read every field the payload carries and names neither removed row. Plan: `../agent/plans/2026-09-22-wave-5-the-application-sees-today.md` | 4 | Met: `hub gui build` exited 0 and `hub gui test` passed 37 of 37, including the case that reads the re-recorded payload |
-| 6 | **Landed 2026-09-22.** `sushi-module.toml`, its reader, and the file in each of the four modules. `hub status` lists what the workspace knows and `hub link` accepts a checkout that names itself; the checkout wins over a catalog entry. `hub add <git-url>` stays out. Plan: `../agent/plans/2026-09-22-wave-6-a-module-describes-itself.md` | 2 | Met: a `sushidsp` checkout carrying a manifest, with no catalog entry, was listed by `hub status` with its real branch |
-| 7 | **Landed 2026-09-22, except `st setup`.** `sd setup` provisions sushidsp from its own fragment and hands off to `hub install` inside a workspace; the fragment reader moved into `sushicore` 0.3.0 and `hub` reads through it. `st setup` is designed and deferred: sushitrack's CLI carries no test suite. Plan: `../agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md` | 2 | Met: `hub status` lists `sushidsp` and `hub doctor` attributes `sdl2` to it, with zero mentions of `sushidsp` in `catalog.toml` |
+| 3 | **Landed 2026-09-22.** `.sushistack` became a directory holding one `workspace.toml` with `[workspace]`, `[modules]` and `[tool]`; the owner chose one file rather than three. `defaults.toml` and `manifests/` moved into the package. Every `hub` command upgrades an old marker silently. Plan: `../archive/agent/plans/2026-09-22-wave-3-workspace-directory.md` | 2 | Met: `hub init` then `hub install --dry-run` ran to completion in an empty directory with no `sushihub/` anywhere, and this workspace upgraded in place, keeping all five `[modules]` entries and eleven probed tool paths |
+| 4 | **Landed 2026-09-22.** `sushihub` publishes to PyPI; the installers bootstrap Python, git and pipx, install from the index and run `hub init`. The module CLIs stay out. `hub sync` upgrades `hub` the way it was installed. Plan: `../archive/agent/plans/2026-09-22-wave-4-hub-on-pypi.md` | 3 | Met: `sushihub` 0.1.0 on PyPI; `install.ps1` ran end to end in a directory that was no checkout, installing from the index and provisioning; a venv install from the index ran `hub init` and `hub install --dry-run` with no `sushihub/` anywhere |
+| 5 | **Landed 2026-09-22.** `sushicore` left the status table, the fixtures were re-recorded from a live `hub`, and Linux stopped being pointed at a vcpkg tree it never uses. The application needed no change: it already read every field the payload carries and names neither removed row. Plan: `../archive/agent/plans/2026-09-22-wave-5-the-application-sees-today.md` | 4 | Met: `hub gui build` exited 0 and `hub gui test` passed 37 of 37, including the case that reads the re-recorded payload |
+| 6 | **Landed 2026-09-22.** `sushi-module.toml`, its reader, and the file in each of the four modules. `hub status` lists what the workspace knows and `hub link` accepts a checkout that names itself; the checkout wins over a catalog entry. `hub add <git-url>` stays out. Plan: `../archive/agent/plans/2026-09-22-wave-6-a-module-describes-itself.md` | 2 | Met: a `sushidsp` checkout carrying a manifest, with no catalog entry, was listed by `hub status` with its real branch |
+| 7 | **Landed 2026-09-22, except `st setup`.** `sd setup` provisions sushidsp from its own fragment and hands off to `hub install` inside a workspace; the fragment reader moved into `sushicore` 0.3.0 and `hub` reads through it. `st setup` is designed and deferred: sushitrack's CLI carries no test suite. Plan: `../archive/agent/plans/2026-09-22-wave-7-sd-and-st-stand-on-their-own.md` | 2 | Met: `hub status` lists `sushidsp` and `hub doctor` attributes `sdl2` to it, with zero mentions of `sushidsp` in `catalog.toml` |
 | 8 | The desktop application is distributed: a separate `sushihub-gui` distribution with platform wheels, reached as `pipx install "sushihub[gui]"`, versioned from the same tag as `sushihub`. `hub gui run` prefers the workspace's own build tree and falls back to the installed one, the way `hub add sushiengine` chooses source or binary. | 5 | `pipx install "sushihub[gui]"` then `hub gui run` opens the application on a machine with no checkout |
 
 Waves 6 and 7 run beside the 3-4-5 chain; their file sets are disjoint from it.

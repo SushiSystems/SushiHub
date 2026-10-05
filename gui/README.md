@@ -5,7 +5,7 @@ from the child's stdout, and draws what arrives. Nothing here knows a module nam
 or a path; all of that comes in events or in the catalogue `hub --describe` prints.
 
 The contract both sides validate against is `../contract/`. The design behind it is
-`../../docs/agent/specs/2026-09-05-hub-design.md`, sections 7 and 8.
+`../docs/design/HUB.md`, sections 7 and 8.
 
 ## Layers
 
@@ -34,7 +34,7 @@ Every destination implements `Screen`, which is a name and a `draw()` and nothin
 that needs the workspace or the run log takes it in its own constructor, so `Shell` holds the four
 as `std::unique_ptr<Screen>` and knows none of their types.
 
-`Installs` draws one card per install, sushiengine and Sushi Hub itself, each with a presence chip
+`Installs` draws one card per install, sushiengine and SushiHub itself, each with a presence chip
 and its own actions; `Open editor` starts `se editor`, the one program other than `hub` this
 application spawns. It draws the offline `hub status` first, then runs `hub status --check-updates`
 once in the background and switches to that payload when it arrives. `model/InstallFacts` turns

@@ -6,7 +6,7 @@ six exists in sushiweb yet. This page is the agreement between the two repositor
 against it and tested against a fake server that implements it
 (`cli/tests/test_identity.py`), and sushiweb builds the real one to the same shapes.
 
-The design behind it is `docs/agent/specs/2026-09-05-hub-design.md`, section 6, and sushiweb's own
+The design behind it is `docs/design/HUB.md`, section 6, and sushiweb's own
 `docs/agent/specs/2026-09-05-device-grant-and-releases-design.md`, sections 5 and 6.
 
 ## The endpoints
