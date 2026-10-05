@@ -3,22 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Dependency manifest reading; merging moved to :mod:`sushicore.provision.fragments`.
+"""Finds the dependency fragments of a workspace and reads them for the current platform.
 
-The installer must not hard-code package names. Instead it asks an
-``IDependencySource`` for the packages relevant to the current platform.
-
-SushiStack owns no single manifest. Each module declares what it needs, and the
-installer aggregates those fragments into one shared dependency set:
-
-  * sushicore's base fragment — the build infrastructure every module shares.
-  * ``sushihub/manifests/*.deps.toml`` — fragments for the components this
-    package ships, such as the desktop application.
-  * ``<module>/cli/sushistack.deps.toml`` — a fragment a module contributes from
-    its own repo (kept under cli/, not the repo root).
-
-Discovering those fragments is hub's own business (this module); merging what
-they declare is :mod:`sushicore.provision.fragments`'s, re-exported here.
+The sources are sushicore's base fragment, ``sushihub/manifests/*.deps.toml`` and each
+module's ``cli/sushistack.deps.toml``. Merging is :mod:`sushicore.provision.fragments`'s,
+re-exported here. See cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
@@ -51,9 +40,7 @@ MANIFESTS_DIR = "manifests"
 #: Suffix every shipped fragment's filename carries; what precedes it names the owner.
 SHIPPED_MANIFEST_SUFFIX = ".deps.toml"
 
-#: Reserved table name a fragment uses to declare module-level metadata
-#: (currently ``depends_on``) rather than a dependency. Owned by
-#: :mod:`sushicore.deps_fragment`, re-exported here for the callers that name it.
+#: The reserved fragment table for module metadata; owned by :mod:`sushicore.deps_fragment`.
 MODULE_META_TABLE = deps_fragment.MODULE_TABLE
 
 
@@ -111,8 +98,7 @@ def manifest_sources() -> list[tuple[Path, str]]:
             fragment = module / MODULE_MANIFEST_REL
             if fragment.is_file():
                 sources.append((fragment, module.name))
-    # Modules linked to external checkouts (a developer's working repos that live
-    # outside the workspace tree) contribute their fragment too.
+    # A module linked from outside the workspace tree contributes its fragment too.
     seen = {p for p, _ in sources}
     for name, module_path in links.registered().items():
         fragment = Path(module_path) / MODULE_MANIFEST_REL

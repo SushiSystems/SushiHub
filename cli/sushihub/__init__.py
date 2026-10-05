@@ -11,8 +11,7 @@ is the one place the version is written.
 
 from importlib.metadata import PackageNotFoundError, version
 
-#: The name this package is published under, and the one every consumer asks for:
-#: the installed version, pipx's venv, the --describe catalogue.
+#: The published name every consumer asks for: the installed version, pipx's venv, --describe.
 DISTRIBUTION = "sushihub"
 
 try:

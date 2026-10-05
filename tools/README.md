@@ -34,3 +34,35 @@ repository sets `K_LICENSE_LINES` to `("All rights reserved. No licence is grant
 
 This repository changes one setting: `K_SKIPPED_FOLDERS` in `check_source_comments.py` also
 names `dependencies`, the provisioned tree `hub install` fills beside the source.
+
+## record_cli_argv.py
+
+A build's output is a function of its input, and the input is the argv list that reaches cmake
+and ctest. So a refactor of the code that assembles that list is proved correct by capturing
+the list before and after and finding no difference. Nothing is compiled, which is the only way
+to check the build code on a machine that is not going to sit through five builds.
+
+A command whose argv is a string, not a list, is passed through untouched. That is the vcvars64
+snapshot, which must really run or the environment every other command is measured under would
+be wrong. SushiRuntime's Linux equivalent, `_snapshot_linux` sourcing oneAPI's `setvars.sh`,
+does not get this treatment: it calls `subprocess.run(["bash", "-c", script])`, a list, so the
+recorder stubs it like any other command. A Linux capture is therefore taken under an unsourced
+environment, and its argv is not evidence of what `setvars.sh` would have changed.
+
+`subprocess.run`, `subprocess.Popen` and `shutil.rmtree` are not the only ways a command touches
+disk. The package-consumer path of SushiBLAS and SushiAI deploys DLLs with `shutil.copy2`, and
+SushiRuntime's `build()` writes a configure-stamp file with `Path.write_text`. Neither goes
+through cmake or ctest, so neither is a command whose argv belongs in the record, but both are
+real writes into a sibling checkout, and a recording pass that consumes and never modifies must
+not make them. They are stubbed the same way: recorded, not performed. Each has a test in
+`tests/test_record_cli_argv.py` that stands in for it. `Path.write_text` is captured unpatched
+at import, as `_REAL_WRITE_TEXT`, and that is what writes the script's own JSON output after the
+recording is done.
+
+Every command a module's CLI exposes resolves its project root by walking up from the current
+directory (`sushicore.module_config.find_project_root`). That is how a real `sb build` finds its
+checkout when a developer runs it from inside the repository. Recording from this checkout's
+own cwd would make every call fail at that first step, "not inside a project", before it
+reached the cmake and ctest argv the tool exists to capture. So the process cwd is switched to
+the target module's root for the duration of the matrix, which is what running the command by
+hand would require, and restored afterwards.

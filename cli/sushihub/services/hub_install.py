@@ -3,13 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""How `hub` itself is installed on this machine, read from disk.
+"""Reports how `hub` itself is installed on this machine, read from disk.
 
-The installers write the ``sh`` alias under a marker comment into the shell's
-rc file or the PowerShell profile; this module finds that marker and reports
-where. It reads the home directory it is given and nothing else, so the
-status payload's ``hub`` block is the same on every call. See
-contract/README.md, "The status payload".
+The installers write the ``sh`` alias under a marker comment into the shell's rc file or the
+PowerShell profile; this module finds that marker and reports where. It reads the home
+directory it is given and nothing else. See contract/README.md, "The status payload".
 """
 
 from __future__ import annotations

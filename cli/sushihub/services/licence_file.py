@@ -3,15 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""The licence token `hub` writes beside a binary install.
+"""Writes and reads the licence token `hub` keeps beside a binary install.
 
-Sushi Account issues one token per product; `hub` writes it, bare, into the module's
-own directory and reads its expiry back to report. Nothing here verifies the
-token: the engine does that offline against Sushi Account's JWKS at start-up, which
-is why the file holds the token and nothing around it.
-
-The shapes are in ``contract/sushi-account.md``, section "Releases and the
-licence file".
+Sushi Account issues one token per product; `hub` writes it bare and reads its expiry back.
+Nothing here verifies the token. The shapes are in ``contract/sushi-account.md``, section
+"Releases and the licence file"; the reason is in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

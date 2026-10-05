@@ -3,16 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Turning a release Sushi Account resolved into an unpacked module directory.
+"""Turns a release Sushi Account resolved into an unpacked module directory.
 
-Four steps in order: resolve, download, verify, unpack. Each is a function of
-its own so a test can run it alone, and :func:`install_release` is the only one
-that knows the order. The archive is unpacked into a temporary directory beside
-the module's own and moved over it last, so a download that fails leaves the
-install that was there untouched.
-
-The shapes this reads are in ``contract/sushi-account.md``; the reason a
-binary install exists at all is docs/design/HUB.md, §5.
+Four steps in order: resolve, download, verify, unpack; :func:`install_release` alone knows
+the order. The shapes are in ``contract/sushi-account.md``, the reason a binary install exists
+in docs/design/HUB.md, §5, and the unpack order in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

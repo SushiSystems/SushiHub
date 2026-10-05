@@ -3,16 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""SushiHub's provisioning pipeline.
+"""Exports SushiHub's provisioning pipeline; the entry point is :func:`factory.build_pipeline`.
 
-A dependency-injected pipeline that detects what is present, installs what the
-``*.deps.toml`` fragments declare and is missing, and writes the probed ``[tool]``
-table. Building a module is its own CLI's job.
-
-The public entry point is :func:`factory.build_pipeline`; everything else is an
-implementation detail behind small interfaces (:class:`pipeline.Step`,
-:class:`package_managers.IPackageManager`,
-:class:`dependency_source.IDependencySource`).
+The pipeline detects what is present, installs what the ``*.deps.toml`` fragments declare and
+is missing, and writes the probed ``[tool]`` table. Its interfaces are named in
+cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

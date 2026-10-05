@@ -54,8 +54,7 @@ def _managers_for(cfg: Config) -> list[IPackageManager]:
     """Return the package managers this platform installs through, in preference order."""
     if cfg.is_windows:
         return [WingetManager(), DirectDownloadWindowsManager(), VcpkgManager(cfg)]
-    # VcpkgManager also serves Linux: it is the only route for ports with no apt
-    # package at all (vk-bootstrap, cgltf — see Dependency.vcpkg_fallback_ports).
+    # VcpkgManager serves Linux for Dependency.vcpkg_fallback_ports; see cli/README.md.
     return [AptManager(), DnfManager(), YumManager(), PacmanManager(), ZypperManager(),
             VcpkgManager(cfg)]
 

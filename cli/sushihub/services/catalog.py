@@ -36,9 +36,7 @@ class Module:
     alias: str
     distribution: str
 
-    #: Where this module keeps its dependency fragment, relative to its root. All
-    #: six repositories use the default; a module says otherwise in its own
-    #: ``sushi-module.toml``. See docs/reference/MODULE_MANIFEST.md.
+    #: The fragment's path relative to the module root; see docs/reference/MODULE_MANIFEST.md.
     fragment: str = "cli/sushistack.deps.toml"
 
     @property

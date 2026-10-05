@@ -3,18 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Interactive component picker for `hub install --customize`.
+"""Runs the interactive component picker behind `hub install --customize`.
 
-What the present modules declare installs by default; this is the escape hatch
-for a user who wants to add or drop one of the heavy components. The picker
-opens on that derived selection and lays the components out as a checklist —
-one row per component, a pointer marking the focused row. Up/down move between
-rows, space toggles the focused one, enter continues, and a final confirmation
-guards against an accidental enter.
-
-It captures keys directly (msvcrt on Windows, termios on Unix) and renders with
-rich, so it needs no extra dependency. A non-interactive stdin (a pipe) falls
-back to the selection it opened on.
+Keys are read directly (msvcrt on Windows, termios on Unix) and rows drawn with rich. A
+non-interactive stdin falls back to the selection the picker opened on. The key bindings are
+in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

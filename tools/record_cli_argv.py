@@ -3,40 +3,10 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Record the command lines a module's CLI would run, without running them.
+"""Records the command lines a module's CLI would run, without running them.
 
-A build's output is a function of its input, and the input is exactly the argv
-list that reaches cmake and ctest. So a refactor of the code that assembles that
-list is proved correct by capturing the list before and after and finding no
-difference -- without compiling anything, which is the only way to check the
-build code on a machine that is not going to sit through five builds.
-
-Commands whose argv is a string rather than a list are passed through untouched:
-that is the vcvars64 snapshot, which must really run or the environment every
-other command is measured under would be wrong. SushiRuntime's Linux equivalent,
-_snapshot_linux's sourcing of oneAPI's setvars.sh, does NOT get this treatment:
-it calls subprocess.run(["bash", "-c", script]), a list, so this recorder stubs
-it like any other command instead of letting it run. A Linux capture is
-therefore taken under an unsourced environment, and its argv should not be
-trusted as evidence of what setvars.sh would have changed.
-
-subprocess.run/Popen and shutil.rmtree are not the only ways a command can touch
-disk: SushiBLAS/SushiAI's package-consumer path deploys DLLs with shutil.copy2,
-and SushiRuntime's build() writes a configure-stamp file with Path.write_text --
-neither goes through cmake/ctest, so neither is a command whose argv belongs in
-the record, but both are real writes into a sibling checkout that a "consume
-only, never modify" recording pass must not make. They are stubbed the same way:
-recorded, not performed. Path.write_text/write_bytes are restored to the real
-implementation before this script writes its own JSON output.
-
-Every command a module's CLI exposes resolves its project root by walking up
-from the current directory (see sushicore.module_config.find_project_root) --
-that is how a real ``sb build`` finds its checkout when a developer runs it
-from inside the repo. Recording from this checkout's own cwd would make every
-call fail at that first step ("not inside a project") before ever reaching the
-cmake/ctest argv this tool exists to capture, so the process cwd is switched to
-the target module's own root for the duration of the matrix -- exactly what
-running the command by hand would require -- and restored afterwards.
+What is stubbed, what really runs and why the cwd changes are in tools/README.md,
+"record_cli_argv.py".
 
 Usage:  python tools/record_cli_argv.py sushiblas out.json
 """
@@ -51,8 +21,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-#: The unpatched Path.write_text, captured before _install_stubs() replaces it,
-#: so this script can still write its own JSON output after recording is done.
+#: The unpatched Path.write_text, captured before _install_stubs() replaces it.
 _REAL_WRITE_TEXT = Path.write_text
 
 #: Module -> the repository root holding its CLI. Siblings of this checkout.
@@ -194,9 +163,7 @@ def main(argv: list[str]) -> int:
     finally:
         os.chdir(original_cwd)
 
-    # Path.write_text is stubbed for the duration of the matrix (see
-    # _install_stubs); the real implementation, captured at import time, is
-    # what writes this script's own output.
+    # Path.write_text is still stubbed here; the real one, captured at import, writes the output.
     _REAL_WRITE_TEXT(out_path, json.dumps(_RECORDS, indent=1), encoding="utf-8")
     print(f"{len(_RECORDS)} records -> {out_path}")
     return 0

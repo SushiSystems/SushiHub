@@ -3,13 +3,10 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Module + workspace management for the SushiStack umbrella.
+"""Manages the workspace and its modules: init, add, link, update and sync.
 
-SushiStack is the workspace the user clones first; the stack's modules
-(sushiruntime, sushiengine, …) are git checkouts that live *inside* it, cloned by
-``hub add``. This service owns that lifecycle — initialising the workspace, cloning
-and updating modules, and reporting status — while the dependency engine in
-``sushihub.setup`` owns everything under ``dependencies/``.
+The dependency engine in ``sushihub.setup`` owns everything under ``dependencies/``. See
+cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
@@ -24,17 +21,11 @@ from . import git_ops, links, module_manifest, pipx
 from .catalog import CATALOG
 from .presence import Presence, describe, module_dir, presence_of
 
-# sushicore is the shared CLI presentation layer, not a stack build module: it
-# ships no dependency fragment, is never built, and stays out of CATALOG so it is
-# excluded from `hub add all`, readiness, and dependency aggregation. It lives
-# inside this repository (see `sushicore/`), so there is nothing to clone and no
-# checkout for anyone to manage -- cloning SushiStack already produced it.
+# sushicore is not a stack module and stays out of CATALOG; see cli/README.md.
 SUSHICORE_NAME = "sushicore"
 
 
-# Lines `hub init` ensures are present in the workspace .gitignore: the shared
-# dependency tree and every module checkout are build artifacts of the workspace,
-# not part of it.
+# The lines `hub init` keeps present in the workspace .gitignore.
 _GITIGNORE_LINES = [
     "# Managed by `hub init`: shared dependencies and cloned modules are not tracked.",
     "/dependencies/",
@@ -279,10 +270,7 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
     if dry_run:
         console.info("Dry-run: showing actions without pulling.")
 
-    # The workspace repo itself (this CLI's own source, cli/ + setup pipeline) is
-    # a git checkout too. Pull it here so a single `hub update` reaches every fix,
-    # not just the ones in modules — otherwise an editable-installed `hub` goes
-    # stale until someone remembers to pull the umbrella by hand.
+    # hub itself is brought up to date before any module; see cli/README.md.
     _self_update(root, dry_run=dry_run)
 
     linked = links.registered()
