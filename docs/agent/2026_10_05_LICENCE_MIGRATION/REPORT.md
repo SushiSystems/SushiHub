@@ -1,6 +1,6 @@
 # Licence migration report
 
-**Status:** Eight repositories migrated and committed locally on 2026-10-05; `sushiengine` and `sushifx` not done. Nothing is pushed.
+**Status:** Ten repositories done and committed locally on 2026-10-05. Nothing is pushed.
 
 ## What was done
 
@@ -22,6 +22,8 @@
 | sushidsp | 502 | PolyForm Noncommercial 1.0.0 |
 | sushitrack | 136 | PolyForm Noncommercial 1.0.0; sixteen files keep upstream notices |
 | sushiweb | 818 | All rights reserved |
+| sushiengine | 2 791 | All rights reserved |
+| sushifx | none | AMD's MIT, unchanged; the README states what the fork changes |
 
 ## Proof
 
@@ -119,10 +121,30 @@ Legal and factual points only the owner or a lawyer can settle:
 12. Many third-party licences in the `NOTICE.md` files are marked "unverified" because no
     licence text was in the tree to read.
 
+## sushiengine and sushifx, done after the first eight
+
+The owner asked for sushiengine not to wait for a clean tree. Its headers were written into
+every tracked source file, and only the files whose sole change was the block were committed
+(`e1ab59e5`, 2 742 files): each was checked by applying the writer to its committed version and
+comparing with the working copy. The licence files followed in `c7bf9c50`. Files with the
+owner's own uncommitted changes carry the new block and were left for the owner to commit; so
+was `docs/reference/CHANGELOG.md`, which holds the owner's entries beside the line for this
+change.
+
+The engine run found three gaps in the writer, fixed in SushiSkills (`12a2f7b`, `512f1ee`): a
+tracked file deleted from the working tree stopped it; configure templates and `.inc`
+fragments were not covered; an old box with indented rows was left under the new block.
+The add-on scaffold under `cli/sushiengine/templates/` is skipped on purpose with `--skip`: it
+becomes the user's own source. Shaders carry the block before `#version`; no shader was
+compiled to prove that, and GLSL allows comments there.
+
+sushifx: `README.md` now states what builds, that the prebuilt Vulkan DLL is AMD's and still
+carries the defect, that the import leaves out 49 ignored binaries, and whose licence covers
+what (`6c99724`).
+
 ## What was not done
 
-- `sushiengine`: deferred; its working tree held 77 uncommitted paths.
-- `sushifx`: the README correction of the spec was not dispatched.
+- In sushiengine, about 38 paths with the owner's uncommitted work are not committed.
 - No repository's `tools/` was replaced with the new checkers; that is programme 4.
 - No build or test proved the changes.
 - Nothing was pushed.
