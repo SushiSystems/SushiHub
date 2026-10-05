@@ -7,7 +7,7 @@ draft 2020-12. The desktop application validates against them and so does
 `../cli/tests/test_json_streams.py`, so a stream that violates one is a defect on the `hub` side,
 not a case for the reader to tolerate.
 
-The design behind them is `docs/agent/specs/2026-09-05-hub-design.md`, section 7.
+The design behind them is `docs/design/HUB.md`, section 7.
 
 A fourth file in this directory, `sushi-account.md`, is the other half of the contract: the six Sushi Account
 endpoints `hub` calls. Four of them sign a machine in and read the account, for `hub login`,

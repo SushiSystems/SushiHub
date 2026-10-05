@@ -1,85 +1,46 @@
-# Manual
+# SushiHub manual
 
-Documentation index for the SushiHub repository. Every document under `docs/` is reachable
-from here. Facts about one component live in that component's own README, beside its code.
+Facts about one component live in that component's README, beside its code. This tree holds the
+rest: how to install, how the workspace is laid out, what is designed and what is left.
 
-## How to contribute
+## Components
 
-- `CONTRIBUTING.md` — what must be documented, and how a change lands.
-- `DOCUMENTATION_STYLE_GUIDE.md` — where a document goes, and the shape of a changelog entry.
+| README | Holds |
+| --- | --- |
+| [`cli/`](../cli/README.md) | The `hub` command: every subcommand, the files it reads and writes, how dependencies are chosen |
+| [`gui/`](../gui/README.md) | The desktop application over `hub --json`: its four layers, its four hand-drawn screens and the form generated for every other command |
+| [`contract/`](../contract/README.md) | The JSON contract between `hub` and the desktop application: event shapes, the status payload and the command catalogue |
+| [`contract/sushi-account.md`](../contract/sushi-account.md) | The six Sushi Account endpoints `hub` calls and the device grant that walks between them |
+| [`gui/tests/fixtures/`](../gui/tests/fixtures/README.md) | Which fixtures are recorded from a live `hub` and which are written by hand |
+| [`tools/`](../tools/README.md) | The checkers, the license block writer and the argv recorder |
 
-## Getting started
+`sushicore`, the engine under `hub` and every module CLI, lives at
+`github.com/SushiSystems/SushiCore` and installs from PyPI. Its manual is `docs/README.md` there.
 
-- `getting_started/INSTALL.md` — from a fresh machine to a built module: the one-line installer,
-  the manual steps, and what each of them does.
+## Manual
 
-## Architecture
-
-- `architecture/WORKSPACE.md` — the workspace layout, why it is flat, and how a module finds its
-  siblings and the shared dependency tree.
-
-## Modules
-
-Each component's own facts live beside its code:
-
-- `../cli/README.md` — the `hub` command: every subcommand, the files it reads and writes.
-- `sushicore` — the shared CLI engine: presentation layer, config plumbing, the cmake driver, and
-  how a Sushi CLI consumes it. It lives at `github.com/SushiSystems/SushiCore` and installs from
-  PyPI; its manual is `docs/README.md` there.
-- `../contract/README.md` — the JSON contract between `hub` and the desktop application:
-  event shapes and the command catalogue.
-- `../gui/README.md` — the desktop application over `hub --json`: the four layers, the
-  five hand-drawn screens, and the form generated for every other command.
-- `../contract/sushi-account.md` — the four Sushi Account endpoints `hub` signs in and reads licences
-  through, and the device grant that walks between them.
-
-## Guides
-
-- `guides/LINKING_CHECKOUTS.md` — pointing the workspace at module checkouts that live elsewhere,
-  and at your own `sushicore`.
-
-## Reference
-
-- `reference/CHANGELOG.md` — one line per meaningful change, newest first, sectioned by release.
-- `reference/GLOSSARY.md` — the words this repository uses in a specific sense.
-- `reference/MODULE_MANIFEST.md` — `sushi-module.toml`, the file a module writes to say what
-  it is, and what `hub` does when it is absent.
-- `reference/KNOWN_ISSUES.md` — failures that turn out to be a toolchain, a package manager or a
-  vendor, with the symptom, the cause and the rule for each.
+| Document | Holds |
+| --- | --- |
+| [Installing](getting_started/INSTALL.md) | From a fresh machine to a built module: the one-line installer, the same steps by hand, and what `hub install` downloads |
+| [The workspace](architecture/WORKSPACE.md) | The workspace layout, why it is flat, and how a module finds its siblings and the shared dependency tree |
+| [Linking checkouts](guides/LINKING_CHECKOUTS.md) | Pointing a workspace at module checkouts that live elsewhere, and at your own `sushicore` |
+| [Module manifest](reference/MODULE_MANIFEST.md) | `sushi-module.toml`, the file a module writes to say what it is, and what `hub` does when it is absent |
+| [Changelog](reference/CHANGELOG.md) | What changed, by release |
+| [Glossary](reference/GLOSSARY.md) | The words this repository uses in a specific sense |
+| [Known issues](reference/KNOWN_ISSUES.md) | Open defects with where each sits, and failures that are a toolchain's or a vendor's doing |
+| [Contributing](CONTRIBUTING.md) | How a change lands and what it must carry |
+| [Documentation style guide](DOCUMENTATION_STYLE_GUIDE.md) | The names and spellings this repository's prose keeps |
 
 ## Design
 
-- `design/REMAINING_WORK.md` — the single backlog: what is planned and not yet built, in the order
-  it is meant to land.
-- `design/WORKSPACE_DECOUPLING.md` — `hub` as a tool and a workspace as data: the module catalog
-  out of code, the workspace's own directory, `sushicore` and `sushihub` on PyPI, and `sushidsp`
-  and `sushitrack` out of the stack.
-- `design/GPU_BACKEND_PROVISIONING.md` — one brick per GPU vendor and one branch per operating
-  system, with the adapter build wired into `hub install`.
+| Document | Holds |
+| --- | --- |
+| [Design map](design/README.md) | Which design document covers which topic, with its status |
+| [Remaining work](design/REMAINING_WORK.md) | The single backlog |
+| [The hub](design/HUB.md) | `hub` in the terminal and on the desktop, the binary distribution of sushiengine and the licence flow through Sushi Account |
+| [Workspace decoupling](design/WORKSPACE_DECOUPLING.md) | `hub` as a tool and a workspace as data: the catalog out of code, the workspace's own directory, `sushicore` and `sushihub` on PyPI |
+| [GPU backend provisioning](design/GPU_BACKEND_PROVISIONING.md) | One brick per GPU vendor and one branch per operating system, with the adapter build wired into `hub install` |
 
-## Agent output
-
-Everything an agent wrote while working, kept as a record rather than as part of the manual:
-
-- `agent/specs/2026-09-05-hub-design.md` — the hub: `hub` as the workspace's one experience in
-  the terminal and on the desktop, the binary distribution of sushiengine, and the licence flow
-  through Sushi Account.
-- `agent/specs/2026-08-25-cmake-driver-design.md` — the shared cmake driver: what five
-  `services/project.py` copies had in common, what they did not, and what moved into `sushicore`.
-- `agent/plans/2026-08-25-cmake-driver.md` — the plan that landed that design, task by task.
-- `agent/plans/2026-09-21-wave-0-uncovered-seams.md` — wave 0 of the decoupling: tests for the
-  five seams the later waves rewrite.
-- `agent/plans/2026-09-22-cleanup-service-decomposition.md` — the service layer split into
-  bricks, and the three duplicated implementations collapsed. Wave 3 waits on it.
-- `agent/plans/2026-09-22-wave-3-workspace-directory.md` — wave 3 of the decoupling: the marker
-  becomes a directory holding `workspace.toml`, and the tool's defaults move into the package.
-- `agent/plans/2026-09-22-wave-2-module-catalog.md` — wave 2 of the decoupling: the catalog out
-  of code into packaged data, and `sushidsp` and `sushitrack` out of the stack.
-- `agent/plans/2026-09-22-wave-1-sushicore-repository.md` — wave 1 of the decoupling: `sushicore`
-  out to its own repository and onto PyPI, and the six consumers onto the published package.
-- `agent/reports/` — reports written while executing a plan. The five from wave 0 of the
-  decoupling are dated 2026-09-22.
-
-## Archive
-
-- `archive/` — frozen documents, added to and never edited. Holds `changelog/v0.1.0.md`.
+Agent work folders are under `agent/`. Finished material is under `archive/` and is not edited:
+`archive/changelog/` holds the release sections older than the live changelog keeps, and
+`archive/agent/` holds the specs, plans and reports written before 2026-10-05.

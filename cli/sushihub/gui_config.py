@@ -88,7 +88,7 @@ class GuiConfig(StackConfig):
         C++17 and builds with the MSVC that vcvars puts on PATH, or with the
         system compiler on Linux. Empty means the configure passes no
         CMAKE_CXX_COMPILER at all and CMake searches the snapshotted
-        environment. See docs/agent/plans/2026-09-05-wave-4b-gui-through-ss.md.
+        environment. See docs/archive/agent/plans/2026-09-05-wave-4b-gui-through-ss.md.
 
         Args:
             root: The application's source directory.

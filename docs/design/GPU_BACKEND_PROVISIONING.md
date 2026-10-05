@@ -1,16 +1,17 @@
 # GPU backend provisioning: one brick per vendor, one branch per operating system
 
-**Status:** P1 through P4 built. `backend.py`, `registry.py`, `compiler_identity.py`,
-`adapter_builder.py` and `provisioning.py` exist under
-`cli/sushihub/setup/gpu_backends/`, alongside the vendor specs `cuda.py`, `rocm.py`
-and `level_zero.py`, each importing shared apt helpers from `cli/sushihub/setup/apt.py`.
-`setup/steps.py` calls `provision_gpu_adapters` after the SYCL toolchains on both Windows and
-Linux. The GPU component is on by default and provisions the vendor `probe.detect_gpu_vendor` reports on
-Windows and Linux; on Windows, `cuda.py` installs CUDA 12.6.3 through NVIDIA's network installer
-with `windows_installer.py`'s helpers. `hub install` has not yet been run against this wiring on
-real hardware. R1 onward (§7) are open. The need comes from
-SushiEngine's `docs/design/SYCL_VULKAN_INTEROP.md` §10 and the spike in its
-`docs/agent/reports/2026_09_14_CUDA_ADAPTER_SPIKE.md`.
+**Status:** Open — P1 to P4 built; R1, E1 and X are open.
+
+The P1 to P4 bricks were written under `cli/sushihub/setup/gpu_backends/` and moved to
+sushicore on 2026-09-23. They live in `sushicore/provision/gpu/` there (`backend.py`,
+`registry.py`, `compiler_identity.py`, `adapter_builder.py`, `provisioning.py`, `cuda.py`,
+`rocm.py`, `level_zero.py`, `windows_installer.py`), and the files of the same names in this
+repository re-export them. Section 3 names the files as they were written; read its paths
+against sushicore. The provision steps call `provision_gpu_adapters` after the SYCL toolchains on
+Windows and Linux. The GPU component is on by default and provisions the vendor
+`detect_gpu_vendor` reports. `hub install` has not been run against this wiring on real hardware.
+The need comes from SushiEngine's `docs/design/SYCL_VULKAN_INTEROP.md` section 10 and the spike
+report `2026_09_14_CUDA_ADAPTER_SPIKE.md` among that repository's agent documents.
 
 ## 1. The problem
 

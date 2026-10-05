@@ -20,8 +20,8 @@ irm https://sushisystems.io/install.ps1 | iex             # Windows (PowerShell)
 On Windows use `irm` (Invoke-RestMethod), not `curl`. In PowerShell `curl` is an alias for
 `Invoke-WebRequest` and does not pipe a script the same way.
 
-Both scripts accept a module list to clone at the end: `install.sh sushiruntime sushiblas`,
-`install.ps1 -Add sushiruntime,sushiblas`.
+Both scripts accept a module list to clone at the end: `install.sh --add "sushiruntime sushiblas"`,
+`install.ps1 -Add "sushiruntime sushiblas"`.
 
 ## Step by step
 
@@ -49,7 +49,7 @@ An install made the way above never clones it, so those commands have nothing to
 repository yourself if you want the application:
 
 ```bash
-git clone https://github.com/sushisystems/sushistack.git
+git clone https://github.com/SushiSystems/SushiHub.git
 ```
 
 Working on `hub` itself is the same clone, plus `python cli/install.py`, which points the
@@ -131,8 +131,9 @@ rights. Pass `--skip-install` to `hub add` or `hub link` to defer that, and use 
 drop it.
 
 The rule and the base fragment live in `sushicore.provision`, so a module CLI's own `setup`
-follows them too. `sd` and `st` have that command today; `sr`, `sb`, `sa` and `se` are next
-(`../design/REMAINING_WORK.md`).
+follows them too. All six module CLIs (`sr`, `sb`, `sa`, `se`, `sd`, `st`) register `setup`,
+`doctor`, `link` and `unlink` from it since 2026-10-04. They need sushicore 0.7.0, which is not
+published yet (`../design/REMAINING_WORK.md`, the standalone programme).
 
 ## Checking the result
 

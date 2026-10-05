@@ -13,7 +13,7 @@ the four forms are decided in one place and worded the same everywhere.
 
 The layout rule this reads by is the workspace's own: a module named
 ``sushiengine`` lives at ``<workspace>/sushiengine``, whether it was cloned or
-unpacked. See docs/agent/specs/2026-09-05-hub-design.md, §5.
+unpacked. See docs/design/HUB.md, §5.
 """
 
 from __future__ import annotations

@@ -14,12 +14,14 @@ curl -fsSL https://sushisystems.io/install.sh | bash      # Linux / WSL
 irm https://sushisystems.io/install.ps1 | iex             # Windows (PowerShell)
 ```
 
-The repository carries two things of its own:
+The repository carries four things of its own:
 
 | Directory | What it is | Its README |
 |---|---|---|
 | `cli/` | The `hub` command: dependency provisioning and module lifecycle. | `cli/README.md` |
 | `gui/` | The desktop application: a screen for every `hub` command, over `hub --json`. | `gui/README.md` |
+| `contract/` | The JSON schemas `hub` and the desktop application both validate against. | `contract/README.md` |
+| `tools/` | The checkers and the argv recorder; they build nothing. | `tools/README.md` |
 
 The engine under every Sushi CLI is `sushicore`, which lives in its own repository and installs
 from PyPI: console, config, workspace resolution, the cmake driver and dependency provisioning.
@@ -27,13 +29,17 @@ from PyPI: console, config, workspace resolution, the cmake driver and dependenc
 `hub` is not required to build a module. A module CLI provisions its own checkout with
 `setup` and reports on it with `doctor`, through the same `sushicore` code `hub install` runs.
 `hub` is what does that for several checkouts at once, and what fetches the engine's binary.
-`sd` and `st` have the two commands today; `docs/design/REMAINING_WORK.md` tracks the rest.
+Every module CLI has registered the two commands since 2026-10-04.
 
 Everything else under the workspace root is a module checkout `hub add` produces, or the
 `dependencies/` tree `hub install` fills. Neither is tracked here.
 
-The manual starts at `docs/README.md`. Install steps are in `docs/getting_started/INSTALL.md`.
-What is planned and not yet built is in `docs/design/REMAINING_WORK.md`.
+After an install, `hub status` lists the modules present and `hub doctor` reports what is
+missing.
+
+The manual starts at [`docs/README.md`](docs/README.md). Install steps are in
+`docs/getting_started/INSTALL.md`. What is planned and not yet built is in
+`docs/design/REMAINING_WORK.md`.
 
 ## Licence
 

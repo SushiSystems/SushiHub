@@ -1,23 +1,24 @@
 # The workspace
 
 A SushiStack workspace is any directory `hub init` has marked, with module checkouts placed
-directly under its root and one shared dependency tree beside them. It is usually a clone of this
-repository, because that is where the desktop application's source lives, but nothing requires it:
-`hub` carries its own defaults and dependency manifests inside its package, so an empty folder is
-a workspace the moment `hub init` runs in it.
+directly under its root and one shared dependency tree beside them. `hub` installs from PyPI and
+carries its own defaults and dependency manifests inside its package, so an empty folder is a
+workspace the moment `hub init` runs in it.
 
 ```
-sushistack/
+<workspace>/
   .sushistack/             the workspace's own data, written by `hub init`; git-ignored
     workspace.toml         [workspace] version, [modules] links, [tool] paths
-  cli/            the `hub` command's source
-  gui/            the desktop application
   dependencies/            toolchains, vcpkg, cmake and ninja; git-ignored, filled by `hub install`
   sushiruntime/            added by `hub add sushiruntime`
   sushiblas/               added by `hub add sushiblas`
   sushiai/                 added by `hub add sushiai`
   sushiengine/             added by `hub add sushiengine`
 ```
+
+A contributor's workspace is a clone of this repository, because the desktop application's source
+is here. That root also holds the tracked folders `cli/` (the `hub` command), `gui/` (the desktop
+application), `contract/` (the JSON schemas), `tools/` (the checkers) and `docs/`.
 
 ## Why the layout is flat
 
@@ -38,9 +39,10 @@ moving it.
 
 `hub` owns the marker directory and what it holds, the dependency tree, the module checkouts and
 the module CLIs' installation.
-It does not build. Building, testing and running belong to each module's CLI, which shares its
-machinery through `sushicore` and keeps its own build policy. The line between the two is drawn in
-`../agent/specs/2026-08-25-cmake-driver-design.md`.
+It builds one thing, the desktop application, through `hub gui build`. Building, testing and
+running a module belong to that module's CLI, which shares its machinery through `sushicore` and
+keeps its own build policy. The line between the two is drawn in
+`../archive/agent/specs/2026-08-25-cmake-driver-design.md`.
 
 ## Three forms of presence
 
@@ -50,8 +52,8 @@ one place, `cli/sushihub/services/presence.py`. A binary install contributes no 
 fragment and is never pulled; `hub add` fetches its next release. A module CLI finds either kind of
 root through `sushicore`'s `ModuleProfile.markers()`.
 
-## What is coming
+## The desktop application
 
-The workspace is to gain a second face: a desktop application with a screen for every `hub`
-command, under `../../gui/`. The design is `../agent/specs/2026-09-05-hub-design.md`; the
-order of work is `../design/REMAINING_WORK.md`.
+`hub` has a second face: a desktop application that reaches every `hub` command, described in
+`../../gui/README.md`. The design is `../design/HUB.md`, and what is left of it is in
+`../design/REMAINING_WORK.md`.

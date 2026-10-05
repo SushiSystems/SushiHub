@@ -102,8 +102,8 @@ is dropped and the command says nobody is signed in.
 Sushi Account lives at `https://account.sushisystems.io`, from `[identity] url` in the packaged
 `defaults.toml`; the same key in `.sushistack/workspace.toml` wins over it.
 `SUSHI_ACCOUNT_URL` overrides it, which is how the tests point every Sushi Account call at a fake server on
-`127.0.0.1`. The six endpoints are written out in `../contract/sushi-account.md`; sushiweb has not built
-them yet.
+`127.0.0.1`. The six endpoints are written out in `../contract/sushi-account.md`. sushiweb's account
+application implements them; `../docs/design/REMAINING_WORK.md` records the state of its deploy.
 
 ## Binary installs
 
