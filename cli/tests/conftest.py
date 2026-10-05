@@ -48,6 +48,13 @@ def _bind_provision_console():
     provision.bind_console(None)
 
 
+@pytest.fixture(autouse=True)
+def _terminal_console():
+    """Put the console back on the terminal renderer after a test that selected ``--json``."""
+    yield
+    console.set_machine(False)
+
+
 class MemorySource(IDependencySource):
     """Serves a fixed dependency list and a fixed module dependency map."""
 
