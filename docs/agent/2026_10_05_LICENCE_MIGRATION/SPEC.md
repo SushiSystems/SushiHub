@@ -1,6 +1,6 @@
 # Licence migration
 
-**Status:** Open — eight repositories done on 2026-10-05, see `REPORT.md`; `sushiengine` and `sushifx` remain.
+**Status:** Shipped — ten repositories done on 2026-10-05; see `REPORT.md`.
 
 Programme 2 of 5 in the estate refactor. It moves every Sushi Systems repository in scope from
 Apache-2.0 to the licence model the owner decided on 2026-10-05, using the header template and
@@ -31,11 +31,10 @@ the rules that programme 1 fixed in SushiSkills. The evidence is each repository
 | sushitrack | PolyForm Noncommercial 1.0.0 | `SushiTrack - https://github.com/SushiSystems/SushiTrack` |
 | sushiweb | All rights reserved | `SushiWeb - https://sushisystems.io` |
 | sushifx | AMD's, unchanged | none; no Sushi header is written |
-| sushiengine | All rights reserved | deferred, see below |
+| sushiengine | All rights reserved | `SushiEngine - https://sushisystems.io` |
 
-`sushiengine` is deferred. Its working tree held 78 uncommitted paths on 2026-10-05 and a header
-rewrite would collide with them. It runs through the same steps once the owner has committed or
-shelved that work.
+`sushiengine` was first deferred because its working tree held uncommitted work. The owner asked
+for it not to wait; `REPORT.md` says how the owner's files were kept out of the commits.
 
 ## Defaults taken where the owner has not decided
 
@@ -147,7 +146,7 @@ no behaviour changes; the proof is the writer's `--report` and each reviewer's r
 4. Every `pyproject.toml` and `package.json` in scope declares its licence.
 5. Each repository's `NOTICE.md` lists every vendored, ported and redistributed part its audit
    report names.
-6. The working tree of `sushiengine` is untouched.
+6. In `sushiengine`, no path the owner had modified is committed by this work.
 
 ## Open risk
 
