@@ -1,6 +1,6 @@
 # Code and comments
 
-**Status:** Open — wave 1 landed on 2026-10-05; wave 2 is running.
+**Status:** Shipped — comments and defects landed on 2026-10-05; three C++ fixes await the owner's build. See `REPORT.md`.
 
 Programme 5 of 5 in the estate refactor. It closes the defects the estate audit found that
 can be fixed without redrawing a module boundary, and brings source comments under the
