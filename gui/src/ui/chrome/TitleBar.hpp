@@ -1,3 +1,11 @@
+/****************************************************************/
+/* TitleBar.hpp                                                 */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file TitleBar.hpp
  *  @brief Declares the row at the top of the window that names the application and the workspace.
  *  @author Mustafa Garip

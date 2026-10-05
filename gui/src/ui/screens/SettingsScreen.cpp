@@ -1,3 +1,11 @@
+/****************************************************************/
+/* SettingsScreen.cpp                                           */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file SettingsScreen.cpp
  *  @brief Defines the four setting rows, the sign-in flow and the doctor table's colouring.
  *  @author Mustafa Garip

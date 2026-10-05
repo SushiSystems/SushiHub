@@ -1,3 +1,11 @@
+/****************************************************************/
+/* Browser.hpp                                                  */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file Browser.hpp
  *  @brief Declares the one call that hands a link to whatever the desktop opens links with.
  *  @author Mustafa Garip

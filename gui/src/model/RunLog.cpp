@@ -1,3 +1,11 @@
+/****************************************************************/
+/* RunLog.cpp                                                   */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file RunLog.cpp
  *  @brief Defines the adoption of a run and the reads the activity strip makes.
  *  @author Mustafa Garip

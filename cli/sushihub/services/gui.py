@@ -1,3 +1,8 @@
+# gui.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Build, test, run and clean policy for the desktop application.
 
 What cache variables the application's configure passes, where its build tree

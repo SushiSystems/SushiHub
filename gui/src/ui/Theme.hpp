@@ -1,3 +1,11 @@
+/****************************************************************/
+/* Theme.hpp                                                    */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file Theme.hpp
  *  @brief Declares the one place the application's palette, rounding and spacing are set.
  *  @author Mustafa Garip

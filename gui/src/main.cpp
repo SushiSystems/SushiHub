@@ -1,3 +1,11 @@
+/****************************************************************/
+/* main.cpp                                                     */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file main.cpp
  *  @brief Opens the window, runs the frame loop over the shell, and tears both down.
  *  @author Mustafa Garip

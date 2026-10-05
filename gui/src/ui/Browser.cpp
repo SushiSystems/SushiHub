@@ -1,3 +1,11 @@
+/****************************************************************/
+/* Browser.cpp                                                  */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file Browser.cpp
  *  @brief Defines the Windows shell association and the POSIX opener a link is handed to.
  *  @author Mustafa Garip

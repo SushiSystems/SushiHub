@@ -76,8 +76,8 @@ shapes, the stdout rule and the prompt rule for whoever is on the other end.
 
 ## Signing in
 
-sushiengine is sold; the other four modules are not. `hub login` is how a machine proves a licence,
-and nothing else in `hub` needs it: cloning an open-source module asks only for a Git identity.
+sushiengine is sold; the other modules are not. `hub login` is how a machine proves a licence,
+and nothing else in `hub` needs it: cloning a source-available module asks only for a Git identity.
 
 `hub login` asks Sushi Account for a device code, prints it with the page to type it into, opens that page
 in the browser, and polls until you approve it there. What comes back — an access token, a refresh
@@ -97,8 +97,8 @@ them yet.
 repository whether this machine's Git identity reaches it, with `git ls-remote --exit-code` under a
 15-second timeout. If it does, the module is cloned like any other. If it does not, `hub` needs a
 Sushi Account session: with one it downloads the release, without one it names both ways in and stops.
-`--binary` skips the question and goes straight to the release. The other four modules are open
-source and have one path; `--binary` on any of them is refused.
+`--binary` skips the question and goes straight to the release. The other modules are
+source-available and have one path; `--binary` on any of them is refused.
 
 The download is what `sushiweb` signed a URL for. `hub` streams it, refuses to unpack it when either
 the size or the sha256 differs from what Sushi Account declared, unpacks it into a directory beside

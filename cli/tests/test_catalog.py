@@ -1,3 +1,8 @@
+# test_catalog.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """What the module catalog answers today: its members, their aliases and their expansion."""
 
 from __future__ import annotations

@@ -1,3 +1,8 @@
+# customize.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Interactive component picker for `hub install --customize`.
 
 What the present modules declare installs by default; this is the escape hatch

@@ -1,3 +1,11 @@
+/****************************************************************/
+/* model_test.cpp                                               */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file model_test.cpp
  *  @brief Checks that a scripted line queue folds into the RunState the UI reads,
  *         and that the run log points at whichever run the strip was handed.

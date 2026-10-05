@@ -1,3 +1,11 @@
+/****************************************************************/
+/* ActivityStrip.cpp                                            */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file ActivityStrip.cpp
  *  @brief Defines the strip's summary line, its progress fill and the log it expands into.
  *  @author Mustafa Garip

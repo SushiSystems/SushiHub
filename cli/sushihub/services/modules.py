@@ -1,3 +1,8 @@
+# modules.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Module + workspace management for the SushiStack umbrella.
 
 SushiStack is the workspace the user clones first; the stack's modules

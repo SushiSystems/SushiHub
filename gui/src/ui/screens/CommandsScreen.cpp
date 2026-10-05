@@ -1,3 +1,11 @@
+/****************************************************************/
+/* CommandsScreen.cpp                                           */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file CommandsScreen.cpp
  *  @brief Defines the search, the row list, the covered-command note and the opened form.
  *  @author Mustafa Garip
