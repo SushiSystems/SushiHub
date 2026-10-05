@@ -3,17 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""How a module is present in the workspace, read from what is on disk.
+"""Reads how a module is present in the workspace from what is on disk.
 
-Presence is never recorded, only observed. A module directory holding
-``sushi-release.json`` is an unpacked binary install, one holding ``.git`` is a
-checkout, and a path in ``workspace.toml``'s ``[modules]`` is a link. Every
-command that used to ask whether ``.git`` is there asks this module instead, so
-the four forms are decided in one place and worded the same everywhere.
-
-The layout rule this reads by is the workspace's own: a module named
-``sushiengine`` lives at ``<workspace>/sushiengine``, whether it was cloned or
-unpacked. See docs/design/HUB.md, §5.
+``sushi-release.json`` marks a binary install, ``.git`` a checkout, and a path in
+``workspace.toml``'s ``[modules]`` a link. See docs/design/HUB.md, §5, and
+cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
@@ -27,10 +21,7 @@ from typing import Mapping
 from .catalog import CATALOG, Module
 from . import module_manifest
 
-#: File the release build writes at the root of an unpacked binary install.
-#: The same name as :data:`sushicore.profile.RELEASE_MANIFEST`, which is how a
-#: module's own CLI finds a binary root; cli/tests/test_presence.py pins the two
-#: together so neither can drift.
+#: The file a release carries at its root; the same name as sushicore.profile.RELEASE_MANIFEST.
 RELEASE_MANIFEST = "sushi-release.json"
 
 

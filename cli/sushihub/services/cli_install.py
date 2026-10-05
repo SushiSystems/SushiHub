@@ -3,19 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""`hub install-cli` service: install a module's own developer CLI.
+"""Installs a module's own developer CLI into an isolated pipx venv, for `hub install-cli`.
 
-One program name per module — `sr`, `se`, `sa`, `sb`, `sd` — resolved from
-the catalog in :mod:`sushihub.services.catalog`, which is the single place
-that knows what the stack contains. Nothing here is per-module: the logic reads
-the distribution name out of the module's own ``cli/pyproject.toml``, so a
-module added to that registry works the day it is added, with no change to this
-file.
-
-The umbrella owns this so there is a single install seam for the whole stack: no
-module ships its own bootstrap script. The service installs the module CLI into
-an isolated pipx venv and stops there: ``sushicore`` is an ordinary PyPI
-dependency each module CLI declares, so pipx resolves it like any other.
+The program name comes from the catalog in :mod:`sushihub.services.catalog` and the
+distribution name from the module's ``cli/pyproject.toml``. Why the umbrella owns this is in
+cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
@@ -48,8 +40,7 @@ def _ensure_pipx() -> None:
     cmd = [sys.executable, "-m", "pip", "install", "pipx"]
     in_venv = sys.prefix != getattr(sys, "base_prefix", sys.prefix)
     if not in_venv:
-        # --user only makes sense (and is only valid) outside a venv/conda env,
-        # where user site-packages are visible; inside one, pip rejects it.
+        # pip accepts --user only outside a venv or conda env.
         cmd.append("--user")
     pip_help = subprocess.run([sys.executable, "-m", "pip", "install", "--help"],
                               capture_output=True, text=True).stdout

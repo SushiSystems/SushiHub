@@ -3,15 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""The payload `hub status` ends with, composed from the readers that look at disk.
+"""Composes the payload `hub status` ends with from the readers that look at disk.
 
-Each fact has one reader: presence and the release manifest in
-:mod:`.presence`, the licence file in :mod:`.licence_file`, a checkout in
-:mod:`.git_state`, `hub` itself in :mod:`.hub_install`. This module only puts
-their answers where ``contract/status.schema.json`` says they go.
-With ``check_updates`` it fetches every checkout and asks Sushi Account about every
-binary install first, through :mod:`.git_state` and :mod:`.update_check`, and
-collects what failed as warnings instead of printing them.
+Each fact has one reader: :mod:`.presence`, :mod:`.licence_file`, :mod:`.git_state` and
+:mod:`.hub_install`. This module puts their answers where ``contract/status.schema.json``
+says they go. The ``check_updates`` path is in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

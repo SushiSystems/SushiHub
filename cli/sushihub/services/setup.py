@@ -43,8 +43,7 @@ def run(step: str = "provision", dry_run: bool = False,
         names = enabled_keys(ctx.selection)
         console.info(f"Installing: {', '.join(names) or 'base tools only'}.")
 
-    # Gather consent for the heavy Windows LLVM download up front — before the
-    # progress spinner starts — so the prompt is actually answerable.
+    # Consent for the Windows LLVM download precedes the progress spinner; see cli/README.md.
     if (not dry_run and step in ("install", "provision") and ctx.selection.install_acpp
             and ctx.cfg.is_windows):
         from ..setup.toolchains import (
@@ -65,9 +64,7 @@ def run(step: str = "provision", dry_run: bool = False,
                 console.info("Skipping the LLVM download. Re-run `hub install` to retry, "
                              "or `hub install --customize` and deselect AdaptiveCpp.")
 
-    # Prime sudo up front (Linux, non-root) so the password prompt happens here,
-    # attached to the terminal, rather than being swallowed by the live progress
-    # spinner during `install-deps` (where it would just time out).
+    # sudo is primed here, on Linux, while its prompt still owns the terminal; see cli/README.md.
     if not dry_run and not detect_only and not ctx.cfg.is_windows:
         from ..setup.package_managers import prime_sudo
         prime_sudo()

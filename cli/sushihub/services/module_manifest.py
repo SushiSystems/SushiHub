@@ -3,14 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Reading `sushi-module.toml`, the manifest a module writes about itself.
+"""Reads `sushi-module.toml`, the manifest a module writes about itself.
 
-A checkout carrying one describes itself, so `hub` can recognise it without a
-catalog entry. This module turns the file into a :class:`~.catalog.Module` or
-refuses it; which of the two wins when both a manifest and a catalog entry exist
-is decided where both are in scope, not here.
-
-The format is fixed in docs/reference/MODULE_MANIFEST.md.
+The file becomes a :class:`~.catalog.Module` or is refused. The format is fixed in
+docs/reference/MODULE_MANIFEST.md; where a manifest meets a catalog entry is in
+cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

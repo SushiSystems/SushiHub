@@ -4,27 +4,12 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Install the `hub` CLI from this checkout, for working on it.
-
-This is the contributor's install. A user installs `hub` from PyPI
-(`pipx install sushihub`), which is what install.ps1 and install.sh do; running
-this script instead points the same command at the checkout you are editing.
+"""Installs the `hub` CLI from this checkout into a pipx venv, always editable.
 
 Usage:
     python cli/install.py            # install / upgrade (always editable)
     python cli/install.py --uninstall
-
-Strategy:
-  * All platforms -> pipx (isolated, puts `hub` on PATH; pipx is bootstrapped if absent).
-  * Always installed --editable, against the workspace checkout at REPO_ROOT. `hub`
-    is one half of a self-updating pair with `hub sync`/`hub update` (which pull this
-    same checkout) -- a non-editable install would silently freeze `hub` at whatever
-    revision was on disk when it was first installed, so every later fix would need
-    a manual reinstall to take effect. There is no non-editable mode to opt into.
-  * `sushicore` is an ordinary dependency, resolved from PyPI by the same pipx install.
-
-The CLI package directory is located automatically (the folder holding
-pyproject.toml), so renaming the `cli/` folder later does not break this script.
+The reasons are in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

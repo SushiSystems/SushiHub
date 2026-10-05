@@ -3,22 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Build, test, run and clean policy for the desktop application.
+"""Holds the build, test, run and clean policy of the desktop application.
 
-What cache variables the application's configure passes, where its build tree
-lives and which executable `run` launches are decisions this module owns; how a
-cmake command line is spawned is :class:`sushicore.cmake_driver.CMakeDriver`'s.
-The split is the one every module CLI in the stack keeps, so the application is
-built the way sushiblas is rather than by a second mechanism.
-
-The build tree is ``build/hub`` under the application, beside the ``build/<preset>``
-trees CMakePresets.json writes. The two never share a directory: a preset build
-runs under whatever environment the shell already had, and this one runs under the
-vcvars snapshot, so a cache written by one is wrong for the other.
-
-The configure turns vcpkg's manifest mode off. `hub install` fills a classic-mode
-tree under ``dependencies/vcpkg`` and manifest mode ignores it, which is what the
-failed configure in docs/archive/agent/plans/2026-09-05-wave-4b-gui-through-ss.md showed.
+This module owns the cache variables, the build tree (``build/hub``) and the run target;
+:class:`sushicore.cmake_driver.CMakeDriver` owns how a cmake command line is spawned. The
+build-tree split and vcpkg's classic mode are in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

@@ -3,13 +3,12 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""The four Sushi Account commands: what `hub login`, `logout`, `whoami` and `license` do.
+"""Runs the four Sushi Account commands: `hub login`, `logout`, `whoami` and `license`.
 
-Each function drives :class:`~sushihub.services.identity.SushiAccount` and writes to
-the console, and returns the exit code and the payload the ``result`` event
-carries. One factory, :func:`client`, decides which server and which credential
-store every Sushi Account call in `hub` talks to, so a test replaces the pair in one
-place. The endpoints are in ``contract/sushi-account.md``.
+Each function drives :class:`~sushihub.services.identity.SushiAccount`, writes to the console
+and returns the exit code and the payload the ``result`` event carries. :func:`client` decides
+which server and which credential store every Sushi Account call in `hub` talks to. The
+endpoints are in ``contract/sushi-account.md``.
 """
 
 from __future__ import annotations

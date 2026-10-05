@@ -3,19 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Layered configuration loading for the SushiHub CLI.
+"""Loads the layered configuration of the SushiHub CLI and locates the workspace.
 
-Precedence (lowest to highest):
-    built-in defaults -> the package's defaults.toml -> .sushistack/workspace.toml
-    -> SR_* env vars
-
-The active platform's ``[tool.<platform>]`` table is merged over the common
-``[tool]`` table, so a single file describes both Linux and Windows.
-
-SushiStack is the umbrella workspace: the user clones it first, then `hub add`
-clones the stack modules (sushiruntime, sushiengine, …) inside it. Everything the
-installer downloads lands in ``<workspace>/dependencies`` and is shared by every
-module, so the modules never provision their own toolchain or vcpkg tree.
+Precedence, lowest to highest: built-in defaults, the package's defaults.toml,
+.sushistack/workspace.toml, SR_* env vars. The platform merge and the shared dependency tree
+are in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
@@ -29,9 +21,7 @@ from importlib.resources import as_file, files
 from pathlib import Path
 from typing import Iterator
 
-# Domain-agnostic config plumbing shared by every Sushi* CLI. The generic build-
-# tool schema (cmake/ninja/vcpkg paths) and the layered-load / [tool]-write
-# skeleton live in sushicore; this repo adds only the SYCL-specific fields below.
+# The generic build-tool schema and the layered load are sushicore's; see cli/README.md.
 from sushicore.config_base import (
     ToolConfig,
     load_tool_config,
@@ -53,9 +43,7 @@ from sushicore.workspace import workspace_file as _core_workspace_file
 
 from .errors import WorkspaceNotFoundError
 
-#: The checkout directory a pre-2026-09-22 workspace kept its local config in.
-#: It keeps the old spelling on purpose: it names where those workspaces wrote,
-#: so the rename to ``cli/`` must not follow it or the upgrade reads nothing.
+#: The directory a pre-2026-09-22 workspace kept its local config in, under its old spelling.
 CHECKOUT_CLI_DIR = Path("sushihub") / "cli"
 
 #: The tool's own portable defaults, shipped as package data beside ``catalog.toml``.
@@ -177,8 +165,7 @@ def upgrade_workspace(root: Path) -> bool:
     return True
 
 
-# Sushi Account's base URL when neither the environment nor the config names one. The
-# four endpoints under it are written down in contract/sushi-account.md.
+# The fallback Sushi Account base URL; its endpoints are in contract/sushi-account.md.
 DEFAULT_IDENTITY_URL = "https://account.sushisystems.io"
 
 
@@ -227,22 +214,18 @@ def deps_dir() -> Path:
     return base / "SushiStack" / "dependencies"
 
 
-# The SYCL toolchains a user can select. Must match SR_SYCL_TOOLCHAIN in
-# CMakeLists.txt: intel-llvm (primary), adaptivecpp (secondary), oneapi (supported).
+# The selectable SYCL toolchains; must match SR_SYCL_TOOLCHAIN in CMakeLists.txt.
 TOOLCHAINS = selection.toolchain_keys()
 
-# Default compiler pair (cc, cxx) per toolchain. Used when the config does not
-# pin an explicit compiler, so `sr toolchain <name>` is enough to switch.
+# The default compiler pair (cc, cxx) per toolchain, used when the config pins no compiler.
 TOOLCHAIN_COMPILERS = {
-    # (cc, cxx). acpp is C++-only, so the C slot uses a plain C compiler; the
-    # project builds CXX only, so cc is effectively unused but kept valid.
+    # acpp is C++-only, so the C slot holds a plain C compiler to stay valid.
     "adaptivecpp": ("gcc", "acpp"),
     "intel-llvm": ("clang", "clang++"),
     "oneapi": ("icx", "icpx"),
 }
 
-# The toolchain ``hub install`` pins as the default SR_SYCL_TOOLCHAIN. Which toolchains a
-# run installs is sushicore's rule (``sushicore.provision.selection``).
+# The toolchain ``hub install`` pins as the default SR_SYCL_TOOLCHAIN.
 DEFAULT_ACTIVE_TOOLCHAIN = "intel-llvm"
 
 # Maps a Config field to the SR_* env var that overrides it.
@@ -276,20 +259,15 @@ class Config(ToolConfig):
     roots ``hub install`` discovers and writes into workspace.toml.
     """
 
-    # SYCL toolchain selection (intel-llvm | adaptivecpp | oneapi). Persisted by
-    # `sr toolchain` and consumed as -DSR_SYCL_TOOLCHAIN at configure time.
+    # One of intel-llvm, adaptivecpp or oneapi; consumed as -DSR_SYCL_TOOLCHAIN at configure time.
     toolchain: str = "intel-llvm"
 
-    # The C compiler. Empty cc/cxx (cxx from ToolConfig) means "derive from the
-    # toolchain" via TOOLCHAIN_COMPILERS.
+    # An empty cc, or cxx from ToolConfig, is derived from the toolchain by TOOLCHAIN_COMPILERS.
     cc: str = ""
 
     oneapi_root: str = ""
     icx_compiler: str = ""
-    # intel/llvm nightly bundle root (holds bin/clang++) for the intel-llvm
-    # toolchain, and the AdaptiveCpp compiler for the adaptivecpp toolchain.
-    # On Windows these are how the non-oneAPI toolchains provide a SYCL compiler;
-    # they are discovered by `hub install` and written to workspace.toml.
+    # The intel/llvm bundle root, holding bin/clang++, and the AdaptiveCpp compiler.
     llvm_root: str = ""
     acpp_exe: str = ""
 

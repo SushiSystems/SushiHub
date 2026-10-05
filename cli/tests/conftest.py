@@ -3,17 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Shared fakes for the `hub` test suite.
+"""Provides the shared fakes of the `hub` test suite and pins the import environment.
 
-``MemorySource`` stands in for the TOML dependency source so no test reads a
-manifest, touches the network, or writes into ``dependencies/``. ``fake_cfg``
-gives the steps a Linux :class:`Config` whose every tool path is empty.
-
-Two things happen before ``sushihub`` is imported. ``SUSHISTACK_HOME`` is
-pinned to the repository root, because ``sushihub.console`` resolves the
-workspace at import time and pytest may run from outside one. The repository
-root leaves ``sys.path``, because its ``sushicore/`` directory shadows the
-installed ``sushicore`` distribution as a namespace package.
+``MemorySource`` stands in for the TOML dependency source, and ``fake_cfg`` gives the steps a
+Linux :class:`Config` whose every tool path is empty. What changes before ``sushihub`` is
+imported, and why, is in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

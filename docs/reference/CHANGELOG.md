@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-05 — docs: Moved the reasoning held in module docstrings and comment paragraphs to the component READMEs (`cli/README.md`, `tools/README.md`, `cli/sushihub/`, `tools/record_cli_argv.py`).
 - 2026-10-05 — docs: Moved the agent specs, plans and reports to the archive, promoted the hub design to `docs/design/HUB.md`, and added the SushiSkills checkers (`docs/`, `tools/`).
 - 2026-10-05 — cli: Added the version flag to the root command (`hub --version`, `cli.py`).
 - 2026-10-05 — cli: Added a `main()` entry point that ends a sushicore failure in one error line, a failed result event under JSON output, and exit code 1 (`cli.py`, `console.py`, `__main__.py`).

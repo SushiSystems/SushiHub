@@ -3,12 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Where a checkout stands against its upstream, read from git.
+"""Reads where a checkout stands against its upstream, from git.
 
-Reading never touches the network: ``ahead`` and ``behind`` count against the
-upstream as the last fetch left it, and ``last_fetch`` says when that was.
-:func:`fetch` is the one call here that goes online, and only
-``hub status --check-updates`` makes it. See contract/README.md,
+Reading never touches the network: ``ahead`` and ``behind`` count against the upstream as the
+last fetch left it, and ``last_fetch`` says when that was. :func:`fetch` is the one call that
+goes online, and only ``hub status --check-updates`` makes it. See contract/README.md,
 "The status payload".
 """
 

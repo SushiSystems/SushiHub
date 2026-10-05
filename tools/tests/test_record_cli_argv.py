@@ -70,9 +70,7 @@ def test_rmtree_is_recorded_and_deletes_nothing(tmp_path):
 
 
 def test_copy2_is_recorded_and_copies_nothing(tmp_path):
-    # A stand-in for the package-consumer DLL deploy (sushiblas/sushiai's
-    # _deploy_consumer_dlls): a real write into a sibling checkout that goes
-    # through shutil.copy2 rather than subprocess, so it needs its own stub.
+    # Stands in for the shutil.copy2 DLL deploy of sushiblas and sushiai; see tools/README.md.
     src = tmp_path / "source.dll"
     src.write_bytes(b"binary-payload")
     dst = tmp_path / "dest.dll"
@@ -83,9 +81,7 @@ def test_copy2_is_recorded_and_copies_nothing(tmp_path):
 
 
 def test_write_text_is_recorded_and_writes_nothing(tmp_path):
-    # A stand-in for SushiRuntime's configure-stamp write (build() writing
-    # STAMP_NAME via Path.write_text): also real disk I/O outside subprocess
-    # and shutil.rmtree, so it too needs its own stub.
+    # Stands in for SushiRuntime's Path.write_text configure stamp; see tools/README.md.
     target = tmp_path / "stamp.txt"
     with _installed_stubs() as records:
         target.write_text("hello")

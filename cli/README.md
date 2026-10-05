@@ -169,3 +169,236 @@ pipeline, the `--describe` catalogue, `--version` and the entry point. It is an 
 dependency (`sushicore>=0.7.0` in `pyproject.toml`), resolved by the same pipx install that
 installs `hub`. It is not a module: `hub link sushicore <path>` is refused. To work on both, install
 your sushicore checkout editable into `hub`'s venv, as `../docs/guides/LINKING_CHECKOUTS.md` says.
+
+## Notes on the source
+
+A comment in the source says what the code does. The reason it is built that way is here, one
+heading per file, and the file cites this section.
+
+### `install.py`
+
+This is the contributor's install. A user installs `hub` from PyPI (`pipx install sushihub`),
+which is what `install.ps1` and `install.sh` do; running this script instead points the same
+command at the checkout you are editing.
+
+Every platform goes through pipx, which isolates the install and puts `hub` on PATH; pipx is
+bootstrapped when it is absent. The install is always `--editable`, against the checkout at
+`REPO_ROOT`. `hub` is one half of a self-updating pair with `hub sync` and `hub update`, which
+pull this same checkout. A non-editable install would freeze `hub` at whatever revision was on
+disk when it was first installed, and every later fix would need a manual reinstall to take
+effect. There is no non-editable mode to opt into. `sushicore` is an ordinary dependency,
+resolved from PyPI by the same pipx install.
+
+The script finds the CLI package directory itself, as the folder holding `pyproject.toml`, so
+renaming the `cli/` folder does not break it.
+
+### `sushihub/cli.py`
+
+`hub` is the umbrella: it provisions one shared dependency tree for the whole stack and manages
+the module checkouts named in `catalog.toml` that live inside the workspace. Each module keeps
+its own CLI (`sr`, `se`, `sa`, `sb`) for building and testing. `hub` owns downloading,
+installing and the module lifecycle, and nothing else. `cli.py` is a thin Typer layer over
+`sushihub.services`, and a failure raised as a sushicore error ends in `main()`, through
+`console.report_failure`.
+
+`_MODULE_NAMES` and `_MODULE_ALIASES` hold the module names and aliases every command's help
+repeats. They are built from the catalog, so a change to `catalog.toml` reaches `hub --help`
+and `hub --describe` without an edit in `cli.py`.
+
+### `sushihub/config.py`
+
+The active platform's `[tool.<platform>]` table is merged over the common `[tool]` table, so
+one file describes both Linux and Windows. SushiStack is the umbrella workspace, and `hub add`
+clones the stack modules (sushiruntime, sushiengine and the rest) inside it. Everything the
+installer downloads lands in `<workspace>/dependencies` and is shared by every module, so the
+modules never provision their own toolchain or vcpkg tree.
+
+The config plumbing is domain-agnostic and shared by every Sushi CLI: the generic build-tool
+schema (the cmake, ninja and vcpkg paths) and the skeleton that loads the layers and writes
+`[tool]` live in sushicore. `config.py` adds only the SYCL fields.
+
+`CHECKOUT_CLI_DIR` keeps the spelling `sushihub/cli` on purpose. It names where a workspace made
+before 2026-09-22 wrote its local config, so the rename of the folder to `cli/` must not follow
+it, or the upgrade reads nothing.
+
+`TOOLCHAINS` lists the SYCL toolchains a user can select: intel-llvm is the primary one,
+adaptivecpp the secondary, and oneapi is supported. `TOOLCHAIN_COMPILERS` gives each a default
+compiler pair, so `sr toolchain <name>` is enough to switch. acpp compiles C++ only, so the C
+slot of its pair holds a plain C compiler; the project builds CXX only, which leaves `cc`
+unused but valid. `Config.toolchain` is persisted by `sr toolchain`. `llvm_root` and `acpp_exe`
+are how the toolchains other than oneAPI provide a SYCL compiler on Windows; `hub install`
+discovers them and writes them to `workspace.toml`.
+
+### `sushihub/console.py`
+
+`console.py` is a thin wrapper around `sushicore`. The theme, icon and renderer logic, with its
+`[cli]` config schema, lives there and is shared with every module CLI in the stack:
+sushiruntime, sushiengine, sushiai and sushiblas. sushicore's README says how to change the
+colours.
+
+The console is built on first use, not on import, so a command that needs no workspace
+(`hub --help`, `hub --describe`) still runs outside one. Every name the module exposes resolves
+through `sushicore.cli_console.LazyConsole`: `console` for the raw Rich console, `info`,
+`success`, `warn`, `error`, `command`, `header`, `fail_panel`, `accent`, and the four
+machine-readable ones, `table`, `progress`, `result` and `prompt`.
+
+### `sushihub/gui_config.py` and `sushihub/gui_env.py`
+
+`hub gui` builds `gui` the way a module CLI builds its own repository: through
+`sushicore.cmake_driver.CMakeDriver` under a snapshotted environment, against the vcpkg tree
+`hub install` provisions. That machinery asks for a profile and a config, and `gui_config.py`
+is where the application answers. The application is not a module checkout. It lives inside the
+workspace `hub` already owns, so its root is a fixed path under the workspace root and its
+configuration is the workspace's own. There is no second config directory to find.
+
+`GUI_PROFILE` is read by the environment snapshot's cache key and by the run target, so the two
+cannot disagree about what is being built.
+
+A parent process cannot `call vcvars64.bat` and inherit the result, so the shell runs as a child
+and its environment is dumped and cached; `sushicore.build_env` holds the mechanism. That is why
+`cmake --preset windows-x64` from a plain PowerShell found no compiler and `hub gui build` does.
+The application consumes the shared tree and provisions nothing, so its environment is
+`sushicore.build_env.StackBuildEnv` with the application's own profile and root resolver.
+
+### `sushihub/services/cli_install.py`
+
+Each module has one program name (`sr`, `se`, `sa`, `sb`, `sd`), resolved from the catalog in
+`sushihub.services.catalog`, the single place that knows what the stack contains. Nothing in
+the service is per-module: it reads the distribution name out of the module's own
+`cli/pyproject.toml`, so a module added to the catalog works the day it is added, with no
+change to this file.
+
+The umbrella owns this so that the whole stack has one install seam and no module ships its own
+bootstrap script. The service installs the module CLI into an isolated pipx venv and stops
+there: `sushicore` is an ordinary PyPI dependency each module CLI declares, and pipx resolves it
+like any other.
+
+When the service bootstraps pipx with pip, `--user` goes on the command line only outside a
+venv or conda environment. User site-packages are visible there; inside one, pip rejects the
+flag.
+
+### `sushihub/services/customize.py`
+
+What the present modules declare installs by default. The picker is the escape hatch for a user
+who wants to add or drop one of the heavy components. It opens on that derived selection and
+lays the components out as a checklist, one row per component, with a pointer on the focused
+row. Up and down move between rows, space toggles the focused one, enter continues, and a final
+confirmation guards against an accidental enter. Capturing keys directly and rendering with
+rich means the picker needs no extra dependency.
+
+### `sushihub/services/gui.py`
+
+The split between policy here and spawning in `CMakeDriver` is the one every module CLI in the
+stack keeps, so the application is built the way sushiblas is and not by a second mechanism.
+
+The build tree is `build/hub` under the application, beside the `build/<preset>` trees
+`CMakePresets.json` writes. The two never share a directory: a preset build runs under whatever
+environment the shell already had, and this one runs under the vcvars snapshot, so a cache
+written by one is wrong for the other.
+
+The configure turns vcpkg's manifest mode off. `hub install` fills a classic-mode tree under
+`dependencies/vcpkg` and manifest mode ignores it, which is what the failed configure in
+`../docs/archive/agent/plans/2026-09-05-wave-4b-gui-through-ss.md` showed.
+
+### `sushihub/services/hub_install.py` and `sushihub/services/status_report.py`
+
+`hub_install.py` reads the home directory it is given and nothing else, so the `hub` block of
+the status payload is the same on every call.
+
+With `check_updates`, `status_report.py` first fetches every checkout and asks Sushi Account
+about every binary install, through `git_state` and `update_check`. It collects what failed as
+warnings and does not print them.
+
+### `sushihub/services/identity.py`, `session.py` and `token_store.py`
+
+The client prints nothing and asks nothing: the commands in `sushihub.services.session` own the
+terminal, and the credential store arrives as a `TokenStore`. The clock, the sleep and the HTTP
+opener are constructor arguments, so a test can run the whole grant against a fake server in a
+thread with no wall-clock wait.
+
+One factory, `session.client`, decides which server and which credential store every Sushi
+Account call in `hub` talks to, so a test replaces the pair in one place.
+
+The client never names a credential store. In production the `TokenStore` it takes is
+`KeyringStore`; in tests it is `MemoryStore`, which is gone when the process is.
+
+### `sushihub/services/licence_file.py`
+
+`hub` writes the token bare into the module's own directory. The engine verifies it offline
+against Sushi Account's JWKS at start-up, which is why the file holds the token and nothing
+around it.
+
+### `sushihub/services/module_manifest.py`
+
+A checkout that carries a manifest describes itself, so `hub` can recognise it without a
+catalog entry. Which of the two wins when both a manifest and a catalog entry exist is decided
+where both are in scope, not in this module.
+
+### `sushihub/services/modules.py`
+
+SushiStack is the workspace, and the stack's modules (sushiruntime, sushiengine and the rest)
+are git checkouts that live inside it, cloned by `hub add`. This service owns that lifecycle:
+initialising the workspace, cloning and updating modules.
+
+`sushicore` is the shared CLI presentation layer, not a stack build module. It ships no
+dependency fragment and is never built, and it stays out of `CATALOG` so that `hub add all`,
+readiness and dependency aggregation all leave it out.
+
+`_GITIGNORE_LINES` names the shared dependency tree and every module checkout because they are
+build artifacts of the workspace, not part of it.
+
+`update` brings `hub` itself up to date before any module, so a single `hub update` reaches
+every fix and not only the ones in modules. Otherwise an editable `hub` goes stale until
+someone remembers to pull its checkout by hand.
+
+### `sushihub/services/presence.py`
+
+Presence is never recorded, only observed. Every command that needs to know whether `.git` is
+there asks this module, so the four forms are decided in one place and worded the same
+everywhere. The layout rule it reads by is the workspace's own: a module named `sushiengine`
+lives at `<workspace>/sushiengine`, whether it was cloned or unpacked.
+
+`RELEASE_MANIFEST` has the same value as `sushicore.profile.RELEASE_MANIFEST`, which is how a
+module's own CLI finds a binary root. `tests/test_presence.py` pins the two together so neither
+can drift.
+
+### `sushihub/services/releases.py`
+
+Each of the four steps is a function of its own so a test can run it alone. The archive is
+unpacked into a temporary directory beside the module's own and moved over it last, so a
+download that fails leaves the install that was there untouched.
+
+### `sushihub/services/setup.py`
+
+Consent for the heavy LLVM download on Windows is gathered before the progress spinner starts,
+so the prompt can be answered. On Linux, for a user who is not root, sudo is primed at the same
+point: the password prompt appears while it is attached to the terminal. Left to `install-deps`,
+the live progress spinner would swallow it and it would time out.
+
+### `sushihub/setup/`
+
+The pipeline is dependency-injected. Building a module is that module's own CLI's job. The
+public entry point is `factory.build_pipeline`; everything else is an implementation detail
+behind small interfaces: `pipeline.Step`, `package_managers.IPackageManager` and
+`dependency_source.IDependencySource`.
+
+The installer must not hard-code package names. It asks an `IDependencySource` for the packages
+relevant to the current platform. SushiStack owns no single manifest: each module declares what
+it needs and the installer aggregates those fragments into one shared dependency set. A module
+keeps its fragment under `cli/`, not at its repository root. Finding the fragments is `hub`'s
+own business, in `dependency_source.py`. A module linked to an external checkout, a developer's
+working repository outside the workspace tree, contributes its fragment like one inside it.
+
+`MODULE_META_TABLE` is the table name a fragment reserves for module-level metadata, currently
+`depends_on`, as opposed to a dependency.
+
+On Linux `VcpkgManager` is the only route for the ports that have no apt package at all:
+vk-bootstrap and cgltf.
+
+### `tests/conftest.py`
+
+`MemorySource` exists so that no test reads a manifest, touches the network or writes into
+`dependencies/`. Two things happen before `sushihub` is imported. `SUSHISTACK_HOME` is pinned to
+the repository root, because `sushihub.console` resolves the workspace at import time and
+pytest may run from outside one. The repository root leaves `sys.path`, because a `sushicore/`
+directory there shadows the installed `sushicore` distribution as a namespace package.

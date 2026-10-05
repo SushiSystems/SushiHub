@@ -18,8 +18,7 @@ from pathlib import Path
 
 from .. import console
 
-#: How long `git ls-remote` may take to answer before the source counts as out
-#: of reach, in seconds.
+#: Seconds `git ls-remote` may take before the source counts as out of reach.
 REACHABLE_TIMEOUT = 15
 
 

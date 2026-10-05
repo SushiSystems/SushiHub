@@ -3,17 +3,10 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""What the desktop application is, said once for the shared build machinery.
+"""Declares the desktop application's profile, config and root for the shared build machinery.
 
-`hub gui` builds `gui` the way a module CLI builds its own repository:
-through :class:`sushicore.cmake_driver.CMakeDriver` under a snapshotted
-environment, against the vcpkg tree `hub install` provisions. That machinery asks
-for a profile and a config, and this module is where the application answers.
-
-The application is not a module checkout. It lives inside the workspace `hub`
-already owns, so its root is a fixed path under the workspace root and its
-configuration is the workspace's own — there is no second config directory to
-find.
+Why the application answers here and has no config directory of its own is in
+cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
@@ -29,9 +22,7 @@ from sushicore.stack_config import StackConfig
 from .config import packaged_defaults, workspace_file, workspace_root
 from .errors import GuiSourcesMissingError
 
-#: How the desktop application describes itself to the shared build machinery.
-#: Read by the environment snapshot's cache key and by the run target, so the
-#: two cannot disagree about what is being built.
+#: The profile both the environment snapshot's cache key and the run target read.
 GUI_PROFILE = ModuleProfile(
     name="SushiHub GUI",
     program="hub gui",

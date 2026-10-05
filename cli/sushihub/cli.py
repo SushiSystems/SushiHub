@@ -3,18 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""SushiHub developer CLI (`hub`).
+"""Declares the `hub` Typer application: one function per subcommand, and :func:`main`.
 
-The umbrella that provisions one shared dependency tree for the whole stack and
-manages the module checkouts named in `catalog.toml` that live inside the workspace. Each
-module keeps its own CLI — `sr`, `se`, `sa`, `sb` — for building and testing; `hub` only owns
-downloading, installing, and module lifecycle.
-
-Thin Typer layer: commands parse arguments and delegate to the service layer in
-``sushihub.services``. Every command ends through :func:`_finish`, which emits
-the one ``result`` event the JSON contract in ``contract/README.md``
-requires and then exits. A failure raised as a sushicore error ends in
-:func:`main`, through ``console.report_failure``.
+Commands parse arguments and delegate to ``sushihub.services``. Every command ends through
+:func:`_finish`, which emits the one ``result`` event ``contract/README.md`` requires.
+What `hub` owns and what a module CLI owns is in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
@@ -107,9 +100,7 @@ def _finish(rc: int, payload: dict | None = None) -> None:
     raise typer.Exit(rc)
 
 
-# --------------------------------------------------------------------------- #
 # workspace
-# --------------------------------------------------------------------------- #
 @app.command(
     "init",
     rich_help_panel=K_WORKSPACE,
@@ -161,14 +152,11 @@ def status(
     _finish(status_report.render(report.payload), report.payload)
 
 
-# --------------------------------------------------------------------------- #
 # modules
 
-# The module names and aliases every command's help repeats, built from the catalog so a
-# change to catalog.toml reaches `hub --help` and `hub --describe` without an edit here.
+# Both lists are built from the catalog; see cli/README.md, "Notes on the source".
 _MODULE_NAMES = " | ".join(CATALOG.names())
 _MODULE_ALIASES = "`, `".join(CATALOG.aliases())
-# --------------------------------------------------------------------------- #
 @app.command(
     "add",
     rich_help_panel=K_MODULES,
@@ -266,9 +254,7 @@ def update(
     _finish(modules_svc.update(modules, dry_run=dry_run))
 
 
-# --------------------------------------------------------------------------- #
 # dependencies
-# --------------------------------------------------------------------------- #
 @app.command(
     "install",
     rich_help_panel=K_DEPENDENCIES,
@@ -350,9 +336,7 @@ def remove(
     _finish(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
 
 
-# --------------------------------------------------------------------------- #
 # the desktop application
-# --------------------------------------------------------------------------- #
 gui_app = typer.Typer(
     name="gui",
     cls=_help_group,

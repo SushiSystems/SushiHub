@@ -3,13 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""What `hub` adds when it reads a fragment, and what it still refuses.
+"""Tests what `hub` adds when it reads a fragment, and what it still refuses.
 
-The format itself is `sushicore.deps_fragment`'s and is tested there. What is
-left here is `hub`'s own part — the owner it attaches — and the two contracts a
-caller of `hub` depends on: the fragments this package ships all read, and a
-shape the reader cannot understand still stops `hub` rather than being skipped.
-That silence is what lost sushidsp's fragment until 2026-09-22.
+The format is `sushicore.deps_fragment`'s and is tested there. Here: the owner `hub` attaches,
+that every fragment this package ships reads, and that a shape the reader cannot understand
+stops `hub`. The reason is in docs/reference/MODULE_MANIFEST.md.
 """
 
 from __future__ import annotations

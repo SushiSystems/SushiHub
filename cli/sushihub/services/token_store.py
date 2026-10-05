@@ -3,13 +3,10 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""Where the Sushi Account session lives between two `hub` runs.
+"""Stores the Sushi Account session between two `hub` runs.
 
-The client in ``sushihub.services.identity`` never names a credential store: it
-takes a :class:`TokenStore`. In production that is :class:`KeyringStore`, which
-puts one JSON document in the operating system's credential store; in tests it is
-:class:`MemoryStore`, which holds it in the process and is gone when the process
-is. The document's fields are the ones
+:class:`KeyringStore` puts one JSON document in the operating system's credential store;
+:class:`MemoryStore` holds it in the process, for tests. The document's fields are the ones
 ``contract/sushi-account.md`` says the token endpoint returns.
 """
 
@@ -24,8 +21,7 @@ import keyring.errors
 
 from ..errors import SushiAccountError
 
-# The credential store's coordinates. One entry holds the whole session, so a
-# sign-out is one deletion.
+# One credential-store entry holds the whole session, so a sign-out is one deletion.
 KEYRING_SERVICE = "sushihub"
 KEYRING_USERNAME = "sushi-account"
 

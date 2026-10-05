@@ -3,19 +3,10 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""CLI output for the SushiHub CLI.
+"""Exposes the SushiHub console, built on first use over :mod:`sushicore`.
 
-Thin wrapper around :mod:`sushicore` — the actual theme/icon/renderer logic
-(and its `[cli]` config schema) lives there and is shared with every module
-CLI in the stack — sushiruntime, sushiengine, sushiai and sushiblas. See
-sushicore's README to change colors.
-
-The console is built on first use, not on import, so a command that needs no
-workspace (`hub --help`, `hub --describe`) still runs outside one. Every name this
-module exposes resolves through :class:`~sushicore.cli_console.LazyConsole`:
-``console`` for the raw Rich console, ``info``/``success``/``warn``/``error``,
-``command``, ``header``, ``fail_panel``, ``accent``, and the machine-readable
-four, ``table``, ``progress``, ``result`` and ``prompt``.
+Every name this module exposes resolves through :class:`~sushicore.cli_console.LazyConsole`.
+The names, and why the console is built late, are in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

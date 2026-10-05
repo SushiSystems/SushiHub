@@ -3,14 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""The Sushi Account client: the device grant, the account read, licences and releases.
+"""Implements the Sushi Account client: the device grant, the account read, licences, releases.
 
-One class over the six endpoints written down in
-``contract/sushi-account.md``. It prints nothing and asks nothing: the
-commands in ``sushihub.services.session`` own the terminal, and the credential
-store arrives as a :class:`~sushihub.services.token_store.TokenStore`. The
-clock, the sleep and the HTTP opener are constructor arguments so a test can run
-the whole grant against a fake server in a thread with no wall-clock wait.
+One class over the six endpoints written down in ``contract/sushi-account.md``. It prints
+nothing and asks nothing; the clock, the sleep and the HTTP opener are constructor arguments.
+See cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations
