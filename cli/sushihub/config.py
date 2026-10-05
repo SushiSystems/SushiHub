@@ -51,6 +51,8 @@ from sushicore.workspace import (
 )
 from sushicore.workspace import workspace_file as _core_workspace_file
 
+from .errors import WorkspaceNotFoundError
+
 #: The checkout directory a pre-2026-09-22 workspace kept its local config in.
 #: It keeps the old spelling on purpose: it names where those workspaces wrote,
 #: so the rename to ``cli/`` must not follow it or the upgrade reads nothing.
@@ -65,26 +67,36 @@ LEGACY_TOOL_FILE = "config.local.toml"
 #: The file `hub link` wrote its ``[modules]`` registry into before 2026-09-22.
 LEGACY_MODULES_FILE = "modules.local.toml"
 
-def workspace_root(start: Path | None = None) -> Path:
-    """Locate the SushiStack workspace root.
+#: What a command that needs a workspace says when it runs outside one.
+K_NO_WORKSPACE = (
+    "Not inside a SushiStack workspace: no .sushistack marker found in the "
+    "current directory or any parent. Run `hub init` first, or set "
+    "SUSHISTACK_HOME to the workspace root."
+)
 
-    The CLI is installed (pip/pipx) outside the workspace, so the package location
-    tells us nothing about where the workspace lives — the invocation directory
-    does. Resolution order: ``SUSHISTACK_HOME`` env var, then a walk up from CWD
-    looking for the ``.sushistack`` marker. The marker is a directory since
-    2026-09-22 and was a file before it; both resolve, and
-    :func:`upgrade_workspace` converts the second into the first.
+
+def find_workspace_root(start: Path | None = None) -> Path | None:
+    """Returns the SushiStack workspace root, or None outside a workspace.
+
+    ``SUSHISTACK_HOME`` answers first, then a walk up from *start*, the current
+    directory when None, looking for the ``.sushistack`` marker. The marker is a
+    directory since 2026-09-22 and was a file before it; both resolve.
     """
     home = resolve_env_path("SUSHISTACK_HOME")
     if home:
         return home
-    root = walk_up(start or Path.cwd(), has_marker(WORKSPACE_MARKER))
+    return walk_up(start or Path.cwd(), has_marker(WORKSPACE_MARKER))
+
+
+def workspace_root(start: Path | None = None) -> Path:
+    """Returns the SushiStack workspace root :func:`find_workspace_root` resolves.
+
+    Raises:
+        WorkspaceNotFoundError: Neither the environment nor a marker names a workspace.
+    """
+    root = find_workspace_root(start)
     if root is None:
-        raise SystemExit(
-            "Not inside a SushiStack workspace: no .sushistack marker found in the "
-            "current directory or any parent. Run `hub init` first, or set "
-            "SUSHISTACK_HOME to the workspace root."
-        )
+        raise WorkspaceNotFoundError(K_NO_WORKSPACE)
     return root
 
 
@@ -180,11 +192,8 @@ def identity_url() -> str:
     override = os.environ.get("SUSHI_ACCOUNT_URL")
     if override:
         return override.rstrip("/")
-    sources: list[Path] = []
-    try:
-        sources.append(workspace_file(workspace_root()))
-    except SystemExit:
-        pass
+    root = find_workspace_root()
+    sources = [] if root is None else [workspace_file(root)]
     with packaged_defaults() as defaults:
         for source in (*sources, defaults):
             url = read_toml(source).get("identity", {}).get("url")
@@ -210,12 +219,12 @@ def deps_dir() -> Path:
     override = os.environ.get("SUSHISTACK_DEPS_DIR")
     if override:
         return Path(override)
-    try:
-        return workspace_root() / "dependencies"
-    except SystemExit:
-        local = os.environ.get("LOCALAPPDATA", "")
-        base = Path(local) if local else Path.home() / ".local"
-        return base / "SushiStack" / "dependencies"
+    root = find_workspace_root()
+    if root is not None:
+        return root / "dependencies"
+    local = os.environ.get("LOCALAPPDATA", "")
+    base = Path(local) if local else Path.home() / ".local"
+    return base / "SushiStack" / "dependencies"
 
 
 # The SYCL toolchains a user can select. Must match SR_SYCL_TOOLCHAIN in

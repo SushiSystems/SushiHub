@@ -121,7 +121,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
         binary: bool = False, provision=None) -> int:
     """Bring one or more modules into the workspace. Return exit code.
 
-    Four of the five modules are cloned. sushiengine is cloned when this
+    A module is cloned. sushiengine alone has a second form: it is cloned when this
     machine's Git identity reaches its repository and *binary* was not asked
     for, and downloaded as a compiled release otherwise; a release brings its
     own dependencies, so it never runs the provision pipeline.
@@ -195,8 +195,8 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
         if rc != 0:
             return rc
     if not dry_run:
-        console.success("Modules ready. Build them with their own CLI "
-                        "(`sr`, `se`, `sa`, `sb`).")
+        aliases = ", ".join(f"`{alias}`" for alias in CATALOG.aliases())
+        console.success(f"Modules ready. Build them with their own CLI ({aliases}).")
     return 0
 
 

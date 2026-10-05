@@ -13,14 +13,31 @@ not, and writes the licence file once a release lands.
 
 from __future__ import annotations
 
+import functools
 from pathlib import Path
+from typing import Callable
 
 from .. import console
+from ..errors import SushiAccountError
 from . import licence_file, releases, session
 from .catalog import CATALOG
-from .identity import ReleaseInfo, SushiAccount, SushiAccountError
+from .identity import ReleaseInfo, SushiAccount
 from .presence import read_release
 from .releases import ReleaseCorrupt
+
+
+def _reported(action: Callable[..., bool]) -> Callable[..., bool]:
+    """Returns *action* wrapped to end a Sushi Account failure in one error line and False."""
+    @functools.wraps(action)
+    def wrapper(name: str, *args, **kwargs) -> bool:
+        """Runs the action for *name* and reports the failure it raised."""
+        try:
+            return action(name, *args, **kwargs)
+        except SushiAccountError as error:
+            console.error(f"{name}: {error}")
+            return False
+
+    return wrapper
 
 
 def install(name: str, dest: Path, client: SushiAccount,
@@ -49,6 +66,7 @@ def install(name: str, dest: Path, client: SushiAccount,
     return True
 
 
+@_reported
 def add(name: str, dest: Path, requested: bool) -> bool:
     """Install *name* from its release, having found no other way to bring it in.
 
@@ -75,6 +93,7 @@ def add(name: str, dest: Path, requested: bool) -> bool:
     return install(name, dest, client)
 
 
+@_reported
 def update(name: str, dest: Path) -> bool:
     """Reinstall *name* when Sushi Account holds a release newer than the one at *dest*.
 
@@ -91,11 +110,7 @@ def update(name: str, dest: Path) -> bool:
         console.error(f"{name}: a binary install is refreshed through Sushi Account. "
                       "Run `hub login` first.")
         return False
-    try:
-        info = client.resolve_release(name, releases.host_platform())
-    except SushiAccountError as error:
-        console.error(f"{name}: {error}")
-        return False
+    info = client.resolve_release(name, releases.host_platform())
     installed = read_release(dest)
     if installed is not None and installed.version == info.version:
         console.info(f"{name}: binary {installed.version} is the latest release.")

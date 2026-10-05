@@ -13,9 +13,11 @@ have spawned.
 from pathlib import Path
 
 import pytest
+from sushicore.errors import SushiCoreError
 
 from sushihub.config import WORKSPACE_MARKER
-from sushihub.gui_config import GuiConfig, gui_root, load_gui_config
+from sushihub.errors import GuiSourcesMissingError
+from sushihub.gui_config import K_REPOSITORY_URL, GuiConfig, gui_root, load_gui_config
 
 
 @pytest.fixture
@@ -37,10 +39,22 @@ def test_gui_root_defaults_to_the_workspace_the_environment_names(workspace):
     assert gui_root() == workspace / "gui"
 
 
-def test_gui_root_exits_when_the_application_carries_no_cmakelists(workspace):
+def test_gui_root_refuses_a_workspace_without_the_application_sources(workspace):
+    """A missing CMakeLists.txt raises the hub error whose hint names the clone."""
     (workspace / "gui" / "CMakeLists.txt").unlink()
-    with pytest.raises(SystemExit):
+    with pytest.raises(GuiSourcesMissingError) as caught:
         gui_root(workspace)
+    assert isinstance(caught.value, SushiCoreError)
+    assert "git clone" in str(caught.value) and "hub update" not in str(caught.value)
+
+
+def test_the_missing_sources_hint_names_the_repository_only_by_its_clone_url(workspace):
+    """The hint carries the clone URL and no second repository name beside it."""
+    (workspace / "gui" / "CMakeLists.txt").unlink()
+    with pytest.raises(GuiSourcesMissingError) as caught:
+        gui_root(workspace)
+    assert K_REPOSITORY_URL in str(caught.value)
+    assert "repository" not in str(caught.value)
 
 
 def test_the_compiler_is_left_to_cmake_when_none_is_configured(workspace):

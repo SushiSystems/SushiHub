@@ -20,11 +20,29 @@ four, ``table``, ``progress``, ``result`` and ``prompt``.
 
 from __future__ import annotations
 
+from pathlib import Path
+
+from sushicore import build_console
 from sushicore.cli_console import LazyConsole
+from sushicore.errors import SushiCoreError
 
-from .config import legacy_cli_dir
+from .config import find_workspace_root, legacy_cli_dir
 
-_lazy = LazyConsole(legacy_cli_dir)
+
+def _theme_dir() -> Path:
+    """Returns the directory the `[cli]` theme is read from.
+
+    Raises:
+        SystemExit: Outside a workspace, which is how
+            :class:`~sushicore.cli_console.LazyConsole` is told there is none.
+    """
+    root = find_workspace_root()
+    if root is None:
+        raise SystemExit(0)
+    return legacy_cli_dir(root)
+
+
+_lazy = LazyConsole(_theme_dir)
 
 
 def set_machine(flag: bool) -> None:
@@ -35,7 +53,7 @@ def set_machine(flag: bool) -> None:
     line, before anything reaches the terminal.
     """
     global _lazy
-    _lazy = LazyConsole(legacy_cli_dir)
+    _lazy = LazyConsole(_theme_dir)
     _lazy.machine = flag
 
 
@@ -47,6 +65,21 @@ def is_machine() -> bool:
 def current():
     """Return the sushicore Console this run prints through, building it on first use."""
     return _lazy.get()
+
+
+def report_failure(message: str) -> None:
+    """Prints one error line and, under ``--json``, the ``result`` event that ends the stream.
+
+    A console whose own configuration cannot be read is replaced by one built
+    from no configuration, so the failure is still reported in this run's mode.
+    """
+    try:
+        printer = current()
+    except SushiCoreError:
+        printer = build_console((), machine=is_machine())
+    printer.error(message)
+    if is_machine():
+        printer.result(False, {})
 
 
 def __getattr__(name: str):

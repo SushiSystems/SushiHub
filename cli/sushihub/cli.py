@@ -13,7 +13,8 @@ downloading, installing, and module lifecycle.
 Thin Typer layer: commands parse arguments and delegate to the service layer in
 ``sushihub.services``. Every command ends through :func:`_finish`, which emits
 the one ``result`` event the JSON contract in ``contract/README.md``
-requires and then exits.
+requires and then exits. A failure raised as a sushicore error ends in
+:func:`main`, through ``console.report_failure``.
 """
 
 from __future__ import annotations
@@ -23,12 +24,13 @@ import sys
 from typing import List, Optional
 
 import typer
-from sushicore import provision
+from sushicore import entry, provision
 from sushicore.provision import home as provision_home
+from sushicore.root_options import version_line, version_option
 from sushicore.typer_help import help_group
 
-from . import console
-from .config import deps_dir, upgrade_workspace, workspace_root
+from . import DISTRIBUTION, console
+from .config import deps_dir, find_workspace_root, upgrade_workspace, workspace_root
 from .describe import catalogue
 from .services.catalog import CATALOG
 from .services import gui as gui_svc
@@ -61,7 +63,8 @@ def _root(
     describe: bool = typer.Option(
         False, "--describe", is_eager=True,
         help="Print the command catalogue as JSON and exit."),
-):
+    show_version: Optional[bool] = version_option(lambda: [version_line(DISTRIBUTION)]),
+) -> None:
     """Select the output mode before any command body runs."""
     provision.bind_console(lambda: console)
     provision_home.bind_root(deps_dir)
@@ -85,11 +88,9 @@ def _upgrade_if_old() -> None:
     Outside a workspace there is nothing to convert, and `hub init` must still
     run there, so an unresolved root is not an error.
     """
-    try:
-        root = workspace_root()
-    except SystemExit:
-        return
-    upgrade_workspace(root)
+    root = find_workspace_root()
+    if root is not None:
+        upgrade_workspace(root)
 
 
 def _finish(rc: int, payload: dict | None = None) -> None:
@@ -119,7 +120,8 @@ def init():
 
     Writes the [cmd].sushistack[/cmd] marker, ensures [cmd].gitignore[/cmd]
     excludes the shared [cmd]dependencies/[/cmd] tree and module checkouts, and
-    creates the dependency directory. Run this once after cloning sushihub.
+    creates the dependency directory. Run this once, in the directory that will
+    hold the modules.
     """
     _finish(modules_svc.init())
 
@@ -131,7 +133,6 @@ def init():
 )
 def home():
     """Print the resolved workspace root and dependency directory."""
-    from .config import deps_dir, workspace_root
     root, deps = workspace_root(), deps_dir()
     console.info(str(root))
     console.info(f"dependencies: {deps}")
@@ -187,9 +188,10 @@ def add(
 ):
     """Bring one or more stack modules into the workspace, with what they need.
 
-    Five of the six are cloned. sushiengine is cloned when this machine's Git
-    identity reaches its repository, and downloaded as a compiled release, with
-    its licence file, when it does not or when [bold]--binary[/bold] is given.
+    A module is cloned. sushiengine alone has a second form: it is cloned when
+    this machine's Git identity reaches its repository, and downloaded as a
+    compiled release, with its licence file, when it does not or when
+    [bold]--binary[/bold] is given.
     Each module that arrives by clone brings its own dependencies; they are
     provisioned once at the end unless [bold]--skip-install[/bold] is given.
     """
@@ -233,8 +235,8 @@ def install_cli(
     """Install a module's developer CLI into an isolated pipx venv.
 
     The single install seam for the stack: no module ships its own bootstrap
-    script. This installs the module's [cmd]cli/[/cmd] package and injects the
-    shared [cmd]sushicore[/cmd] presentation layer that ships in this repository.
+    script. This installs the module's [cmd]cli/[/cmd] package; the shared
+    [cmd]sushicore[/cmd] layer arrives from PyPI as that package's dependency.
 
     Always installed editable, against the checkout it was invoked from -- a
     non-editable install would freeze the CLI at whatever revision existed at
@@ -314,7 +316,7 @@ def install(
 def sync(
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't change."),
 ):
-    """Bring the workspace up to date: install missing deps, then update modules."""
+    """Bring the workspace up to date: update the modules, then install missing deps."""
     _finish(modules_svc.sync(dry_run=dry_run))
 
 
@@ -470,5 +472,10 @@ def license():
     _finish(*session_svc.license())
 
 
+def main() -> None:
+    """Runs `hub` and exits; a sushicore failure becomes one line and exit code 1."""
+    entry.run(app, console.report_failure)
+
+
 if __name__ == "__main__":
-    app()
+    main()

@@ -22,6 +22,8 @@ from typing import Protocol
 import keyring
 import keyring.errors
 
+from ..errors import SushiAccountError
+
 # The credential store's coordinates. One entry holds the whole session, so a
 # sign-out is one deletion.
 KEYRING_SERVICE = "sushihub"
@@ -65,25 +67,55 @@ def _decode(blob: str | None) -> Tokens | None:
         return None
 
 
+class CredentialStoreError(SushiAccountError):
+    """Reports an operating system credential store that could not be used."""
+
+
+def _unusable(error: keyring.errors.KeyringError) -> CredentialStoreError:
+    """Returns the error that names the credential store's own failure."""
+    detail = str(error) or type(error).__name__
+    return CredentialStoreError(f"The credential store is unusable: {detail}")
+
+
 class KeyringStore:
     """Keeps the session in the operating system's credential store."""
 
     def load(self) -> Tokens | None:
-        """Return the session keyring holds, or None when it holds none."""
-        return _decode(keyring.get_password(KEYRING_SERVICE, KEYRING_USERNAME))
+        """Return the session keyring holds, or None when it holds none.
+
+        Raises:
+            CredentialStoreError: The credential store could not be read.
+        """
+        try:
+            return _decode(keyring.get_password(KEYRING_SERVICE, KEYRING_USERNAME))
+        except keyring.errors.KeyringError as error:
+            raise _unusable(error) from error
 
     def save(self, tokens: Tokens) -> None:
-        """Write *tokens* as one JSON document under the service and username."""
-        keyring.set_password(
-            KEYRING_SERVICE, KEYRING_USERNAME,
-            json.dumps(asdict(tokens), ensure_ascii=False))
+        """Write *tokens* as one JSON document under the service and username.
+
+        Raises:
+            CredentialStoreError: The credential store refused the write.
+        """
+        try:
+            keyring.set_password(
+                KEYRING_SERVICE, KEYRING_USERNAME,
+                json.dumps(asdict(tokens), ensure_ascii=False))
+        except keyring.errors.KeyringError as error:
+            raise _unusable(error) from error
 
     def clear(self) -> None:
-        """Delete the entry, ignoring a keyring that has none to delete."""
+        """Delete the entry; a keyring that has none to delete is not a failure.
+
+        Raises:
+            CredentialStoreError: The credential store could not be reached.
+        """
         try:
             keyring.delete_password(KEYRING_SERVICE, KEYRING_USERNAME)
         except keyring.errors.PasswordDeleteError:
-            pass
+            return
+        except keyring.errors.KeyringError as error:
+            raise _unusable(error) from error
 
 
 class MemoryStore:

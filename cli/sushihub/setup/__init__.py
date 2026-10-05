@@ -3,12 +3,11 @@
 # Copyright (c) 2026 Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
-"""SushiRuntime one-shot installer pipeline.
+"""SushiHub's provisioning pipeline.
 
-A SOLID, dependency-injected pipeline that takes a bare machine to a working
-build: detect what is present, install what is missing (driven by the
-``dependencies.toml`` manifest), write the probed ``[tool]`` table, then verify by
-building and smoke-testing.
+A dependency-injected pipeline that detects what is present, installs what the
+``*.deps.toml`` fragments declare and is missing, and writes the probed ``[tool]``
+table. Building a module is its own CLI's job.
 
 The public entry point is :func:`factory.build_pipeline`; everything else is an
 implementation detail behind small interfaces (:class:`pipeline.Step`,

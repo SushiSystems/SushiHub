@@ -22,6 +22,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Callable
 
+from ..errors import SushiAccountError
 from .token_store import TokenStore, Tokens
 
 # The client identifier every device-grant request carries.
@@ -83,8 +84,8 @@ class Account:
     licenses: tuple[Licence, ...]
 
 
-class SushiAccountError(RuntimeError):
-    """A Sushi Account call this client could not carry through."""
+class AccountUnreachable(SushiAccountError):
+    """Sushi Account did not answer: no connection, or no reply within the timeout."""
 
 
 class LoginError(SushiAccountError):
@@ -336,16 +337,18 @@ class SushiAccount:
         """Perform *request*, reading an HTTP error's body as an ordinary answer.
 
         Raises:
-            LoginError: The server could not be reached at all.
+            AccountUnreachable: The connection failed, or the answer did not arrive
+                within :data:`TIMEOUT` seconds.
         """
         try:
-            response = self._http(request, timeout=TIMEOUT)
+            with self._http(request, timeout=TIMEOUT) as response:
+                return getattr(response, "status", 200), _parse(response.read())
         except urllib.error.HTTPError as error:
             return error.code, _parse(error.read())
-        except urllib.error.URLError as error:
-            raise LoginError(f"Sushi Account at {self._base} is unreachable: {error.reason}") from error
-        with response:
-            return getattr(response, "status", 200), _parse(response.read())
+        except OSError as error:
+            reason = getattr(error, "reason", None) or error
+            raise AccountUnreachable(
+                f"Sushi Account at {self._base} is unreachable: {reason}") from error
 
 
 def _parse(payload: bytes) -> dict:

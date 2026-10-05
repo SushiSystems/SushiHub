@@ -8,6 +8,12 @@ Releases are sectioned newest first. Sections older than the current release mov
 
 ## Unreleased
 
+- 2026-10-05 — cli: Added `hub --version` and a `main()` entry point that ends a sushicore failure in one error line, a failed `result` event under `--json`, and exit code 1 (`cli.py`, `console.py`, `__main__.py`).
+- 2026-10-05 — cli: Replaced the `SystemExit` raised outside a workspace and for missing desktop sources with `WorkspaceNotFoundError` and `GuiSourcesMissingError` (`errors.py`, `config.py`, `gui_config.py`).
+- 2026-10-05 — account: Raised `AccountUnreachable` for connection failures and timeouts and `CredentialStoreError` for keyring failures, both reported as one line (`identity.py`, `token_store.py`, `session.py`, `binary.py`).
+- 2026-10-05 — describe: Took the `--describe` catalogue from `sushicore.describe` and removed the local serialiser (`describe.py`).
+- 2026-10-05 — setup: Removed the `verify` and `all` pipeline steps and `VerifyStep` (`steps.py`, `factory.py`, `services/setup.py`).
+- 2026-10-05 — cli: Corrected the help of `hub init`, `add`, `install-cli` and `sync` and the desktop-sources hint (`cli.py`, `modules.py`, `gui_config.py`, `cli/README.md`).
 - 2026-10-05 — licence: Replaced Apache-2.0 with PolyForm Noncommercial 1.0.0, which ends commercial use without a licence (`LICENSE`, `COMMERCIAL.md`, `NOTICE.md`, `README.md`).
 - 2026-10-04 — docs: Marked the module wave of the standalone programme as landed (`docs/design/REMAINING_WORK.md`).
 - 2026-10-04 — setup: Took the toolchain selection rule and the base fragment from sushicore, so a bare hub install installs one SYCL toolchain (`cli/sushihub/setup/factory.py`, `cli/sushihub/setup/dependency_source.py`).

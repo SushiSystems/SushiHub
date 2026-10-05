@@ -37,11 +37,10 @@ from .steps import (
     DetectStep,
     InstallDepsStep,
     UninstallStep,
-    VerifyStep,
     report_readiness,
 )
 
-STEP_NAMES = ("detect", "install", "configure", "verify", "provision", "all")
+STEP_NAMES = ("detect", "install", "configure", "provision")
 
 
 def _validated_toolchain(toolchain: str) -> str:
@@ -73,7 +72,7 @@ def derived_selection(source: IDependencySource, cfg: Config) -> ToolchainSelect
 
 def build_pipeline(
     *,
-    only: str = "all",
+    only: str = "provision",
     selection: dict[str, bool] | None = None,
     dry_run: bool = False,
     refresh_toolchains: bool = False,
@@ -83,8 +82,8 @@ def build_pipeline(
 ) -> tuple[InstallPipeline, InstallContext]:
     """Build the installer pipeline and its execution context.
 
-    ``only`` selects a single step ('detect'|'install'|'configure'|'verify') or a
-    combo ('provision'|'all'). By default one toolchain per capability the present
+    ``only`` selects a single step ('detect'|'install'|'configure') or all three
+    in that order ('provision'). By default one toolchain per capability the present
     modules require is provisioned, and none when the machine already holds one.
     ``selection`` overrides that per
     component (keys: ``install_intel_llvm``, ``install_acpp``, ``oneapi``,
@@ -104,26 +103,10 @@ def build_pipeline(
                                 after_inventory=partial(report_readiness, source)),
         "install":   InstallDepsStep(source, managers),
         "configure": ConfigureStep(WorkspaceSink(workspace_root())),
-        "verify":    VerifyStep(),
     }
 
-    if only == "all":
-        ordered = [
-            all_steps["detect"],
-            all_steps["install"],
-            all_steps["configure"],
-            all_steps["verify"],
-        ]
-    elif only == "provision":
-        # `hub install`: detect + install + write config, but no verify. The
-        # workspace has no single project to build, so VerifyStep (which compiles
-        # and smoke-tests a checkout) is left to each module's own CLI
-        # (`sr`, `se`, `sa`, `sb`).
-        ordered = [
-            all_steps["detect"],
-            all_steps["install"],
-            all_steps["configure"],
-        ]
+    if only == "provision":
+        ordered = list(all_steps.values())
     elif only in all_steps:
         ordered = [all_steps[only]]
     else:

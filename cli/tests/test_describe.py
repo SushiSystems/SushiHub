@@ -5,10 +5,15 @@
 # Commercial use requires a licence from Sushi Systems.
 """The catalogue is what the Typer app already knows, written down."""
 
-import jsonschema
+import json
 
+import jsonschema
+import typer
+from typer.testing import CliRunner
+
+from sushihub import DISTRIBUTION
 from sushihub.cli import app
-from sushihub.describe import catalogue
+from sushihub.describe import ALL_PRESENCE, catalogue
 
 from .test_json_streams import _schema
 
@@ -48,15 +53,52 @@ def test_gui_build_is_described_with_its_type_choice_and_its_defines():
     assert by_name["define"]["multiple"] is True and by_name["define"]["flags"] == ["-D"]
 
 
-def test_type_names_are_read_from_the_type_not_its_class():
-    """Typer ships its own Click classes; the mapping must not depend on click's."""
-    from types import SimpleNamespace
+def test_the_catalogue_is_the_shared_one_with_hubs_distribution_and_presences():
+    """hub's catalogue is sushicore's, called with hub's distribution and presences."""
+    from sushicore import describe as core
 
-    from sushihub.describe import _type_name
+    assert catalogue(app) == core.catalogue(app, distribution=DISTRIBUTION,
+                                            applies_to=ALL_PRESENCE)
+    assert all(c["applies_to"] == ["cloned", "linked", "binary"]
+               for c in catalogue(app)["commands"])
 
-    assert _type_name(SimpleNamespace(name="boolean")) == "boolean"
-    assert _type_name(SimpleNamespace(name="integer")) == "integer"
-    assert _type_name(SimpleNamespace(name="float")) == "number"
-    assert _type_name(SimpleNamespace(name="path")) == "path"
-    assert _type_name(SimpleNamespace(name="choice", choices=("a",))) == "choice"
-    assert _type_name(SimpleNamespace(name="str")) == "string"
+
+def test_a_hidden_command_is_left_out_of_the_catalogue():
+    """A hidden command does not appear in the catalogue."""
+    tool = typer.Typer(name="tool")
+    tool.command("shown")(lambda: None)
+    tool.command("old", hidden=True)(lambda: None)
+
+    assert [c["name"] for c in catalogue(tool)["commands"]] == ["shown"]
+
+
+def test_describe_prints_the_catalogue_as_one_compact_utf8_line():
+    """--describe writes the catalogue as compact UTF-8 JSON and one newline."""
+    result = CliRunner().invoke(app, ["--describe"])
+
+    assert result.exit_code == 0
+    expected = json.dumps(catalogue(app), ensure_ascii=False).encode("utf-8") + b"\n"
+    assert result.stdout_bytes == expected
+
+
+def test_describe_lists_every_visible_command_and_no_hidden_one():
+    """--describe names exactly the nineteen commands the help screen shows."""
+    document = json.loads(CliRunner().invoke(app, ["--describe"]).stdout)
+
+    assert {c["name"] for c in document["commands"]} == {
+        "init", "home", "status", "add", "link", "install-cli", "update", "sync",
+        "install", "doctor", "remove", "gui build", "gui test", "gui run", "gui clean",
+        "login", "logout", "whoami", "license",
+    }
+
+
+def test_no_command_help_repeats_a_stale_count_or_the_old_sushicore_delivery():
+    """The help of init, add, install-cli and sync carries none of the four stale claims."""
+    helps = " ".join(c["help"] for c in catalogue(app)["commands"])
+    pages = " ".join(" ".join(CliRunner().invoke(app, [name, "--help"]).output.split())
+                     for name in ("add", "install-cli", "init", "sync"))
+
+    assert "install missing deps, then update" not in helps
+    assert "Five of the six" not in pages
+    assert "ships in this repository" not in pages
+    assert "after cloning sushihub" not in pages

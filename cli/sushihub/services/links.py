@@ -16,16 +16,13 @@ from pathlib import Path
 
 from sushicore.workspace import registered_modules, write_module
 
-from ..config import workspace_root
+from ..config import find_workspace_root, workspace_root
 
 
 def registered() -> dict[str, str]:
     """Return name -> path for modules linked via ``hub link``, empty outside a workspace."""
-    try:
-        home = workspace_root()
-    except SystemExit:
-        return {}
-    return registered_modules(home)
+    home = find_workspace_root()
+    return {} if home is None else registered_modules(home)
 
 
 def write(name: str, path: Path) -> None:

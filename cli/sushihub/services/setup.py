@@ -17,10 +17,10 @@ from ..setup import build_pipeline, build_uninstall_pipeline
 from sushicore.provision.selection import enabled_keys
 
 
-def run(step: str = "all", dry_run: bool = False,
+def run(step: str = "provision", dry_run: bool = False,
         selection: dict[str, bool] | None = None, assume_yes: bool = False,
         refresh_toolchains: bool = False) -> int:
-    """Run one step (or the whole pipeline) and return a process exit code.
+    """Run one step, or all of them as ``provision``, and return a process exit code.
 
     What the present modules declare is provisioned; ``selection`` (from
     --customize) overrides that per component. ``assume_yes`` pre-answers the
@@ -45,7 +45,7 @@ def run(step: str = "all", dry_run: bool = False,
 
     # Gather consent for the heavy Windows LLVM download up front — before the
     # progress spinner starts — so the prompt is actually answerable.
-    if (not dry_run and step in ("all", "install", "provision") and ctx.selection.install_acpp
+    if (not dry_run and step in ("install", "provision") and ctx.selection.install_acpp
             and ctx.cfg.is_windows):
         from ..setup.toolchains import (
             LLVM_WINDOWS_VERSION, _confirm_timeout, _find_windows_llvm,
@@ -75,7 +75,7 @@ def run(step: str = "all", dry_run: bool = False,
     ok = pipeline.run(ctx, show_progress=not detect_only)
     if ok:
         console.success("Inventory complete." if detect_only else "Install completed.")
-        if step in ("all", "provision", "configure"):
+        if step in ("provision", "configure"):
             console.info("Next: `hub add sushiruntime` then build it with `sr build`, "
                          "or `hub status` to see what is installed.")
         return 0
