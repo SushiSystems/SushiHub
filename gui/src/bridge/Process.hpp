@@ -1,3 +1,11 @@
+/****************************************************************/
+/* Process.hpp                                                  */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file Process.hpp
  *  @brief Declares the child process whose stdout arrives as lines and whose stdin takes answers.
  *  @author Mustafa Garip

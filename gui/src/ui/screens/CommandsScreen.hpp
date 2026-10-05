@@ -1,3 +1,11 @@
+/****************************************************************/
+/* CommandsScreen.hpp                                           */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file CommandsScreen.hpp
  *  @brief Declares the screen that keeps every catalogued `hub` command reachable.
  *  @author Mustafa Garip

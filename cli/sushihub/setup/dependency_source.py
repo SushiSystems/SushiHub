@@ -1,3 +1,8 @@
+# dependency_source.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Dependency manifest reading; merging moved to :mod:`sushicore.provision.fragments`.
 
 The installer must not hard-code package names. Instead it asks an

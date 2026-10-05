@@ -1,3 +1,11 @@
+/****************************************************************/
+/* InstallsScreen.cpp                                           */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file InstallsScreen.cpp
  *  @brief Defines the two install cards, their presence chips, their fields and their actions.
  *  @author Mustafa Garip

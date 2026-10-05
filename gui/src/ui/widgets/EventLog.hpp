@@ -1,3 +1,11 @@
+/****************************************************************/
+/* EventLog.hpp                                                 */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file EventLog.hpp
  *  @brief Declares the scrolling region a run's events are drawn in, in arrival order.
  *  @author Mustafa Garip

@@ -1,3 +1,8 @@
+# console.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """CLI output for the SushiHub CLI.
 
 Thin wrapper around :mod:`sushicore` — the actual theme/icon/renderer logic

@@ -42,9 +42,15 @@ A changelog entry (`docs/reference/CHANGELOG.md`) is one line: the date, a past-
 changed, and where, in backticks. It never says why; the reason lives in a design document the
 entry may link. The exact shape is in `docs/DOCUMENTATION_STYLE_GUIDE.md`.
 
+## Licence
+
+The source is under the PolyForm Noncommercial License 1.0.0; `LICENSE` at the repository root is
+the binding text. Contributions from outside Sushi Systems are not accepted yet.
+
 ## Source comments
 
-A comment says what a thing does, in docstring form, and nothing else. Every module opens with a
+Every source file opens with the license block of the `source-comments` skill, which
+`tools/licensing/write_license_block.py` in SushiSkills writes. A comment says what a thing does, in docstring form, and nothing else. Every module opens with a
 docstring stating its purpose; every function carries a Google-style docstring whose first line
 starts with its verb. History, reasons and TODO do not go in source; a reason is a design document
 the docstring cites by path.

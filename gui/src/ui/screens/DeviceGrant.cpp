@@ -1,3 +1,11 @@
+/****************************************************************/
+/* DeviceGrant.cpp                                              */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file DeviceGrant.cpp
  *  @brief Defines the payload fields and the message shapes a device grant is recognised by.
  *  @author Mustafa Garip

@@ -1,3 +1,8 @@
+# token_store.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Where the Sushi Account session lives between two `hub` runs.
 
 The client in ``sushihub.services.identity`` never names a credential store: it

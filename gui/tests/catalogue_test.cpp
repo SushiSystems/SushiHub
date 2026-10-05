@@ -1,3 +1,11 @@
+/****************************************************************/
+/* catalogue_test.cpp                                           */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file catalogue_test.cpp
  *  @brief Checks that the recorded and hand-written catalogues parse and every type maps.
  *  @author Mustafa Garip

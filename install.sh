@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+# install.sh
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
+
 # SushiStack one-script installer (Linux / WSL).
 #
 # Bootstraps Python, pip and Git, installs the `hub` CLI from PyPI with pipx,

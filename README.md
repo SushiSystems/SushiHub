@@ -35,4 +35,14 @@ Everything else under the workspace root is a module checkout `hub add` produces
 The manual starts at `docs/README.md`. Install steps are in `docs/getting_started/INSTALL.md`.
 What is planned and not yet built is in `docs/design/REMAINING_WORK.md`.
 
-Licensed under the terms in `LICENSE`.
+## Licence
+
+SushiHub is source-available, free for non-commercial use under the PolyForm Noncommercial
+License 1.0.0; commercial use needs a licence from Sushi Systems, see `COMMERCIAL.md`. `LICENSE`
+is the binding text and `NOTICE.md` lists the third-party parts.
+
+sushihub 0.1.0 on PyPI and the commits before the one that replaced `LICENSE` were published
+under the Apache License 2.0 and stay available under it.
+
+This is the licence of the source in this repository. The licence `hub license` reports is a
+different thing: the product licence Sushi Account issues for sushiengine.

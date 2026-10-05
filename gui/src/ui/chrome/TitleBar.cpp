@@ -1,3 +1,11 @@
+/****************************************************************/
+/* TitleBar.cpp                                                 */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file TitleBar.cpp
  *  @brief Defines the accent dot, the version, the workspace chip and the account of the top row.
  *  @author Mustafa Garip

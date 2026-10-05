@@ -1,3 +1,8 @@
+# hub_install.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """How `hub` itself is installed on this machine, read from disk.
 
 The installers write the ``sh`` alias under a marker comment into the shell's

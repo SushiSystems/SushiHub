@@ -1,3 +1,8 @@
+# licence_file.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """The licence token `hub` writes beside a binary install.
 
 Sushi Account issues one token per product; `hub` writes it, bare, into the module's

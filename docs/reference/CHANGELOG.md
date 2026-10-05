@@ -8,6 +8,7 @@ Releases are sectioned newest first. Sections older than the current release mov
 
 ## Unreleased
 
+- 2026-10-05 — licence: Replaced Apache-2.0 with PolyForm Noncommercial 1.0.0, which ends commercial use without a licence (`LICENSE`, `COMMERCIAL.md`, `NOTICE.md`, `README.md`).
 - 2026-10-04 — docs: Marked the module wave of the standalone programme as landed (`docs/design/REMAINING_WORK.md`).
 - 2026-10-04 — setup: Took the toolchain selection rule and the base fragment from sushicore, so a bare hub install installs one SYCL toolchain (`cli/sushihub/setup/factory.py`, `cli/sushihub/setup/dependency_source.py`).
 - 2026-09-23 — Ran `hub install` and `hub remove` through sushicore.provision's pipeline and steps (`cli/sushihub/setup/`, `cli/pyproject.toml`).

@@ -1,3 +1,8 @@
+# test_describe.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """The catalogue is what the Typer app already knows, written down."""
 
 import jsonschema

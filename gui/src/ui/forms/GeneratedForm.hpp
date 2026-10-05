@@ -1,3 +1,11 @@
+/****************************************************************/
+/* GeneratedForm.hpp                                            */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file GeneratedForm.hpp
  *  @brief Declares the form one catalogue command is drawn as, and the run its button starts.
  *  @author Mustafa Garip

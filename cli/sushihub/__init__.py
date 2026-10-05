@@ -1,3 +1,8 @@
+# __init__.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """SushiHub developer CLI package.
 
 ``__version__`` is read from the installed distribution, so ``pyproject.toml``

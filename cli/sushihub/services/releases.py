@@ -1,3 +1,8 @@
+# releases.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Turning a release Sushi Account resolved into an unpacked module directory.
 
 Four steps in order: resolve, download, verify, unpack. Each is a function of

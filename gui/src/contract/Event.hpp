@@ -1,3 +1,11 @@
+/****************************************************************/
+/* Event.hpp                                                    */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file Event.hpp
  *  @brief Declares the eight event kinds one line of `hub --json` output can be.
  *  @author Mustafa Garip

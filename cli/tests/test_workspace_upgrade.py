@@ -1,3 +1,8 @@
+# test_workspace_upgrade.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """An old workspace becomes a new one, and the one file it produces is shared without loss."""
 
 from __future__ import annotations

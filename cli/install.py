@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# install.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Install the `hub` CLI from this checkout, for working on it.
 
 This is the contributor's install. A user installs `hub` from PyPI

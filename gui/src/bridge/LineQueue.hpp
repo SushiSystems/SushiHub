@@ -1,3 +1,11 @@
+/****************************************************************/
+/* LineQueue.hpp                                                */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file LineQueue.hpp
  *  @brief Declares the thread-safe hand-off of complete lines from a reader to the UI thread.
  *  @author Mustafa Garip

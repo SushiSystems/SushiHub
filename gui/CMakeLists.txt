@@ -1,3 +1,9 @@
+# CMakeLists.txt
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
+
 cmake_minimum_required(VERSION 3.25)
 
 # Resolve the vcpkg toolchain before project() when the caller named none.

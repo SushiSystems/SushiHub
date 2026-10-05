@@ -1,3 +1,11 @@
+/****************************************************************/
+/* PromptDialog.hpp                                             */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file PromptDialog.hpp
  *  @brief Declares the modal that asks a prompt event's question and collects one line.
  *  @author Mustafa Garip

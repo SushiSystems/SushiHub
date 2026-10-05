@@ -1,3 +1,11 @@
+/****************************************************************/
+/* ModulesScreen.cpp                                            */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file ModulesScreen.cpp
  *  @brief Defines the module rows, their presence chip, their detail line and their action.
  *  @author Mustafa Garip
@@ -75,7 +83,7 @@ std::string detail_line(const nlohmann::json& module, std::string_view presence)
 {
     if (presence == ABSENT)
     {
-        return "Open source; can be cloned.";
+        return "Source available; can be cloned.";
     }
     if (presence == BINARY)
     {

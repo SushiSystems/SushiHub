@@ -1,3 +1,11 @@
+/****************************************************************/
+/* install_facts_test.cpp                                       */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file install_facts_test.cpp
  *  @brief Checks the sentences an install card derives from the status payload.
  *  @author Mustafa Garip

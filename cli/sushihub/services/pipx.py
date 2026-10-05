@@ -1,3 +1,8 @@
+# pipx.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Running pipx: finding it, naming a package's distribution, and installing it.
 
 `hub add` and `hub install-cli` both install a module's own `cli/` package with

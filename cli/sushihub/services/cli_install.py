@@ -1,3 +1,8 @@
+# cli_install.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """`hub install-cli` service: install a module's own developer CLI.
 
 One program name per module — `sr`, `se`, `sa`, `sb`, `sd` — resolved from

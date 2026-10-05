@@ -1,3 +1,11 @@
+/****************************************************************/
+/* event_test.cpp                                               */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file event_test.cpp
  *  @brief Checks that every recorded event line parses to its kind and a bad line does not throw.
  *  @author Mustafa Garip

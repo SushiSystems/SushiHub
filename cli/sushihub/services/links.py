@@ -1,3 +1,8 @@
+# links.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """The link registry: modules pointed at existing checkouts outside the workspace.
 
 ``hub link`` records a module's path in ``[modules]`` of

@@ -1,3 +1,8 @@
+# steps.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """Hub's pipeline steps: sushicore's shared steps, hub's verify step and readiness report."""
 
 from __future__ import annotations

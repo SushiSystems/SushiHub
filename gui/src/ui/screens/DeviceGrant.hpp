@@ -1,3 +1,11 @@
+/****************************************************************/
+/* DeviceGrant.hpp                                              */
+/* SushiHub - https://github.com/SushiSystems/SushiHub          */
+/* Copyright (c) 2026 Sushi Systems                             */
+/* Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.    */
+/* Commercial use requires a licence from Sushi Systems.        */
+/****************************************************************/
+
 /** @file DeviceGrant.hpp
  *  @brief Declares what a person needs to approve a sign-in and how a run is read for it.
  *  @author Mustafa Garip

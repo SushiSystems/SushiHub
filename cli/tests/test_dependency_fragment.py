@@ -1,3 +1,8 @@
+# test_dependency_fragment.py
+# SushiHub - https://github.com/SushiSystems/SushiHub
+# Copyright (c) 2026 Sushi Systems
+# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
+# Commercial use requires a licence from Sushi Systems.
 """What `hub` adds when it reads a fragment, and what it still refuses.
 
 The format itself is `sushicore.deps_fragment`'s and is tested there. What is
