@@ -1,6 +1,6 @@
 # Code and comments report
 
-**Status:** Done in nine repositories and committed locally on 2026-10-05, with three C++ fixes that were never built. Nothing is pushed.
+**Status:** Done in nine repositories on 2026-10-05, with three C++ fixes that were never built. The owner pushed every repository at about 18:15 that day; the commits made after that are local.
 
 ## Source comments
 
@@ -118,7 +118,29 @@ Known losses and limits:
 Eight repositories got a `checkers` job that runs the four checkers and the tool tests on
 Linux and Windows (`build(ci)` commits). Every step passes on the committed tree, run locally.
 sushiruntime and sushiblas leave the layout checker out, because `docs/api` is still outside
-the tree. sushiengine's workflow was not changed. No workflow has run on GitHub.
+the tree. sushiengine's workflow was not changed.
+
+### The first run on GitHub
+
+The owner's push ran the workflows. The `checkers` job passed on both platforms in sushiskills,
+sushistack, sushicore, sushiruntime, sushiblas, sushidsp, sushitrack and sushiweb. It failed
+in sushiai: a tracked backlog linked the audit report, which is kept out of git. Fixed locally
+in `aa194ac`.
+
+Other jobs failed, and each failure was read from its log:
+
+| Repository | Job | Cause | From this work |
+| --- | --- | --- | --- |
+| sushicore | test | `provision_adapters_for_run` raised a TypeError when the probe found clang; two Windows PATH tests ran on Linux | No. Fixed locally in `16de98f`, with a test seen failing first |
+| sushistack | hub | `sushicore>=0.7.0` is not on PyPI | No |
+| sushiai, sushiblas | CLI, functional | The job installs sushicore from a path that does not exist; the oneAPI image does not fit on the runner's disk | No |
+| sushidsp | Linux build | `wayland-scanner` and `egl` are missing for GLFW | No |
+| sushiengine | structure rules | `RenderSettings::water.debug_view` is not named by the JSON functions | No; it belongs to the owner's render work |
+| sushiengine | command line tests | A required token input is not supplied | No |
+| sushiruntime | four jobs | Not read | Unknown |
+
+The sushicore failure is a real defect that the local suite could not show: no clang is on
+PATH on the owner's machine, so the probe never returned the key that broke the call.
 
 ## Process failures in this programme
 
@@ -139,3 +161,6 @@ the tree. sushiengine's workflow was not changed. No workflow has run on GitHub.
 - The 253 findings in the owner's uncommitted sushiengine files.
 - `docs/api` in three repositories, and the layout step in two CI jobs.
 - No build, no C++ test run, no shader compiled.
+- sushiruntime's four failing CI jobs were not read.
+- The reports of programmes 1 to 4 say "nothing is pushed". That was true when each was written
+  and is not true since the owner's push.
