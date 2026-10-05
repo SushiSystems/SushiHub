@@ -1,6 +1,6 @@
 # Documentation and layout
 
-**Status:** Open — written on 2026-10-05; the per-repository wave is running.
+**Status:** Shipped — nine repositories done on 2026-10-05; see `REPORT.md`.
 
 Programme 4 of 5 in the estate refactor. Every repository gets the documentation tree and the
 checkers that SushiSkills defines, so that one command audits any of them and a reader who
