@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-05 — cli: Reset the console to the terminal renderer after each test, so a `--json` test no longer breaks the next file under click 8.5 (`cli/tests/conftest.py`).
 - 2026-10-05 — docs: Moved the reasoning held in module docstrings and comment paragraphs to the component READMEs (`cli/README.md`, `tools/README.md`, `cli/sushihub/`, `tools/record_cli_argv.py`).
 - 2026-10-05 — docs: Moved the agent specs, plans and reports to the archive, promoted the hub design to `docs/design/HUB.md`, and added the SushiSkills checkers (`docs/`, `tools/`).
 - 2026-10-05 — cli: Added the version flag to the root command (`hub --version`, `cli.py`).
