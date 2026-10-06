@@ -1,6 +1,6 @@
 # presence.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
-# Copyright (c) 2026 Sushi Systems
+# Copyright (c) 2026-present Mustafa Garip & Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
 """Reads how a module is present in the workspace from what is on disk.
