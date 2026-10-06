@@ -1,6 +1,6 @@
 # update_check.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
-# Copyright (c) 2026 Sushi Systems
+# Copyright (c) 2026-present Mustafa Garip & Sushi Systems
 # Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
 # Commercial use requires a licence from Sushi Systems.
 """Whether a newer release of a binary install exists, asked of Sushi Account.
