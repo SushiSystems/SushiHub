@@ -63,6 +63,18 @@ since 2026-10-07 (`cli/README.md`, "Moving the dependency tree"). It needs sushi
 which is unpublished. Open: the owner's real run, each module's `doctor` and build after it,
 then `hub migrate --finalize` or `--rollback`.
 
+## The documentation site programme
+
+Designed 2026-10-07 in `../agent/2026_10_07_DOCS_SITE/SPEC.md`: a public site at
+`docs.sushisystems.io` compiled from the `docs/` trees and Doxygen comments of eight
+repositories. The owner approved the design on 2026-10-07.
+
+| # | Work | State |
+|---|---|---|
+| 1 | The bundle contract and `docs bundle` in SushiCore, proven on sushiruntime. Plan: `docs/agent/2026_10_07_DOCS_BUNDLE/PLAN.md` in the SushiCore repository. | Built 2026-10-07 and proven by `sr docs bundle --release 1.0.0`; SushiCore's release with `docs_bundle` is open, and nothing is pushed. |
+| 2 | The site, `apps/docs` in the sushiweb repository. | Open; waits on 1. |
+| 3 | `docs/publish.toml`, Doxygen XML, `docs/guides/FAQ.md` and a release step in each publishing repository. | Open; sushiruntime before 2, the rest after. |
+
 ## Outside the programmes
 
 ### Command line
