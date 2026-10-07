@@ -182,8 +182,8 @@ The move of `dependencies/` to `~/.sushisystems` waits on wave 4.
   desktop application's dependencies are declared in `cli/sushihub/manifests/gui.deps.toml`.
 - **How the desktop application reaches a user.** Wave 8 of the decoupling names a
   `sushihub-gui` distribution; no workflow builds it.
-- **v0.2.0 is tagged locally and was never pushed or published** (audit of 2026-10-05). Push it
-  as it stands, or skip to v0.3.0 after sushicore is released.
+- **v0.2.0 awaits its tag.** The release commit of 2026-10-07 is on `main`; the owner tries
+  the hub first, then tags `v0.2.0` and pushes the tag, which publishes it to PyPI.
 - **Whether the CUDA and vcpkg entries of `../reference/KNOWN_ISSUES.md` move to SushiCore**,
   which owns the code they describe since 2026-09-23.
 - **Whether contributions from outside are accepted**, and under which contributor agreement.

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.2.0 — 2026-10-07
+
 - 2026-10-07 — licence: Named Mustafa Garip and Sushi Systems as the copyright holders in the licence and notice files (`LICENSE`, `NOTICE.md`).
 - 2026-10-06 — licence: Restored the three-section license box and named both holders in the copyright line of every source file (`tools/licensing/write_license_block.py`, `tools/documentation/check_source_comments.py`).
 - 2026-10-05 — cli: Reset the console to the terminal renderer after each test, so a `--json` test no longer breaks the next file under click 8.5 (`cli/tests/conftest.py`).
@@ -24,9 +26,6 @@
 - 2026-10-04 — setup: Reduced a bare `hub install` from three SYCL toolchains to one (`cli/sushihub/setup/factory.py`).
 - 2026-09-23 — setup: Ran `hub install` and `hub remove` through sushicore.provision's pipeline and steps (`cli/sushihub/setup/`, `cli/pyproject.toml`).
 - 2026-09-22 — cli: Replaced raw Rich colour names with sushicore theme tokens in printed markup (`cli/sushihub/`).
-
-## v0.2.0 — 2026-09-22
-
 - 2026-09-22 — cli: Grouped the `hub doctor` table by owner and listed what is missing after it (`cli/sushihub/setup/steps.py`).
 - 2026-09-22 — cli: Drew `hub --help` from sushicore's help page: command groups, examples and the logo (`cli/sushihub/cli.py`, `cli/sushihub/console.py`).
 - 2026-09-22 — docs: Split the two names in prose: `SushiHub` is the tool, `SushiStack` is the applications it installs (`README.md`, `docs/`).

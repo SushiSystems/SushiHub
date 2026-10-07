@@ -19,7 +19,7 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     endif()
 endif()
 
-project(sushihub_gui VERSION 0.1.0 LANGUAGES CXX)
+project(sushihub_gui VERSION 0.2.0 LANGUAGES CXX)
 
 option(SUSHIHUB_GUI_BUILD_TESTS "Build the GoogleTest suites." ON)
 
