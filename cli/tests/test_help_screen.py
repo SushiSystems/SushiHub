@@ -13,7 +13,7 @@ from typer.testing import CliRunner
 from sushihub.cli import app
 
 K_GROUPS = {
-    "Workspace": ["init", "home", "status"],
+    "Workspace": ["init", "home", "status", "docs"],
     "Modules": ["add", "link", "install-cli", "update", "sync"],
     "Dependencies": ["install", "doctor", "remove", "migrate"],
     "Account": ["login", "logout", "whoami", "license"],

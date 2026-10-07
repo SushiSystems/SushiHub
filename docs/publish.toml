@@ -1,0 +1,7 @@
+name = "sushistack"
+title = "SushiHub"
+summary = "The tool that acquires and manages a SushiStack workspace."
+sections = ["getting_started", "guides", "architecture", "reference"]
+exclude = []
+api = false
+source_url = "https://github.com/SushiSystems/SushiHub"

@@ -6,7 +6,8 @@
 """Declares the `hub` Typer application: one function per subcommand, and :func:`main`.
 
 Commands parse arguments and delegate to ``sushihub.services``. Every command ends through
-:func:`_finish`, which emits the one ``result`` event ``contract/README.md`` requires.
+:func:`_finish`, which emits the one ``result`` event ``contract/README.md`` requires; a
+command registered from sushicore returns instead, and :func:`_finish_returned` ends it.
 What `hub` owns and what a module CLI owns is in cli/README.md, "Notes on the source".
 """
 
@@ -19,13 +20,16 @@ from typing import List, Optional
 
 import typer
 from sushicore import entry, provision
+from sushicore.docs_bundle import register_docs_commands
 from sushicore.provision import home as provision_home
 from sushicore.root_options import version_line, version_option
 from sushicore.typer_help import help_group
+from sushicore.workspace import has_marker, walk_up
 
 from . import DISTRIBUTION, console
 from .config import deps_dir, find_workspace_root, upgrade_workspace, workspace_root
 from .describe import catalogue
+from .errors import HubError
 from .services.catalog import CATALOG
 from .services import gui as gui_svc
 from .services import migrate as migrate_svc
@@ -39,13 +43,24 @@ K_DEPENDENCIES = "Dependencies"
 K_DESKTOP_APP = "Desktop app"
 K_ACCOUNT = "Account"
 
+K_PUBLISH_LIST = "docs/publish.toml"
+K_NO_CHECKOUT = ("hub docs bundle builds the documentation of a SushiHub checkout "
+                 "and must be run inside one.")
+
 _help_group = help_group(console.current)
+
+
+def _finish_returned(_value: object, **_options: object) -> None:
+    """Ends a command that returned without exiting: one ok ``result`` event, exit code 0."""
+    _finish(0)
+
 
 app = typer.Typer(
     name="hub",
     cls=_help_group,
     help="SushiHub CLI — one shared dependency tree and module manager for the stack.",
     rich_markup_mode="rich",
+    result_callback=_finish_returned,
 )
 
 
@@ -152,6 +167,31 @@ def status(
     for warning in report.warnings:
         console.warn(warning)
     _finish(status_report.render(report.payload), report.payload)
+
+
+def checkout_root(start: Path | None = None) -> Path:
+    """Returns the SushiHub checkout that holds *start*, the current directory when None.
+
+    The checkout is the nearest ancestor that holds ``docs/publish.toml``; a workspace is
+    not one.
+
+    Raises:
+        HubError: No ancestor of *start* holds a publish list.
+    """
+    root = walk_up(start or Path.cwd(), has_marker(K_PUBLISH_LIST))
+    if root is None:
+        raise HubError(K_NO_CHECKOUT)
+    return root
+
+
+register_docs_commands(
+    app,
+    program="hub",
+    panel=K_WORKSPACE,
+    project_root=checkout_root,
+    report=lambda line: console.success(line),
+    group_cls=_help_group,
+)
 
 
 # modules

@@ -45,6 +45,7 @@ two see "Machine-readable output".
 | `hub remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
 | `hub migrate [--to PATH] [--dry-run] [--rollback] [--finalize [--drop-link]] [--yes]` | Move the `dependencies/` tree to another directory and leave a link at the old path; see "Moving the dependency tree". |
 | `hub home` | Print the workspace root and the `dependencies/` path. |
+| `hub docs bundle --release X.Y.Z [--out DIR]` | Write the documentation bundle of the SushiHub checkout the command runs in: `docs-bundle-X.Y.Z.tar.gz` and its `.sha256`, in `build/docs/bundle` unless `--out` names another folder. `docs/publish.toml` says which pages go in. It needs a checkout of this repository, not a workspace, and fails outside one. |
 | `hub gui build [--type debug\|release\|relwithdebinfo] [--clean] [-D VAR=VALUE…]` | Configure and compile the desktop application into `gui/build/hub`, under the Visual Studio environment on Windows, against the shared vcpkg tree. |
 | `hub gui test [--filter <pattern>] [--repeat <n>]` | Run the application's CTest suites. `--filter` selects by test name, `--repeat` re-runs each until it fails. |
 | `hub gui run [target] [-- args…]` | Launch a program from the application's build tree; the application itself when no target is named. |
