@@ -24,6 +24,7 @@ rest: how to install, how the workspace is laid out, what is designed and what i
 | [Installing](getting_started/INSTALL.md) | From a fresh machine to a built module: the one-line installer, the same steps by hand, and what `hub install` downloads |
 | [The workspace](architecture/WORKSPACE.md) | The workspace layout, why it is flat, and how a module finds its siblings and the shared dependency tree |
 | [Linking checkouts](guides/LINKING_CHECKOUTS.md) | Pointing a workspace at module checkouts that live elsewhere, and at your own `sushicore` |
+| [FAQ](guides/FAQ.md) | The questions a newcomer asks, each answered from this manual |
 | [Module manifest](reference/MODULE_MANIFEST.md) | `sushi-module.toml`, the file a module writes to say what it is, and what `hub` does when it is absent |
 | [Changelog](reference/CHANGELOG.md) | What changed, by release |
 | [Glossary](reference/GLOSSARY.md) | The words this repository uses in a specific sense |

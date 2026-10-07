@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-07 — docs: Added the frequently asked questions page (`docs/guides/FAQ.md`).
 - 2026-10-07 — cli: Added `hub migrate`, which moves the dependency tree to another directory, leaves a link at the old path and can roll back or finalize (`cli/sushihub/services/migrate.py`, `cli.py`).
 - 2026-10-07 — cli: Made `deps_dir` answer `SUSHISYSTEMS_HOME`, then the directory `<workspace>/dependencies` links to, after `SUSHISTACK_DEPS_DIR` (`cli/sushihub/config.py`).
 - 2026-10-07 — cli: Added the rewrite of a workspace file's `[tool]` paths from one dependency root to another (`cli/sushihub/services/tool_paths.py`).
