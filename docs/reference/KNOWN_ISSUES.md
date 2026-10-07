@@ -13,7 +13,7 @@ own page for failures inside its build.
 | Issue | Where |
 | --- | --- |
 | A checkout of `main` cannot install `hub` from PyPI: it requires `sushicore>=0.7.0`, and 0.7.0 is unpublished | `cli/pyproject.toml` |
-| v0.2.0 is tagged locally and has a changelog section, but was never pushed or published; PyPI serves 0.1.0 | git, `docs/reference/CHANGELOG.md` |
+| v0.2.0 has its release commit of 2026-10-07 and no tag yet, so it is not published; PyPI serves 0.1.0 | git, `docs/reference/CHANGELOG.md` |
 | `hub status` reports the channel `editable` for an install from PyPI; the schema allows only `editable` and `frozen` | `cli/sushihub/services/hub_install.py`, `contract/status.schema.json` |
 | git and pipx inherit `hub`'s stdout, so under `--json` their plain text lands in the event stream | `cli/sushihub/services/git_ops.py`, `cli/sushihub/services/pipx.py`, `cli/sushihub/services/cli_install.py` |
 | `hub install --customize` decides on `sys.stdin.isatty()` alone and opens its picker under `--json` on a terminal | `cli/sushihub/services/customize.py` |
@@ -26,7 +26,6 @@ own page for failures inside its build.
 | `hub status` looks for the `sh` alias in four fixed profile paths and reports none when the PowerShell profile is under a redirected Documents folder | `cli/sushihub/services/hub_install.py` |
 | A module `pyproject.toml` without `[project] name` ends `hub install-cli` in a `KeyError` | `cli/sushihub/services/pipx.py` |
 | `discovery.py` is imported by nothing | `cli/sushihub/services/discovery.py` |
-| The desktop application's CMake version says 0.1.0 while the package, the tag and the changelog say 0.2.0 | `gui/CMakeLists.txt` |
 | Neither the CLI nor the desktop application has a logger | `cli/sushihub/`, `gui/src/` |
 | `contract/sushi-account.md` says the six endpoints do not exist in sushiweb and names the keyring service `sushistack`; the code uses `sushihub` | `contract/sushi-account.md`, `cli/sushihub/services/token_store.py` |
 | The archived v0.1.0 changelog cites `docs/agent/specs/2026-09-05-hub-design.md`, which is now `docs/design/HUB.md`, and has one entry of 246 characters | `docs/archive/changelog/v0.1.0.md` |
