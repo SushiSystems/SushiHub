@@ -1,6 +1,6 @@
 # Documentation site
 
-**Status:** Open — sub-project 1 of 3 built on 2026-10-07; sub-projects 2 and 3 have not started.
+**Status:** Open — sub-projects 1 and 2 of 3 built on 2026-10-07; the site is not deployed and sub-project 3 has not started.
 
 A public site at `docs.sushisystems.io` that shows how the SushiStack applications are built:
 guides, architecture pages, C++ API reference and a FAQ. Nothing is written for the site. Every
