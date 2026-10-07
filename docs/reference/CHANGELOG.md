@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- 2026-10-07 — cli: Added `hub migrate`, which moves the dependency tree to another directory, leaves a link at the old path and can roll back or finalize (`cli/sushihub/services/migrate.py`, `cli.py`).
+- 2026-10-07 — cli: Made `deps_dir` answer `SUSHISYSTEMS_HOME`, then the directory `<workspace>/dependencies` links to, after `SUSHISTACK_DEPS_DIR` (`cli/sushihub/config.py`).
+- 2026-10-07 — cli: Added the rewrite of a workspace file's `[tool]` paths from one dependency root to another (`cli/sushihub/services/tool_paths.py`).
+- 2026-10-07 — build: Raised the sushicore requirement to 0.8.0 (`cli/pyproject.toml`).
+
 ## v0.2.0 — 2026-10-07
 
 - 2026-10-07 — licence: Named Mustafa Garip and Sushi Systems as the copyright holders in the licence and notice files (`LICENSE`, `NOTICE.md`).

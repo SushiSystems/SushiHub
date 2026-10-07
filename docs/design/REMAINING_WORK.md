@@ -58,7 +58,10 @@ Designed 2026-10-04 in the SushiCore repository
 | 3 | Hub reads the rule and the base fragment from sushicore; a bare `hub install` installs one SYCL toolchain. | Landed 2026-10-04. |
 | 4 | The owner runs the real `setup` and build of each module, then tags and publishes sushicore 0.7.0. | Open. |
 
-The move of `dependencies/` to `~/.sushisystems` waits on wave 4.
+`hub migrate`, the command that moves `dependencies/` to a directory the owner names, exists
+since 2026-10-07 (`cli/README.md`, "Moving the dependency tree"). It needs sushicore 0.8.0,
+which is unpublished. Open: the owner's real run, each module's `doctor` and build after it,
+then `hub migrate --finalize` or `--rollback`.
 
 ## Outside the programmes
 

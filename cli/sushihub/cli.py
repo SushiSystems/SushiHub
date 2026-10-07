@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import json
 import sys
+from pathlib import Path
 from typing import List, Optional
 
 import typer
@@ -27,6 +28,7 @@ from .config import deps_dir, find_workspace_root, upgrade_workspace, workspace_
 from .describe import catalogue
 from .services.catalog import CATALOG
 from .services import gui as gui_svc
+from .services import migrate as migrate_svc
 from .services import modules as modules_svc
 from .services import setup as setup_svc
 from .services import status_report
@@ -334,6 +336,50 @@ def remove(
 ):
     """Remove provisioned dependencies. Use [bold]--all[/bold] to reclaim the lot."""
     _finish(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
+
+
+@app.command(
+    "migrate",
+    rich_help_panel=K_DEPENDENCIES,
+    epilog="hub migrate --dry-run  # Show the plan only\n"
+           "hub migrate --to D:/deps  # Move the tree there\n"
+           "hub migrate --rollback  # Undo the move\n"
+           "hub migrate --finalize  # Delete the old copy",
+)
+def migrate(
+    to: Optional[Path] = typer.Option(
+        None, "--to", metavar="PATH",
+        help="Directory the tree moves to; ~/.sushisystems when omitted. Give the same "
+             "path to --rollback after a run that stopped part-way."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show the plan, don't move."),
+    rollback: bool = typer.Option(
+        False, "--rollback", help="Undo a migration that was not finalized."),
+    finalize: bool = typer.Option(
+        False, "--finalize",
+        help="Delete the copy the migration left beside the old path."),
+    drop_link: bool = typer.Option(
+        False, "--drop-link",
+        help="With --finalize, also remove the link at the old path."),
+    yes: bool = typer.Option(
+        False, "--yes", "-y", help="Skip the confirmation prompt before the move."),
+):
+    """Move the shared dependency tree out of the workspace, leaving a link behind.
+
+    Each component is renamed into the new directory when it is on the same drive,
+    and copied and verified when it is not. [cmd]dependencies/[/cmd] then becomes a
+    link to the new directory, so every path under it still resolves, and what was
+    left of the old folder is kept as [cmd]dependencies.pre-migrate[/cmd] until
+    [bold]--finalize[/bold]. Close the programs that use the tree first.
+    """
+    if rollback and finalize:
+        raise typer.BadParameter("--rollback and --finalize cannot be given together.")
+    if drop_link and not finalize:
+        raise typer.BadParameter("--drop-link needs --finalize.")
+    if rollback:
+        _finish(migrate_svc.rollback(to))
+    if finalize:
+        _finish(migrate_svc.finalize(to, drop_link=drop_link))
+    _finish(migrate_svc.run(to, dry_run=dry_run, assume_yes=yes))
 
 
 # the desktop application

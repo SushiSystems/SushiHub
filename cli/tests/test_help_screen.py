@@ -15,7 +15,7 @@ from sushihub.cli import app
 K_GROUPS = {
     "Workspace": ["init", "home", "status"],
     "Modules": ["add", "link", "install-cli", "update", "sync"],
-    "Dependencies": ["install", "doctor", "remove"],
+    "Dependencies": ["install", "doctor", "remove", "migrate"],
     "Account": ["login", "logout", "whoami", "license"],
     "Desktop app": ["gui"],
 }

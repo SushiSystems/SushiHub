@@ -29,6 +29,8 @@ from sushicore.config_base import (
     write_tool_section,
 )
 from sushicore.provision import selection
+from sushicore.provision.home import ENV_HOME
+from sushicore.provision.links import link_target
 from sushicore.workspace import (
     WORKSPACE_FILE,
     WORKSPACE_HEADER,
@@ -197,6 +199,8 @@ def deps_dir() -> Path:
     so a user can see exactly what was fetched and reclaim it all by deleting one
     folder (``hub remove --all``). Defaults to ``<workspace>/dependencies`` (git-
     ignored) so every module shares one tree; override with ``SUSHISTACK_DEPS_DIR``.
+    ``SUSHISYSTEMS_HOME`` answers next, then the directory ``<workspace>/dependencies``
+    links to once `hub migrate` has moved the tree.
     Falls back to a user-local path when not inside a workspace.
 
     System-level prerequisites that cannot live in one folder (the host C++
@@ -206,9 +210,12 @@ def deps_dir() -> Path:
     override = os.environ.get("SUSHISTACK_DEPS_DIR")
     if override:
         return Path(override)
+    home = resolve_env_path(ENV_HOME)
+    if home is not None:
+        return home
     root = find_workspace_root()
     if root is not None:
-        return root / "dependencies"
+        return link_target(root / "dependencies") or root / "dependencies"
     local = os.environ.get("LOCALAPPDATA", "")
     base = Path(local) if local else Path.home() / ".local"
     return base / "SushiStack" / "dependencies"
