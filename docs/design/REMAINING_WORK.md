@@ -71,9 +71,9 @@ repositories. The owner approved the design on 2026-10-07.
 
 | # | Work | State |
 |---|---|---|
-| 1 | The bundle contract and `docs bundle` in SushiCore, proven on sushiruntime. Plan: `docs/agent/2026_10_07_DOCS_BUNDLE/PLAN.md` in the SushiCore repository. | Built 2026-10-07 and proven by `sr docs bundle --release 1.0.0`; SushiCore's release with `docs_bundle` is open, and nothing is pushed. |
-| 2 | The site, `apps/docs` in the sushiweb repository. Report: `docs/agent/2026_10_07_DOCS_APP/REPORT.md` there. | Built 2026-10-07 from sushiruntime's bundle; not deployed, and nothing is pushed. |
-| 3 | `docs/publish.toml`, Doxygen XML, `docs/guides/FAQ.md` and a release step in each publishing repository. | Open; sushiruntime before 2, the rest after. |
+| 1 | The bundle contract and `docs bundle` in SushiCore, proven on sushiruntime. Plan: `docs/agent/2026_10_07_DOCS_BUNDLE/PLAN.md` in the SushiCore repository. | Built 2026-10-07 and proven by `sr docs bundle --release 0.3.0`; SushiCore's release with `docs_bundle` is open, and nothing is pushed. |
+| 2 | The site, `apps/docs` in the sushiweb repository. Report: `docs/agent/2026_10_07_DOCS_APP/REPORT.md` there. | Built 2026-10-07; it compiles 466 pages from eight hand-built bundles. Not deployed, and nothing is pushed. |
+| 3 | `docs/publish.toml`, Doxygen XML, `docs/guides/FAQ.md` and a release step in each publishing repository. | Built 2026-10-07 in all eight; report in `../agent/2026_10_07_DOCS_ROLLOUT/REPORT.md`. No workflow has run and nothing is pushed. Open: the owner's two decisions and the deferred findings listed there, the engine's FAQ, and the push order at the end of the report. |
 
 ## Outside the programmes
 
