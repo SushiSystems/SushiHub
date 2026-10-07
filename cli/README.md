@@ -43,6 +43,7 @@ two see "Machine-readable output".
 | `hub status [--json] [--check-updates]` | Which modules are present, in which form, on which branch and how far from upstream, and whether dependencies are installed. It reads the disk only; `--check-updates` first fetches every checkout and asks Sushi Account for each binary install's latest release. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `hub doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `hub remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
+| `hub migrate [--to PATH] [--dry-run] [--rollback] [--finalize [--drop-link]] [--yes]` | Move the `dependencies/` tree to another directory and leave a link at the old path; see "Moving the dependency tree". |
 | `hub home` | Print the workspace root and the `dependencies/` path. |
 | `hub gui build [--type debug\|release\|relwithdebinfo] [--clean] [-D VAR=VALUE…]` | Configure and compile the desktop application into `gui/build/hub`, under the Visual Studio environment on Windows, against the shared vcpkg tree. |
 | `hub gui test [--filter <pattern>] [--repeat <n>]` | Run the application's CTest suites. `--filter` selects by test name, `--repeat` re-runs each until it fails. |
@@ -105,6 +106,47 @@ Sushi Account lives at `https://account.sushisystems.io`, from `[identity] url` 
 `127.0.0.1`. The six endpoints are written out in `../contract/sushi-account.md`. sushiweb's account
 application implements them; `../docs/design/REMAINING_WORK.md` records the state of its deploy.
 
+## Moving the dependency tree
+
+`hub migrate` moves `<workspace>/dependencies` to the directory `--to` names, `~/.sushisystems`
+without it. Close the IDEs, terminals and builds that use the tree first: Windows refuses to
+rename a folder while a file in it is open.
+
+1. `hub migrate --to PATH --dry-run` prints both paths, each component with its file count and
+   size, the total, the free space on the target and whether it is enough. It changes nothing.
+2. `hub migrate --to PATH` prints the same plan and asks before it moves; `--yes` skips the
+   question. On the same drive each component is renamed into the new directory. On another
+   drive each is copied, compared with its source by file count and file size, and only then
+   counted as moved; the target needs free space of 1.1 times the tree.
+3. `dependencies/` becomes a link to the new directory, a junction on Windows and a symlink
+   elsewhere, so every path under it still resolves. What was left of the old folder is kept
+   beside it as `dependencies.pre-migrate`.
+4. `hub` records the moved components in `<new directory>/registry.toml`, rewrites the `[tool]`
+   paths of `.sushistack/workspace.toml` to the new directory, and sets `SUSHISYSTEMS_HOME` for
+   your user when the directory is not `~/.sushisystems`; when it is, the variable is removed.
+   A terminal opened before the move must be reopened to see the variable.
+
+A run that stops part-way, because a file was open or the run was interrupted, leaves a journal
+at `<new directory>/.migrate-journal.jsonl`. `hub migrate --to PATH` goes on from it.
+
+`hub migrate --rollback` undoes the move from that journal: it removes the link, puts the old
+folder back with every component in it, restores the `[tool]` paths and the earlier value of
+`SUSHISYSTEMS_HOME`, and deletes the registry file the move created. After a run that stopped
+before the link was made, give it the same `--to PATH`.
+
+`hub migrate --finalize` deletes `dependencies.pre-migrate` and closes the journal, so there is
+nothing left to roll back. Run it once every module builds from the new directory.
+`hub migrate --finalize --drop-link` also removes the link at the old path. It is refused
+unless `SUSHISYSTEMS_HOME` names the new directory, because the link is otherwise the only
+thing that leads `hub` to the tree; build caches and each module's `cli/config.local.toml`
+that still name the old path stop resolving once the link is gone.
+
+| Exit code | When |
+|---|---|
+| 0 | The plan was shown, the tree moved, was already moved, was rolled back or finalized, or there was nothing to roll back |
+| 1 | The target holds a component's name, space is short, a component could not be moved or its copy differs, the answer was no, or `--finalize` found nothing to finalize |
+| 2 | `--rollback` with `--finalize`, or `--drop-link` without `--finalize` |
+
 ## Binary installs
 
 `hub add sushiengine` decides between the two forms rather than being told. It asks the private
@@ -159,14 +201,17 @@ empty workspace gets the base tools alone.
 | `<workspace>/.sushistack/workspace.toml` | `hub init`, `hub install`, `hub link` | Everything the workspace owns: its format version, the resolved toolchain paths for this machine, and the modules linked from outside the tree. |
 | `<workspace>/sushiengine/sushi-release.json` | the release | Product, version, platform and what the package bundles. Its presence is what makes the directory a binary install. |
 | `<workspace>/sushiengine/sushi-licence.jwt` | `hub add`, `hub update` | The licence token the engine reads at start-up. Nothing but the token. |
-| `<workspace>/dependencies/` | `hub install`, `hub remove` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. |
+| `<workspace>/dependencies/` | `hub install`, `hub remove`, `hub migrate` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. A link to the new directory after `hub migrate`. |
+| `<workspace>/dependencies.pre-migrate/` | `hub migrate` | What was left of the old tree, kept until `hub migrate --finalize`. |
+| `<new directory>/.migrate-journal.jsonl` | `hub migrate` | The steps of a move that can still be rolled back; renamed to `.migrate-journal.done.jsonl` by `--finalize`. |
+| `SUSHISYSTEMS_HOME`, in the user's environment | `hub migrate` | The new directory, when it is not `~/.sushisystems`. |
 | OS credential store, `sushihub` / `sushi-account` | `hub login`, `hub logout` | The Sushi Account session as one JSON document: both tokens and the access token's expiry. |
 
 ## Where sushicore comes from
 
 `hub` imports `sushicore` for its console, its config schema, its workspace helpers, the provision
 pipeline, the `--describe` catalogue, `--version` and the entry point. It is an ordinary PyPI
-dependency (`sushicore>=0.7.0` in `pyproject.toml`), resolved by the same pipx install that
+dependency (`sushicore>=0.8.0` in `pyproject.toml`), resolved by the same pipx install that
 installs `hub`. It is not a module: `hub link sushicore <path>` is refused. To work on both, install
 your sushicore checkout editable into `hub`'s venv, as `../docs/guides/LINKING_CHECKOUTS.md` says.
 
@@ -212,6 +257,10 @@ one file describes both Linux and Windows. SushiStack is the umbrella workspace,
 clones the stack modules (sushiruntime, sushiengine and the rest) inside it. Everything the
 installer downloads lands in `<workspace>/dependencies` and is shared by every module, so the
 modules never provision their own toolchain or vcpkg tree.
+
+`deps_dir()` answers in this order: `SUSHISTACK_DEPS_DIR`, then `SUSHISYSTEMS_HOME`, then the
+directory `<workspace>/dependencies` links to after `hub migrate`, then `<workspace>/dependencies`
+itself, then a user-local folder outside a workspace.
 
 The config plumbing is domain-agnostic and shared by every Sushi CLI: the generic build-tool
 schema (the cmake, ninja and vcpkg paths) and the skeleton that loads the layers and writes

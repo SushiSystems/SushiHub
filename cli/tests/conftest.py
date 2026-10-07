@@ -49,6 +49,12 @@ def _bind_provision_console():
 
 
 @pytest.fixture(autouse=True)
+def _no_machine_dependency_root(monkeypatch):
+    """Hide the machine's ``SUSHISYSTEMS_HOME`` so a test sees only the roots it sets."""
+    monkeypatch.delenv("SUSHISYSTEMS_HOME", raising=False)
+
+
+@pytest.fixture(autouse=True)
 def _terminal_console():
     """Put the console back on the terminal renderer after a test that selected ``--json``."""
     yield
