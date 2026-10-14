@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 2026-10-14 — docs: Recorded that ROCm is now chosen from the AMD cards as CUDA is from the NVIDIA ones (`REMAINING_WORK.md`).
+
 - 2026-10-14 — docs: Described the CUDA release chosen from the hardware in place of the 12.6.3 pin (`KNOWN_ISSUES.md`, `INSTALL.md`, `FAQ.md`, `REMAINING_WORK.md`).
 
 - 2026-10-07 — docs: Recorded the documentation rollout as built in eight repositories (`REMAINING_WORK.md`, `docs/agent/2026_10_07_DOCS_ROLLOUT/REPORT.md`).
