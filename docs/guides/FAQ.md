@@ -94,7 +94,7 @@ AdaptiveCpp and oneAPI. One is enough to build. When the machine already holds o
 declares. `hub install --customize` adds the others.
 
 `hub install` also detects the machine's GPU and installs that vendor's toolkit without being
-asked; on Windows the CUDA installer asks once for administrator rights. `hub install --dry-run`
+asked. CUDA is unpacked under the dependency root and needs no administrator rights. `hub install --dry-run`
 is available, and `--customize` drops the GPU toolkit. See
 [Installing](../getting_started/INSTALL.md).
 

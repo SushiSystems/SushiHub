@@ -34,28 +34,21 @@ own page for failures inside its build.
 The audit's code-shape findings that are work and not a failure a user meets are in
 `docs/design/REMAINING_WORK.md` and in the audit report itself.
 
-## Raising the CUDA pin above 12.6 breaks Pascal builds far from the cause
+## A toolkit release chosen elsewhere breaks Pascal builds far from the cause
 
-**Symptom.** After the CUDA toolkit is bumped past 12.6, `nvcc --version` succeeds, `hub doctor`
+**Symptom.** A CUDA 13 toolkit on a Pascal machine: `nvcc --version` succeeds, `hub doctor`
 reports the toolkit present, and the CMake configure passes. The build then fails in the ptxas
 link step with an unknown-architecture error for `sm_61`.
 
-**Cause.** Pascal (`sm_6x`) is hardware this project is actively developed on, not legacy
-support. NVIDIA drops older architectures from ptxas across major releases, and CUDA 13 removed
-`sm_6x` outright. SushiRuntime's `SR_CUDA_ARCH` has no default; `cmake/gpu/Cuda.cmake` resolves
-it from `nvidia-smi`, so on a Pascal box it resolves to `61` on its own, and only a 12.x toolkit
-can compile that. `LinuxCudaLocator.provision` in sushicore's
-`sushicore/provision/gpu/cuda.py` therefore installs the pinned
-`cuda-toolkit-12-6` package, never the unversioned `cuda-toolkit` meta-package. The same reason
-drives `_cuda_repo_tag`, in the same file: NVIDIA's apt repos for Ubuntu releases newer than
-24.04 carry only CUDA 13.x, so an exact distro tag there 404s on the 12.6 package and the install
-fails silently. The tag is clamped to `_CUDA126_MAX_UBUNTU_TAG` (`ubuntu2404`), whose debs run on
-newer Ubuntu. Multi-arch binaries are a real case too: `SR_CUDA_ARCH` accepts a list such as
-`61;86`, so a machine that has moved to Ampere can still ship a Pascal build.
+**Cause.** CUDA 13 removed `sm_6x`. SushiCore chooses the release from the machine's cards, so
+it gives a Pascal machine a 12.x toolkit on its own (sushicore's
+`docs/design/CUDA_TOOLKIT_SELECTION.md`). The failure comes back when the choice is bypassed:
+`SUSHISYSTEMS_CUDA_RELEASE` set to 13.x, a `CUDA_PATH` pointed at another toolkit, or an
+`SR_CUDA_ARCH` that names a card the machine does not have.
 
-**Rule.** Do not raise or unpin `cuda-toolkit-12-6`, and do not lift the `ubuntu2404` clamp,
-without a Pascal build proving the replacement works. A passing `nvcc --version` proves nothing
-here.
+**Rule.** For a build that must target a card absent from the machine, set
+`SUSHISYSTEMS_CUDA_RELEASE` to a release whose `nvcc --list-gpu-arch` lists it. A passing
+`nvcc --version` proves nothing here.
 
 ## Changing a vcpkg port's feature set needs `--recurse`, which `hub install` cannot pass
 

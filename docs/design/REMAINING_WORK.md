@@ -125,8 +125,9 @@ repositories. The owner approved the design on 2026-10-07.
   the iGPU through Vulkan compute, timed, decides whether the two-core RDNA2 part is worth a
   backend.
 - **GPU backend provisioning on real hardware.** P1 through P4 of `GPU_BACKEND_PROVISIONING.md`
-  are built and `hub install` wires the adapter build into both platforms. Neither the default
-  GPU component nor the CUDA 12.6.3 silent install on Windows has run on real hardware. R1 in
+  are built and `hub install` wires the adapter build into both platforms. The CUDA install
+  that sushicore now chooses from the hardware ran on an RTX 4050 on 2026-10-14. No build
+  against a 13.x toolkit has run yet; sushicore's `REMAINING_WORK.md` tracks it. R1 in
   SushiRuntime and E1 in SushiEngine are open.
 
 ### Sibling repositories
