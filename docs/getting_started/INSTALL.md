@@ -126,8 +126,9 @@ downloads none; otherwise it installs the first the fragment declares, intel/llv
 installed is removed.
 
 The toolkit for this machine's GPU is the exception: `hub install` detects the GPU and installs
-its toolkit without being asked, and on Windows the CUDA installer asks once for administrator
-rights. Pass `--skip-install` to `hub add` or `hub link` to defer that, and use `--customize` to
+its toolkit without being asked. For an NVIDIA card that is the newest CUDA release the driver
+runs and the compiler builds the card for, unpacked under the dependency root with no
+administrator rights. Pass `--skip-install` to `hub add` or `hub link` to defer that, and use `--customize` to
 drop it.
 
 The rule and the base fragment live in `sushicore.provision`, so a module CLI's own `setup`
