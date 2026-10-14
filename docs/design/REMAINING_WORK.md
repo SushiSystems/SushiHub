@@ -127,7 +127,8 @@ repositories. The owner approved the design on 2026-10-07.
 - **GPU backend provisioning on real hardware.** P1 through P4 of `GPU_BACKEND_PROVISIONING.md`
   are built and `hub install` wires the adapter build into both platforms. The CUDA install
   that sushicore now chooses from the hardware ran on an RTX 4050 on 2026-10-14. No build
-  against a 13.x toolkit has run yet; sushicore's `REMAINING_WORK.md` tracks it. R1 in
+  against a 13.x toolkit has run yet. ROCm is chosen the same way from AMD's SDK tarballs and
+  has not run on an AMD card. sushicore's `REMAINING_WORK.md` tracks both. R1 in
   SushiRuntime and E1 in SushiEngine are open.
 
 ### Sibling repositories
