@@ -31,9 +31,11 @@ from .config import deps_dir, find_workspace_root, upgrade_workspace, workspace_
 from .describe import catalogue
 from .errors import HubError
 from .services.catalog import CATALOG
+from .services import fetched_sources as fetched_sources_svc
 from .services import gui as gui_svc
 from .services import migrate as migrate_svc
 from .services import modules as modules_svc
+from .services import pins as pins_svc
 from .services import setup as setup_svc
 from .services import status_report
 
@@ -166,6 +168,10 @@ def status(
     report = status_report.build_status(check_updates)
     for warning in report.warnings:
         console.warn(warning)
+    home = find_workspace_root()
+    for copy in fetched_sources_svc.unused_copies(home) if home is not None else []:
+        console.warn(f"{copy.name} {copy.version}: fetched to {copy.path}, pinned by no module; "
+                     "`hub clean` removes it.")
     _finish(status_report.render(report.payload), report.payload)
 
 
@@ -376,6 +382,35 @@ def remove(
 ):
     """Remove provisioned dependencies. Use [bold]--all[/bold] to reclaim the lot."""
     _finish(setup_svc.uninstall(gpu=gpu, dry_run=dry_run, everything=all, assume_yes=yes))
+
+
+@app.command(
+    "pin",
+    rich_help_panel=K_MODULES,
+    epilog="hub pin sushilog v0.2.0  # Move every module's pin to v0.2.0\n"
+           "hub pin sushilog v0.2.0 --dry-run  # Show the modules it would move",
+)
+def pin(
+    library: str = typer.Argument(..., help="The Sushi library whose pin moves, such as sushilog."),
+    version: str = typer.Argument(..., help="The release tag to pin, such as v0.2.0."),
+    commit: Optional[str] = typer.Option(
+        None, "--commit", help="The tag's full commit hash, when its repository is out of reach."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't rewrite."),
+):
+    """Move one Sushi library's pin in every module of the workspace that pins it."""
+    _finish(pins_svc.pin(library, version, commit, dry_run))
+
+
+@app.command(
+    "clean",
+    rich_help_panel=K_DEPENDENCIES,
+    epilog="hub clean --dry-run  # Show the copies it would remove",
+)
+def clean(
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't remove."),
+):
+    """Remove the library copies a module's setup fetched that no module pins any more."""
+    _finish(fetched_sources_svc.clean(workspace_root(), dry_run))
 
 
 @app.command(

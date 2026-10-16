@@ -40,9 +40,11 @@ two see "Machine-readable output".
 | `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv; `sushicore` arrives from PyPI as its dependency. Always editable. Same names, aliases and `all` as `hub add`. |
 | `hub update [module…] [--dry-run]` | Upgrade `hub` itself, then run `git pull --ff-only` on present modules, cloned or linked. A binary install asks Sushi Account for the latest release and downloads it when the version differs. No arguments means all. |
 | `hub sync [--dry-run]` | Update every module, then install missing dependencies. |
+| `hub pin <library> <version> [--commit HASH] [--dry-run]` | Move one Sushi library's `[sushi.<library>]` pin in every module of the workspace that pins it, to the release tag and the commit it points at. `--commit` names the commit when the repository is out of reach. Commit each module afterwards. |
 | `hub status [--json] [--check-updates]` | Which modules are present, in which form, on which branch and how far from upstream, and whether dependencies are installed. It reads the disk only; `--check-updates` first fetches every checkout and asks Sushi Account for each binary install's latest release. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
 | `hub doctor` | Check tools, compilers and dependencies; report what is missing. |
 | `hub remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
+| `hub clean [--dry-run]` | Remove each library copy a module's own `setup` fetched under `<sushicore home>/sources/` that no module of the workspace pins any more. `hub status` lists them. |
 | `hub migrate [--to PATH] [--dry-run] [--rollback] [--finalize [--drop-link]] [--yes]` | Move the `dependencies/` tree to another directory and leave a link at the old path; see "Moving the dependency tree". |
 | `hub home` | Print the workspace root and the `dependencies/` path. |
 | `hub docs bundle --release X.Y.Z [--out DIR]` | Write the documentation bundle of the SushiHub checkout the command runs in: `docs-bundle-X.Y.Z.tar.gz` and its `.sha256`, in `build/docs/bundle` unless `--out` names another folder. `docs/publish.toml` says which pages go in. It needs a checkout of this repository, not a workspace, and fails outside one. |
@@ -191,6 +193,12 @@ The toolchain selection is sushicore's rule (`sushicore.provision.selection`): f
 capability a present module requires, nothing installs when the machine already holds a
 toolchain that provides it, and otherwise the first one the fragment declares installs. An
 empty workspace gets the base tools alone.
+When a module's own `setup` already fetched a library it pins, under `<sushicore home>/sources/`,
+`hub add` clones the module from that copy, without the network, points the clone's remote at the
+repository and fetches its history; offline, the clone holds only the copy's tag until
+`hub update` runs. The workspace checkout then wins over the fetched copy wherever a module looks
+for the library.
+
 `hub add` and `hub link` run the provision pipeline for the module they bring in, unless you pass
 `--skip-install`.
 
@@ -212,7 +220,7 @@ empty workspace gets the base tools alone.
 
 `hub` imports `sushicore` for its console, its config schema, its workspace helpers, the provision
 pipeline, the `--describe` catalogue, `--version` and the entry point. It is an ordinary PyPI
-dependency (`sushicore>=0.8.0` in `pyproject.toml`), resolved by the same pipx install that
+dependency (`sushicore>=0.9.1` in `pyproject.toml`), resolved by the same pipx install that
 installs `hub`. It is not a module: `hub link sushicore <path>` is refused. To work on both, install
 your sushicore checkout editable into `hub`'s venv, as `../docs/guides/LINKING_CHECKOUTS.md` says.
 
