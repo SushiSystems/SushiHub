@@ -103,9 +103,9 @@ class RecordingDriver:
         return 0
 
     def ctest_run(self, cfg, build_dir, env, *, label_regex=None, filter=None,
-                  repeat=0) -> int:
+                  repeat=0, jobs=None) -> int:
         """Record the selection one test run was asked for."""
-        self.ctests.append((label_regex, filter, repeat))
+        self.ctests.append((label_regex, filter, repeat, jobs))
         return 0
 
     def clean_tree(self, build_dir) -> None:
@@ -198,13 +198,14 @@ def test_clean_removes_the_tree_before_configuring(provisioned):
     assert len(driver.configures) == 1
 
 
-def test_test_passes_the_filter_and_the_repeat_through_with_no_label(provisioned):
+def test_test_passes_the_filter_the_repeat_and_the_jobs_through_with_no_label(provisioned):
     from sushihub.services import gui
 
     (provisioned / "gui" / "build" / "hub").mkdir(parents=True)
     driver = RecordingDriver()
-    assert gui.test(filter="Catalogue.*", repeat=3, driver=driver, env_loader=_env) == 0
-    assert driver.ctests == [(None, "Catalogue.*", 3)]
+    assert gui.test(filter="Catalogue.*", repeat=3, jobs=2, driver=driver,
+                    env_loader=_env) == 0
+    assert driver.ctests == [(None, "Catalogue.*", 3, 2)]
 
 
 def test_test_refuses_before_the_first_build(provisioned, capsys):

@@ -158,8 +158,8 @@ def build(build_type: BuildType = BuildType.debug, clean: bool = False,
     return rc
 
 
-def test(filter: str | None = None, repeat: int = 0, *, driver=None,
-         env_loader=None) -> int:
+def test(filter: str | None = None, repeat: int = 0, jobs: int | None = None, *,
+         driver=None, env_loader=None) -> int:
     """Run the application's CTest suites.
 
     The application labels no test, so every registered case runs and *filter*
@@ -168,6 +168,7 @@ def test(filter: str | None = None, repeat: int = 0, *, driver=None,
     Args:
         filter: A ctest ``-R`` pattern over the "Suite.Case" names.
         repeat: Re-run each selected test until it fails or this many runs pass.
+        jobs: The tests run at once, or None to let ctest decide.
         driver: The cmake driver, or None for the shared one.
         env_loader: The build-environment loader, or None for the vcvars snapshot.
 
@@ -186,7 +187,7 @@ def test(filter: str | None = None, repeat: int = 0, *, driver=None,
         return 1
 
     env = env_loader(cfg, build_dir)
-    return driver.ctest_run(cfg, build_dir, env, filter=filter, repeat=repeat)
+    return driver.ctest_run(cfg, build_dir, env, filter=filter, repeat=repeat, jobs=jobs)
 
 
 def run(target: str | None = None, args: Sequence[str] = (), *, runner=None,
