@@ -23,9 +23,10 @@ def recorder(monkeypatch):
     return spy
 
 
-def test_the_catalog_holds_the_four_stack_modules():
-    """Four modules are registered, in the order every command lists them."""
+def test_the_catalog_holds_the_five_stack_modules():
+    """Five modules are registered, in the order every command lists them."""
     assert CATALOG.names() == [
+        "sushilog",
         "sushiruntime",
         "sushiengine",
         "sushiai",
