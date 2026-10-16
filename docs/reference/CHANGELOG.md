@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- 2026-10-17 — cli: Added `hub pin`, which moves one Sushi library's pin in every module that pins it (`pins.py`).
+- 2026-10-17 — cli: Made `hub add` clone a module from the copy its setup fetched, and added `hub clean` for the copies no module pins (`fetched_sources.py`).
+- 2026-10-17 — cli: Required sushicore 0.9.1 for the pins it reads (`pyproject.toml`).
 - 2026-10-16 — cli: Added sushilog to the module catalog, ahead of the modules that link it (`catalog.toml`).
 - 2026-10-16 — cli: Added `hub gui test --jobs`, which caps how many tests ctest runs at once (`cli.py`, `gui.py`).
 - 2026-10-14 — docs: Recorded that ROCm is now chosen from the AMD cards as CUDA is from the NVIDIA ones (`REMAINING_WORK.md`).

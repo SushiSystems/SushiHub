@@ -82,13 +82,13 @@ def test_describe_prints_the_catalogue_as_one_compact_utf8_line():
 
 
 def test_describe_lists_every_visible_command_and_no_hidden_one():
-    """--describe names exactly the twenty-one commands the help screen shows."""
+    """--describe names exactly the twenty-three commands the help screen shows."""
     document = json.loads(CliRunner().invoke(app, ["--describe"]).stdout)
 
     assert {c["name"] for c in document["commands"]} == {
         "init", "home", "status", "docs bundle",
-        "add", "link", "install-cli", "update", "sync",
-        "install", "doctor", "remove", "migrate",
+        "add", "link", "install-cli", "update", "sync", "pin",
+        "install", "doctor", "remove", "clean", "migrate",
         "gui build", "gui test", "gui run", "gui clean",
         "login", "logout", "whoami", "license",
     }

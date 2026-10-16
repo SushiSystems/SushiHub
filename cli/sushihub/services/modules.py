@@ -17,7 +17,7 @@ from .. import DISTRIBUTION, console
 from ..config import WORKSPACE_MARKER, create_workspace_file, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import binary as binary_svc
-from . import git_ops, links, module_manifest, pipx
+from . import fetched_sources, git_ops, links, module_manifest, pipx
 from .catalog import CATALOG
 from .presence import Presence, describe, module_dir, presence_of
 
@@ -108,6 +108,16 @@ def _provision(dry_run: bool) -> int:
     return setup_svc.run("provision", dry_run=dry_run)
 
 
+def _clone(name: str, repo: str, dest: Path, root: Path) -> bool:
+    """Clone module *name* into *dest*, from the copy its `setup` fetched when there is one."""
+    copy = fetched_sources.newest_copy(name)
+    if copy is not None:
+        console.info(f"{name}: cloning from the copy setup fetched, {copy.path} -> {dest}")
+        return fetched_sources.clone_from_copy(copy, repo, dest, root)
+    console.info(f"{name}: cloning {repo} -> {dest}")
+    return git_ops.run(["clone", repo, str(dest)], cwd=root) == 0
+
+
 def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = False,
         binary: bool = False, provision=None) -> int:
     """Bring one or more modules into the workspace. Return exit code.
@@ -168,8 +178,7 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             console.info(f"{name}: (dry-run) would clone {mod.repo} -> {dest}")
             brought_in = True
             continue
-        console.info(f"{name}: cloning {mod.repo} -> {dest}")
-        if git_ops.run(["clone", mod.repo, str(dest)], cwd=root) != 0:
+        if not _clone(name, mod.repo, dest, root):
             console.error(f"{name}: clone failed.")
             failed = True
             continue
