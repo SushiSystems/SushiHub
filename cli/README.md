@@ -47,7 +47,7 @@ two see "Machine-readable output".
 | `hub home` | Print the workspace root and the `dependencies/` path. |
 | `hub docs bundle --release X.Y.Z [--out DIR]` | Write the documentation bundle of the SushiHub checkout the command runs in: `docs-bundle-X.Y.Z.tar.gz` and its `.sha256`, in `build/docs/bundle` unless `--out` names another folder. `docs/publish.toml` says which pages go in. It needs a checkout of this repository, not a workspace, and fails outside one. |
 | `hub gui build [--type debug\|release\|relwithdebinfo] [--clean] [-D VAR=VALUE…]` | Configure and compile the desktop application into `gui/build/hub`, under the Visual Studio environment on Windows, against the shared vcpkg tree. |
-| `hub gui test [--filter <pattern>] [--repeat <n>]` | Run the application's CTest suites. `--filter` selects by test name, `--repeat` re-runs each until it fails. |
+| `hub gui test [--filter <pattern>] [--repeat <n>] [--jobs <n>]` | Run the application's CTest suites. `--filter` selects by test name, `--repeat` re-runs each until it fails, `--jobs` caps how many run at once. |
 | `hub gui run [target] [-- args…]` | Launch a program from the application's build tree; the application itself when no target is named. |
 | `hub gui clean` | Remove `gui/build/hub`. The presets' own build trees are untouched. |
 | `hub login` | Sign in to Sushi Account: print a code, open the browser at the device page, wait for the grant, and store the session in this machine's credential store. |

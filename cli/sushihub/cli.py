@@ -456,16 +456,21 @@ def gui_build(
 @gui_app.command(
     "test",
     epilog="hub gui test --filter <pattern>\n"
-           "hub gui test --repeat 5",
+           "hub gui test --repeat 5\n"
+           "hub gui test --jobs 3",
 )
 def gui_test(
     filter: Optional[str] = typer.Option(
         None, "--filter", help="Run only the tests whose name matches this pattern."),
     repeat: int = typer.Option(
         0, "--repeat", help="Re-run each test until it fails or this many runs pass."),
+    jobs: Optional[int] = typer.Option(
+        None, "--jobs", "-j", min=1,
+        help="Tests run at once. When omitted ctest decides, and "
+             "CTEST_PARALLEL_LEVEL is honoured."),
 ):
     """Run the desktop application's tests through CTest."""
-    _finish(gui_svc.test(filter=filter, repeat=repeat))
+    _finish(gui_svc.test(filter=filter, repeat=repeat, jobs=jobs))
 
 
 @gui_app.command(
