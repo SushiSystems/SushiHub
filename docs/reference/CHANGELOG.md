@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-16 — cli: Added sushilog to the module catalog, ahead of the modules that link it (`catalog.toml`).
 - 2026-10-16 — cli: Added `hub gui test --jobs`, which caps how many tests ctest runs at once (`cli.py`, `gui.py`).
 - 2026-10-14 — docs: Recorded that ROCm is now chosen from the AMD cards as CUDA is from the NVIDIA ones (`REMAINING_WORK.md`).
 
