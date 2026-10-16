@@ -10,6 +10,12 @@
 #   alias         the module's own CLI program name, accepted wherever a name is.
 #   distribution  "source" to clone, "binary" for the one module sold as a compiled release.
 
+[sushilog]
+repo = "https://github.com/sushisystems/sushilog.git"
+directory = "sushilog"
+alias = "sl"
+distribution = "source"
+
 [sushiruntime]
 repo = "https://github.com/sushisystems/sushiruntime.git"
 directory = "sushiruntime"
