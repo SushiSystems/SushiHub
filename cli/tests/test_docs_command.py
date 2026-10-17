@@ -7,6 +7,7 @@
 
 from __future__ import annotations
 
+import re
 import json
 import subprocess
 import sys
@@ -77,6 +78,10 @@ def checkout(tmp_path, monkeypatch) -> Path:
     return root
 
 
+#: An ANSI style sequence; a runner such as GitHub Actions makes rich colour the usage text.
+_ANSI = re.compile(r"\[[0-9;]*m")
+
+
 @pytest.fixture
 def nowhere(tmp_path, monkeypatch) -> Path:
     """Runs the test in a directory that is inside neither a workspace nor a checkout."""
@@ -90,7 +95,7 @@ def test_bundle_without_a_release_exits_two_and_names_the_option():
     result = CliRunner().invoke(cli.app, ["docs", "bundle"])
 
     assert result.exit_code == 2
-    assert "--release" in result.output
+    assert "--release" in _ANSI.sub("", result.output)
 
 
 def test_bare_docs_prints_the_group_help_and_exits_two():
