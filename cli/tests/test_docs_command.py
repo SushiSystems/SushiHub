@@ -79,7 +79,7 @@ def checkout(tmp_path, monkeypatch) -> Path:
 
 
 #: An ANSI style sequence; a runner such as GitHub Actions makes rich colour the usage text.
-_ANSI = re.compile(r"\[[0-9;]*m")
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
 
 @pytest.fixture
