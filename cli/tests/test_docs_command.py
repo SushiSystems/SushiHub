@@ -7,8 +7,8 @@
 
 from __future__ import annotations
 
-import re
 import json
+import re
 import subprocess
 import sys
 from pathlib import Path
