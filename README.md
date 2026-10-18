@@ -1,54 +1,49 @@
 # SushiHub
 
-The tool that acquires and manages a SushiStack workspace. One command gives a machine the
-toolchains and libraries every module needs, in one `dependencies/` directory, and the `hub`
-command that manages the module checkouts beside it. SushiStack is the applications; SushiHub
-is what installs them. `hub` comes from PyPI as `sushihub`; this repository carries its source and
-the desktop application.
+The `hub` command and its desktop application: one install gives a machine every toolchain and
+library the SushiStack modules need, in one `dependencies/` directory, and manages the module
+checkouts beside it.
 
 ```bash
 curl -fsSL https://sushisystems.io/install.sh | bash      # Linux / WSL
-```
-
-```powershell
 irm https://sushisystems.io/install.ps1 | iex             # Windows (PowerShell)
+hub add sushiengine                                       # check out a module
+hub status                                                # what is present
+hub doctor                                                # what is missing
 ```
 
-The repository carries four things of its own:
+`hub` is not required to build one module: each module CLI runs the same provisioning through
+its own `setup` and `doctor`.
 
-| Directory | What it is | Its README |
-|---|---|---|
-| `cli/` | The `hub` command: dependency provisioning and module lifecycle. | `cli/README.md` |
-| `gui/` | The desktop application: a screen for every `hub` command, over `hub --json`. | `gui/README.md` |
-| `contract/` | The JSON schemas `hub` and the desktop application both validate against. | `contract/README.md` |
-| `tools/` | The checkers and the argv recorder; they build nothing. | `tools/README.md` |
+| Path | Holds |
+| --- | --- |
+| `cli/` | The `hub` command, published on PyPI as `sushihub` |
+| `gui/` | The desktop application, a screen for every `hub` command over `hub --json` |
+| `contract/` | The JSON schemas both validate against |
+| `tools/` | The checkers and the argv recorder |
 
-The engine under every Sushi CLI is `sushicore`, which lives in its own repository and installs
-from PyPI: console, config, workspace resolution, the cmake driver and dependency provisioning.
+## Build
 
-`hub` is not required to build a module. A module CLI provisions its own checkout with
-`setup` and reports on it with `doctor`, through the same `sushicore` code `hub install` runs.
-`hub` is what does that for several checkouts at once, and what fetches the engine's binary.
-Every module CLI has registered the two commands since 2026-10-04.
+```bash
+pip install -e "cli[test]"
+python -m pytest cli
+```
 
-Everything else under the workspace root is a module checkout `hub add` produces, or the
-`dependencies/` tree `hub install` fills. Neither is tracked here.
+## Status
 
-After an install, `hub status` lists the modules present and `hub doctor` reports what is
-missing.
+The CLI installs dependencies and manages checkouts; planned work is in
+[`docs/design/REMAINING_WORK.md`](docs/design/REMAINING_WORK.md).
 
-The manual starts at [`docs/README.md`](docs/README.md). Install steps are in
-`docs/getting_started/INSTALL.md`. What is planned and not yet built is in
-`docs/design/REMAINING_WORK.md`.
+## Documentation
+
+The manual starts at [`docs/README.md`](docs/README.md); install steps are in
+[`docs/getting_started/INSTALL.md`](docs/getting_started/INSTALL.md), and how a change lands in
+[`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md).
 
 ## Licence
 
-SushiHub is source-available, free for non-commercial use under the PolyForm Noncommercial
-License 1.0.0; commercial use needs a licence from Sushi Systems, see `COMMERCIAL.md`. `LICENSE`
-is the binding text and `NOTICE.md` lists the third-party parts.
-
-sushihub 0.1.0 on PyPI and the commits before the one that replaced `LICENSE` were published
-under the Apache License 2.0 and stay available under it.
-
-This is the licence of the source in this repository. The licence `hub license` reports is a
-different thing: the product licence Sushi Account issues for sushiengine.
+Source-available, free for non-commercial use under the PolyForm Noncommercial License 1.0.0;
+see `LICENSE`. Commercial use needs a licence from Sushi Systems; see `COMMERCIAL.md`.
+Third-party parts are listed in `NOTICE.md`. sushihub 0.1.0 and the commits before the one that
+replaced `LICENSE` stay available under the Apache License 2.0. The product licence `hub license`
+reports is a separate thing, issued by Sushi Account for sushiengine.
