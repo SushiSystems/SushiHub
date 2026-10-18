@@ -1,8 +1,8 @@
 # Changelog
 
 ## Unreleased
-- 2026-10-18 — docs: Cut the root README to the six sections of the documentation skill, and added the shared Code of Conduct and security policy (`README.md`, `.github/`).
 
+- 2026-10-18 — docs: Cut the root README to the six sections of the documentation skill, and added the shared Code of Conduct and security policy (`README.md`, `.github/`).
 - 2026-10-17 — cli: Added `hub pin`, which moves one Sushi library's pin in every module that pins it (`pins.py`).
 - 2026-10-17 — cli: Made `hub add` clone a module from the copy its setup fetched, and added `hub clean` for the copies no module pins (`fetched_sources.py`).
 - 2026-10-17 — cli: Required sushicore 0.9.1 for the pins it reads (`pyproject.toml`).
