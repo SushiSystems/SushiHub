@@ -52,13 +52,11 @@ Next id: RW-55
 
 ## Programmes
 
-### RW-11 Build the engine's side of the hub, wave 6
-- State: open
-- Done when: sushiengine has the command set of a binary install, `se editor --project <name>`,
-  the project registry and its start screen, and the runtime licence client with its offline rule
+### RW-11 Close wave 6 of the hub programme
+- State: blocked
+- Blocked by: sushiengine RW-305
+- Done when: the engine's side of a binary install is built
 - Source: `docs/design/HUB.md`
-
-The work lands in sushiengine; this entry cites its entry there once that repository migrates.
 
 ### RW-12 Ship the desktop application through the installers, wave 7
 - State: blocked
@@ -111,7 +109,7 @@ Rules unification, the first programme, is SushiSkills' and has shipped.
 - Done when: every estate repository's backlog and known issues pass SushiSkills'
   `check_backlog.py`
 
-Ten have moved; sushiengine is next, and sushitrack moves under its own session. The plan is
+Eleven have moved; sushitrack moves under its own session. The plan is
 `docs/agent/2026_10_19_BACKLOG_FORMAT/PLAN.md` in SushiSkills.
 
 ## Command line
@@ -215,12 +213,11 @@ The change reaches sushicore's `IDependencySource`.
 
 ### RW-32 Prove GPU backend provisioning on real hardware
 - State: blocked
-- Blocked by: sushicore RW-12, sushicore RW-14, sushiruntime RW-63
+- Blocked by: sushicore RW-12, sushicore RW-14, sushiruntime RW-63, sushiengine RW-306
 - Done when: a CUDA 13 build, a ROCm install and build on an AMD card, R1's acceptance in the
   runtime and E1's in the engine have each passed
 - Source: `docs/design/GPU_BACKEND_PROVISIONING.md`
 
-E1, the engine's `umf` staging role, gets its entry when sushiengine migrates.
 
 ## Documentation
 
