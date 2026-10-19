@@ -42,6 +42,7 @@ Every other entry was read against the code and stands.
 | A `[cli]` theme in `workspace.toml` is not read | here | `sushicore RW-52`; `RW-25` here waits on it |
 | A doubled progress line | here | `sushicore RW-53` |
 | Every GPU vendor on a machine | here | `sushicore RW-54` |
+| st setup and SushiTrack's conda environment | `RW-10` here | `sushitrack RW-21`, which the owner closed on 2026-10-19: `st setup` does not build the environment |
 | `sushiruntime`'s `env.py` repeats `sushicore.build_env` | here | `sushiruntime RW-64` |
 | R1 of the GPU backend provisioning plan | here | `sushiruntime RW-63`; `RW-32` here waits on it |
 | The site's bundles become addresses | sushiweb `RW-15` | now blocked by `RW-16` here |

@@ -46,10 +46,6 @@ Next id: RW-55
 - Done when: the owner has ruled whether `hub add <git-url>` reaches a repository nobody has
   cloned
 
-### RW-10 Decide whether `st setup` creates SushiTrack's conda environment
-- State: decision
-- Done when: the owner has ruled on task 3 of wave 7 of the decoupling
-
 ## Programmes
 
 ### RW-11 Close wave 6 of the hub programme
@@ -103,14 +99,6 @@ The site's deploy is `sushiweb RW-1`; each command line registers the `docs` gro
 - Source: `docs/agent/2026_10_05_ESTATE_AUDIT/REPORT.md`
 
 Rules unification, the first programme, is SushiSkills' and has shipped.
-
-### RW-19 Move every repository to the backlog format
-- State: open
-- Done when: every estate repository's backlog and known issues pass SushiSkills'
-  `check_backlog.py`
-
-Eleven have moved; sushitrack moves under its own session. The plan is
-`docs/agent/2026_10_19_BACKLOG_FORMAT/PLAN.md` in SushiSkills.
 
 ## Command line
 
