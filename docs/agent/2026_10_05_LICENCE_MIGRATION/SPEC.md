@@ -1,6 +1,6 @@
 # Licence migration
 
-**Status:** Shipped — ten repositories done on 2026-10-05; see `REPORT.md`.
+**Status:** Shipped — 2026-10-05. Ten repositories; see `REPORT.md`.
 
 Programme 2 of 5 in the estate refactor. It moves every Sushi Systems repository in scope from
 Apache-2.0 to the licence model the owner decided on 2026-10-05, using the header template and

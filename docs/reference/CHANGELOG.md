@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-19 — docs: Moved the backlog and the known issues to the SushiSkills entry format, took the cross-repository programmes and took the backlog checker (`REMAINING_WORK.md`, `KNOWN_ISSUES.md`, `check_backlog.py`).
 - 2026-10-18 — docs: Cut the root README to the six sections of the documentation skill, and added the shared Code of Conduct and security policy (`README.md`, `.github/`).
 - 2026-10-17 — cli: Added `hub pin`, which moves one Sushi library's pin in every module that pins it (`pins.py`).
 - 2026-10-17 — cli: Made `hub add` clone a module from the copy its setup fetched, and added `hub clean` for the copies no module pins (`fetched_sources.py`).

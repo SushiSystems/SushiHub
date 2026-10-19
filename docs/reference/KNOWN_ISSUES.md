@@ -1,102 +1,176 @@
 # Known issues
 
-Two kinds of entry. The table lists defects in this repository that are recorded and not yet
-fixed, each with where it sits; the estate audit of 2026-10-05 found them and each was checked
-against the tree that day, except the two about PyPI and the remote, which rest on the audit's
-own lookup. The sections after it record failures that are a toolchain's, a
-package manager's or a vendor's doing, each with the symptom, the cause and the rule, so the
-next person recognises one where they would otherwise diagnose it again. Each module keeps its
-own page for failures inside its build.
+Next id: KI-21
 
-## Open defects
+## Release
 
-| Issue | Where |
-| --- | --- |
-| A checkout of `main` cannot install `hub` from PyPI: it requires `sushicore>=0.7.0`, and 0.7.0 is unpublished | `cli/pyproject.toml` |
-| v0.2.0 has its release commit of 2026-10-07 and no tag yet, so it is not published; PyPI serves 0.1.0 | git, `docs/reference/CHANGELOG.md` |
-| `hub status` reports the channel `editable` for an install from PyPI; the schema allows only `editable` and `frozen` | `cli/sushihub/services/hub_install.py`, `contract/status.schema.json` |
-| git and pipx inherit `hub`'s stdout, so under `--json` their plain text lands in the event stream | `cli/sushihub/services/git_ops.py`, `cli/sushihub/services/pipx.py`, `cli/sushihub/services/cli_install.py` |
-| `hub install --customize` decides on `sys.stdin.isatty()` alone and opens its picker under `--json` on a terminal | `cli/sushihub/services/customize.py` |
-| `hub --json` with no subcommand prints the help text to stdout and no `result` event | `cli/sushihub/cli.py` |
-| The module readiness report of `hub doctor` is written through the raw Rich console, outside the event stream | `cli/sushihub/setup/steps.py` |
-| The desktop application never reads the child's stderr, so a traceback from `hub` and the readiness report never reach the window | `gui/src/bridge/Process.cpp` |
-| The `[cli]` theme is read from `<workspace>/sushihub/cli/`, a directory only a workspace made before 2026-09-22 has | `cli/sushihub/console.py`, `legacy_cli_dir` in `cli/sushihub/config.py` |
-| `hub gui build`, `test`, `run` and `clean` are listed for every user and work only when the workspace root is a clone of this repository | `cli/sushihub/gui_config.py` |
-| The tool overrides are named `SR_*` after sushiruntime, 22 mentions in one file | `cli/sushihub/config.py` |
-| `hub status` looks for the `sh` alias in four fixed profile paths and reports none when the PowerShell profile is under a redirected Documents folder | `cli/sushihub/services/hub_install.py` |
-| A module `pyproject.toml` without `[project] name` ends `hub install-cli` in a `KeyError` | `cli/sushihub/services/pipx.py` |
-| `discovery.py` is imported by nothing | `cli/sushihub/services/discovery.py` |
-| Neither the CLI nor the desktop application has a logger | `cli/sushihub/`, `gui/src/` |
-| `contract/sushi-account.md` says the six endpoints do not exist in sushiweb and names the keyring service `sushistack`; the code uses `sushihub` | `contract/sushi-account.md`, `cli/sushihub/services/token_store.py` |
-| The archived v0.1.0 changelog cites `docs/agent/specs/2026-09-05-hub-design.md`, which is now `docs/design/HUB.md`, and has one entry of 246 characters | `docs/archive/changelog/v0.1.0.md` |
-| `check_docs_layout.py` reports `docs/CLAUDE.md`, which waits for the owner to move it to the root, and one line of the audit report that reads as a link | `docs/CLAUDE.md`, `docs/agent/2026_10_05_ESTATE_AUDIT/REPORT.md` |
+### KI-1 v0.2.0 has its release commit and no tag
+- Origin: own
+- Where: `cli/pyproject.toml`, `docs/reference/CHANGELOG.md`
+- Cause: the owner tries the hub before tagging
+- Recognise: the package declares 0.2.0; PyPI serves 0.1.0
+- Workaround: install from a checkout
+- Fix: RW-5
 
-The audit's code-shape findings that are work and not a failure a user meets are in
-`docs/design/REMAINING_WORK.md` and in the audit report itself.
+## Machine output
 
-## A toolkit release chosen elsewhere breaks Pascal builds far from the cause
+### KI-2 `hub status` reports the channel `editable` for a PyPI install
+- Origin: own
+- Where: `cli/sushihub/services/hub_install.py`, `contract/status.schema.json`
+- Cause: the schema allows only `editable` and `frozen`
+- Recognise: an install from PyPI reads as editable
+- Workaround: none
+- Fix: RW-43
 
-**Symptom.** A CUDA 13 toolkit on a Pascal machine: `nvcc --version` succeeds, `hub doctor`
-reports the toolkit present, and the CMake configure passes. The build then fails in the ptxas
-link step with an unknown-architecture error for `sm_61`.
+### KI-3 Under `--json`, git and pipx write into the event stream
+- Origin: own
+- Where: `cli/sushihub/services/git_ops.py`, `cli/sushihub/services/pipx.py`,
+  `cli/sushihub/services/cli_install.py`
+- Cause: the children inherit `hub`'s stdout
+- Recognise: lines that are not JSON among the events
+- Workaround: skip lines that do not parse as JSON
+- Fix: RW-44
 
-**Cause.** CUDA 13 removed `sm_6x`. SushiCore chooses the release from the machine's cards, so
-it gives a Pascal machine a 12.x toolkit on its own (sushicore's
-`docs/design/CUDA_TOOLKIT_SELECTION.md`). The failure comes back when the choice is bypassed:
-`SUSHISYSTEMS_CUDA_RELEASE` set to 13.x, a `CUDA_PATH` pointed at another toolkit, or an
-`SR_CUDA_ARCH` that names a card the machine does not have.
+### KI-4 `hub install --customize` opens its picker under `--json`
+- Origin: own
+- Where: `cli/sushihub/services/customize.py`
+- Cause: it decides on `sys.stdin.isatty()` alone
+- Recognise: a picker on a terminal during a JSON run
+- Workaround: leave `--customize` out under `--json`
+- Fix: RW-45
 
-**Rule.** For a build that must target a card absent from the machine, set
-`SUSHISYSTEMS_CUDA_RELEASE` to a release whose `nvcc --list-gpu-arch` lists it. A passing
-`nvcc --version` proves nothing here.
+### KI-5 `hub --json` with no subcommand prints help text
+- Origin: own
+- Where: `cli/sushihub/cli.py`
+- Cause: the help path ignores the output mode
+- Recognise: plain help on stdout and no `result` event
+- Workaround: name a subcommand
+- Fix: RW-46
 
-## Changing a vcpkg port's feature set needs `--recurse`, which `hub install` cannot pass
+### KI-6 The readiness report of `hub doctor` bypasses the event stream
+- Origin: own
+- Where: `cli/sushihub/setup/steps.py`
+- Cause: it is written through the raw Rich console
+- Recognise: drawn text in a JSON run
+- Workaround: none
+- Fix: RW-47
 
-**Symptom.** A manifest changes a port's features, for example `sdl2` to `sdl2[vulkan]` in
-`sushiengine/cli/sushistack.deps.toml`. `hub install` then fails at the vcpkg step: vcpkg refuses
-to rebuild the already-installed port with different features and asks for `--recurse`.
+### KI-7 The desktop application never reads the child's stderr
+- Origin: own
+- Where: `gui/src/bridge/Process.cpp`
+- Cause: the bridge reads stdout alone
+- Recognise: a traceback from `hub` and the readiness report never reach the window
+- Workaround: run the command in a terminal
+- Fix: RW-48
 
-**Cause.** vcpkg treats a feature change on an installed port as a removal plus a reinstall of
-everything depending on it, and only does that when told to with `--recurse`. `VcpkgManager.install`
-in sushicore's `sushicore/provision/packages/vcpkg.py` runs a plain `vcpkg install <port>:<triplet>` with
-no way to add that flag, and no `hub install` option exposes it.
+## Commands
 
-**Rule.** After a feature-set change, run the install once by hand with the workspace's vcpkg
-(`hub home` prints the `dependencies/` path; the root is `vcpkg_root` in `.sushistack/workspace.toml` when
-set):
+### KI-8 The `[cli]` theme is read from a directory few workspaces have
+- Origin: own
+- Where: `cli/sushihub/console.py`, `cli/sushihub/config.py`
+- Cause: `legacy_cli_dir` points at `<workspace>/sushihub/cli/`, which only a workspace made
+  before 2026-09-22 has
+- Recognise: a theme set in the workspace has no effect
+- Workaround: none
+- Fix: RW-25
 
-```
-<dependencies>/vcpkg/vcpkg install sdl2[vulkan]:x64-windows --recurse
-```
+### KI-9 The GUI commands are listed where they do not work
+- Origin: own
+- Where: `cli/sushihub/gui_config.py`
+- Cause: `hub gui build`, `test`, `run` and `clean` assume the workspace root is a clone of this
+  repository
+- Recognise: the commands fail in any other workspace
+- Workaround: run them from a clone
+- Fix: RW-49
 
-Then rerun `hub install`; vcpkg's list output now carries the featured port, so the check passes.
-Do not remove the plain port to work around it; `--recurse` is the supported path.
+### KI-10 The tool overrides are named after sushiruntime
+- Origin: own
+- Where: `cli/sushihub/config.py`
+- Cause: 22 mentions of `SR_*` in one file
+- Recognise: a hub setting spelled with the runtime's prefix
+- Workaround: use the names as they are
+- Fix: RW-50
 
-## The runtime, engine and CI lanes build against different SYCL toolchains
+### KI-11 `hub status` misses the `sh` alias under a redirected Documents folder
+- Origin: own
+- Where: `cli/sushihub/services/hub_install.py`
+- Cause: it looks in four fixed profile paths
+- Recognise: `sh` works and the status reports no alias
+- Workaround: none
+- Fix: RW-51
 
-**Symptom.** A SYCL-level behaviour that holds on a developer's machine fails in CI, or the other
-way round, with no change in the code under test.
+### KI-12 A module `pyproject.toml` without a name ends `install-cli` in a `KeyError`
+- Origin: own
+- Where: `cli/sushihub/services/pipx.py`
+- Cause: `[project] name` is read without a check
+- Recognise: a traceback ending in `KeyError: 'name'`
+- Workaround: give the module a name
+- Fix: RW-52
 
-**Cause.** Three different SYCL toolchains are in use. `hub install` downloads the newest
-intel/llvm nightly bundle at the time it runs (`install_intel_llvm` in sushicore's
-`sushicore/provision/toolchains/intel_llvm.py`), and the install is then reused forever unless
-`--refresh-toolchains` is given, so two developer machines can differ from one another. The
-engine's CI job pins a specific nightly by date (`INTEL_LLVM_DATE` in
-`sushiengine/.github/workflows/ci.yml`). The runtime's CI job builds inside
-`intel/oneapi-basekit:latest` with Intel's packaged `icpx`, a separate libsycl build again.
-Runtime and header behaviour differs between these builds in ways the SYCL specification leaves
-open, such as whether a particular call allocates.
+## Source and documentation
 
-**Rule.** A contract stated at the SYCL level (allocation freedom, ordering, what a runtime call
-may do) is not proven by a local run. It needs CI proof on the lane that ships it, and a claim
-that holds on one lane must say which one.
+### KI-13 `discovery.py` is imported by nothing
+- Origin: own
+- Where: `cli/sushihub/services/discovery.py`
+- Cause: its callers left
+- Recognise: no import names it
+- Workaround: none needed
+- Fix: RW-53
 
-## The command was `ss`, and is now `hub`
+### KI-14 Neither the command line nor the desktop application has a logger
+- Origin: own
+- Where: `cli/sushihub`, `gui/src`
+- Cause: none was written
+- Recognise: a failure leaves no record
+- Workaround: none
+- Fix: RW-54
 
-**Symptom.** Documentation and scripts predating this entry call the workspace command `ss`.
+### KI-15 The account contract page is out of date and misnamed
+- Origin: own
+- Where: `contract/sushi-account.md`, `cli/sushihub/services/token_store.py`
+- Cause: it says the six endpoints do not exist in sushiweb and names the keyring service
+  `sushistack`; the code uses `sushihub`
+- Recognise: the page and `token_store.py` disagree
+- Workaround: trust the code
+- Fix: RW-33
 
-**Cause.** `ss` is not free to claim: iproute2 ships `/usr/bin/ss` on every Linux distribution, so
-the workspace command shadowed a system tool of the same name on every machine that had one.
+### KI-16 The archived v0.1.0 changelog cites the hub design by its old path
+- Origin: own
+- Where: `docs/archive/changelog/v0.1.0.md`
+- Cause: the design moved to `docs/design/HUB.md`; one entry is 246 characters
+- Recognise: the cited path resolves nowhere
+- Workaround: read `docs/design/HUB.md`
+- Fix: none, the archive is frozen
 
-**Rule.** The command is `hub`. The installer offers `sh` as an optional interactive alias for
-typing, which changes typing only and leaves `/bin/sh` untouched.
+## Toolchains
+
+### KI-17 A CUDA 13 toolkit breaks a Pascal build far from the cause
+- Origin: toolchain
+- Cause: CUDA 13 removed `sm_6x`; sushicore picks 12.x for a Pascal machine, but
+  `SUSHISYSTEMS_CUDA_RELEASE`, a `CUDA_PATH` to another toolkit or an `SR_CUDA_ARCH` naming an
+  absent card bypasses the choice
+- Recognise: `nvcc --version`, `hub doctor` and the configure pass; ptxas fails on `sm_61`
+- Workaround: set `SUSHISYSTEMS_CUDA_RELEASE` to a release whose `nvcc --list-gpu-arch` lists the
+  card
+
+### KI-18 Changing a vcpkg port's features needs `--recurse`, which `hub install` cannot pass
+- Origin: dependency
+- Cause: vcpkg rebuilds a port with new features only with `--recurse`, and sushicore's
+  `VcpkgManager.install` runs a plain install with no way to add it
+- Recognise: after a manifest changes, say, `sdl2` to `sdl2[vulkan]`, the vcpkg step refuses and
+  asks for `--recurse`
+- Workaround: run `<dependencies>/vcpkg/vcpkg install sdl2[vulkan]:x64-windows --recurse` once,
+  then `hub install` again; `hub home` prints the folder
+
+### KI-19 The runtime, the engine and CI build against different SYCL toolchains
+- Origin: toolchain
+- Cause: `hub install` takes the newest intel/llvm nightly and reuses it, the engine's CI pins a
+  nightly by date, and the runtime's CI uses Intel's packaged `icpx`
+- Recognise: SYCL behaviour that holds locally fails in CI, or the other way round
+- Workaround: prove a SYCL-level contract on the CI lane that ships it, and say which lane
+
+### KI-20 iproute2's `ss` shadows a workspace command of that name
+- Origin: dependency
+- Cause: every Linux distribution ships `/usr/bin/ss`
+- Recognise: an old script or page that calls the workspace command `ss`
+- Workaround: the command is `hub`; the installer offers `sh` as an interactive alias
