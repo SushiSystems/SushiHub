@@ -14,14 +14,6 @@ Next id: KI-21
 
 ## Machine output
 
-### KI-2 `hub status` reports the channel `editable` for a PyPI install
-- Origin: own
-- Where: `cli/sushihub/services/hub_install.py`, `contract/status.schema.json`
-- Cause: the schema allows only `editable` and `frozen`
-- Recognise: an install from PyPI reads as editable
-- Workaround: none
-- Fix: RW-43
-
 ### KI-3 Under `--json`, git and pipx write into the event stream
 - Origin: own
 - Where: `cli/sushihub/services/git_ops.py`, `cli/sushihub/services/pipx.py`,
@@ -47,14 +39,6 @@ Next id: KI-21
 - Workaround: name a subcommand
 - Fix: RW-46
 
-### KI-6 The readiness report of `hub doctor` bypasses the event stream
-- Origin: own
-- Where: `cli/sushihub/setup/steps.py`
-- Cause: it is written through the raw Rich console
-- Recognise: drawn text in a JSON run
-- Workaround: none
-- Fix: RW-47
-
 ### KI-7 The desktop application never reads the child's stderr
 - Origin: own
 - Where: `gui/src/bridge/Process.cpp`
@@ -64,15 +48,6 @@ Next id: KI-21
 - Fix: RW-48
 
 ## Commands
-
-### KI-8 The `[cli]` theme is read from a directory few workspaces have
-- Origin: own
-- Where: `cli/sushihub/console.py`, `cli/sushihub/config.py`
-- Cause: `legacy_cli_dir` points at `<workspace>/sushihub/cli/`, which only a workspace made
-  before 2026-09-22 has
-- Recognise: a theme set in the workspace has no effect
-- Workaround: none
-- Fix: RW-25
 
 ### KI-9 The GUI commands are listed where they do not work
 - Origin: own
@@ -91,14 +66,6 @@ Next id: KI-21
 - Workaround: use the names as they are
 - Fix: RW-50
 
-### KI-11 `hub status` misses the `sh` alias under a redirected Documents folder
-- Origin: own
-- Where: `cli/sushihub/services/hub_install.py`
-- Cause: it looks in four fixed profile paths
-- Recognise: `sh` works and the status reports no alias
-- Workaround: none
-- Fix: RW-51
-
 ### KI-12 A module `pyproject.toml` without a name ends `install-cli` in a `KeyError`
 - Origin: own
 - Where: `cli/sushihub/services/pipx.py`
@@ -108,22 +75,6 @@ Next id: KI-21
 - Fix: RW-52
 
 ## Source and documentation
-
-### KI-13 `discovery.py` is imported by nothing
-- Origin: own
-- Where: `cli/sushihub/services/discovery.py`
-- Cause: its callers left
-- Recognise: no import names it
-- Workaround: none needed
-- Fix: RW-53
-
-### KI-14 Neither the command line nor the desktop application has a logger
-- Origin: own
-- Where: `cli/sushihub`, `gui/src`
-- Cause: none was written
-- Recognise: a failure leaves no record
-- Workaround: none
-- Fix: RW-54
 
 ### KI-15 The account contract page is out of date and misnamed
 - Origin: own

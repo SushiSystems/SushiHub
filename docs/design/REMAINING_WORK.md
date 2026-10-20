@@ -125,6 +125,11 @@ Rules unification, the first programme, is SushiSkills' and has shipped.
 - Blocked by: sushicore RW-52
 - Done when: `cli/sushihub/console.py` reads the theme from `workspace.toml`, not from the
   directory `legacy_cli_dir` returns
+- Where: `cli/sushihub/console.py`, `cli/sushihub/config.py`
+
+The `[cli]` theme is read from a directory few workspaces have. A theme set in the workspace has no
+effect. Cause: `legacy_cli_dir` points at `<workspace>/sushihub/cli/`, which only a workspace made
+before 2026-09-22 has.
 
 ### RW-26 Return each packaged manifest's text
 - State: open
@@ -141,6 +146,10 @@ The change reaches sushicore's `IDependencySource`.
 ### RW-43 Report the install channel of a PyPI install
 - State: open
 - Done when: `hub status` says what a PyPI install is, and `contract/status.schema.json` allows it
+- Where: `cli/sushihub/services/hub_install.py`, `contract/status.schema.json`
+
+`hub status` reports the channel `editable` for a PyPI install. An install from PyPI reads as
+editable. Cause: the schema allows only `editable` and `frozen`.
 
 ### RW-44 Keep git's and pipx's output out of the event stream
 - State: open
@@ -157,6 +166,10 @@ The change reaches sushicore's `IDependencySource`.
 ### RW-47 Send the readiness report of `hub doctor` as events
 - State: open
 - Done when: `cli/sushihub/setup/steps.py` writes no raw Rich output
+- Where: `cli/sushihub/setup/steps.py`
+
+The readiness report of `hub doctor` bypasses the event stream. Drawn text in a JSON run. Cause: it
+is written through the raw Rich console.
 
 ### RW-48 Read the child's stderr in the desktop application
 - State: open
@@ -173,6 +186,10 @@ The change reaches sushicore's `IDependencySource`.
 ### RW-51 Find the `sh` alias under a redirected Documents folder
 - State: open
 - Done when: `hub status` reads the PowerShell profile path from the system, not four fixed paths
+- Where: `cli/sushihub/services/hub_install.py`
+
+`hub status` misses the `sh` alias under a redirected Documents folder. `sh` works and the status
+reports no alias. Cause: it looks in four fixed profile paths.
 
 ### RW-52 Refuse a module `pyproject.toml` without a name cleanly
 - State: open
@@ -181,10 +198,17 @@ The change reaches sushicore's `IDependencySource`.
 ### RW-53 Remove `discovery.py`
 - State: open
 - Done when: `cli/sushihub/services/discovery.py`, imported by nothing, is gone
+- Where: `cli/sushihub/services/discovery.py`
+
+`discovery.py` is imported by nothing. No import names it. Cause: its callers left.
 
 ### RW-54 Give the command line and the desktop application a logger
 - State: open
 - Done when: both log through the `logging` skill's interface
+- Where: `cli/sushihub`, `gui/src`
+
+Neither the command line nor the desktop application has a logger. A failure leaves no record.
+Cause: none was written.
 
 ## GPU
 
