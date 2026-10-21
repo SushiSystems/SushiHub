@@ -81,4 +81,4 @@ and unknown to `hub add`, and both commands say so plainly.
 - The catalog it falls back to: `cli/sushihub/catalog.toml`.
 - The other file a module owns: its dependency fragment at `cli/sushistack.deps.toml`, which
   says what to install rather than what the module is.
-- The design behind both: `../design/WORKSPACE_DECOUPLING.md` §3.1 and §3.2.
+- The design behind both: `../design/WORKSPACE_DECOUPLING.md`, "ModuleCatalog" and "The module manifest".

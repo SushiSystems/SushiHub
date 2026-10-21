@@ -1,6 +1,6 @@
 # tools
 
-The four checkers every Sushi Systems repository carries, copied whole from SushiSkills, where a
+The five checkers every Sushi Systems repository carries, copied whole from SushiSkills, where a
 rule is fixed first and copied out. `record_cli_argv.py` is this repository's own.
 
 | Path | Checks | Takes |
@@ -9,6 +9,7 @@ rule is fixed first and copied out. `record_cli_argv.py` is this repository's ow
 | `documentation/check_source_comments.py` | C++, GLSL, TypeScript and Python: license block, file header, block ceiling, `//` and `#` runs, separators, history words, `@date` | Files or folders |
 | `documentation/check_docs_layout.py` | `docs/` entries, required documents, document names, work folders, status lines, design ceiling, links under `docs/`, reachability from `docs/README.md`, READMEs under `modules/<tier>/`, archive candidates | Repository root |
 | `documentation/check_changelog.py` | Headings and entry shape, releases kept live, length, one sentence, nesting, cited places | Repository root |
+| `documentation/check_design_format.py` | Design documents: the five sections in order, a status line of at most 160 characters, the phase table and its states, no commit hash, no line that dates built or merged work | Repository root |
 | `layering/check_layering.py` | Declared tiers, upward includes, reaches into another module's `source/` | Repository root |
 | `licensing/write_license_block.py` | Nothing; writes the license block of `source-comments` into every tracked source file, or lists the files that lack it with `--report` | Repository root, `--project` |
 | `record_cli_argv.py` | Nothing; records the argv a Sushi CLI would hand to cmake and ctest, so a CLI change is proven without a build | A CLI command line |

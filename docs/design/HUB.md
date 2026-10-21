@@ -1,13 +1,12 @@
-# The hub: `hub` in the terminal and on the desktop — Design
+# The hub: `hub` in the terminal and on the desktop
 
-**Status:** Open — waves 0 to 5 landed; waves 6 and 7 are open.
+**Status:** Open — waves 0 to 5 built; waves 6 and 7 are open
 
-Written on 2026-09-05 and approved in conversation. It was the agent spec
-`2026-09-05-hub-design.md` until 2026-10-05. The body keeps the names of its date: Sushi ID is
-Sushi Account today, and `sushihub/cli` and `sushihub/gui` are `cli/` and `gui/` at the
-repository root. `REMAINING_WORK.md` holds the state of each wave.
+## Problem
 
-## 1. Purpose
+The names below are those of the design's own time: Sushi ID is Sushi Account today, and
+`sushihub/cli` and `sushihub/gui` are `cli/` and `gui/` at the repository root.
+`REMAINING_WORK.md` holds the state of each wave.
 
 SushiStack is open source, as are sushiruntime, sushiblas, sushiai and sushidsp. sushiengine is
 sold: a licence bought through Sushi ID gives a person a compiled engine. Today the workspace
@@ -21,7 +20,7 @@ licence and binary installation added. On the desktop a Dear ImGui application g
 its commands a screen and calls `hub` underneath. The two faces share one core and one contract.
 The programme is called the hub; there is no program of that name.
 
-## 2. Decisions
+## Decision
 
 | Question | Decision |
 |---|---|
@@ -37,7 +36,9 @@ The programme is called the hub; there is no program of that name.
 | How a developer and a user differ | Only in state `hub` finds: Git access to the private repository, a Sushi ID session, a licence, which modules are present |
 | Which toolchains `hub install` provisions | Those the present modules declare. An empty workspace installs the base fragment only |
 
-## 3. Two people, one download
+## Design
+
+### Two people, one download
 
 Both run the same installer and receive the same `hub` and the same desktop application. What they
 see afterwards follows from what `hub` finds on their machine and in their account.
@@ -66,7 +67,7 @@ present module's `cli/sushistack.deps.toml` (`cli/sushistack/setup/dependency_so
 sushiengine ships no fragment, so a licensed user never downloads a SYCL toolchain, vcpkg or LLVM.
 Today this rule is broken in one place: `build_pipeline` in `cli/sushistack/setup/factory.py`
 turns every toolchain on unconditionally, and both install scripts run `hub install` before any
-module is added. Wave 1b repairs it (§9). If a user clones an open-source module beside a binary
+module is added. Wave 1b repairs it (see Phases). If a user clones an open-source module beside a binary
 engine, the toolchains that module declares will download, several gigabytes of them; that is the
 right behaviour, because there is now something to build, and the desktop application says so
 beside the "Clone" button.
@@ -75,13 +76,13 @@ beside the "Clone" button.
 marker file the release carries. `ModuleProfile` (`sushicore/sushicore/profile.py`) learns the
 marker, and `se` registers its command set from it: in a source install every command, in a binary
 install `editor`, `player`, `package` and the diagnostics. One package, one version, one branch.
-The change to `se` itself belongs to the sushiengine repository (§10).
+The change to `se` itself belongs to the sushiengine repository (see "What other repositories must build").
 
 **`hub status` and `hub doctor` tell the truth about both.** For the user, a line such as
 "sushiengine: binary 1.4.2, licence valid to 2027-03-01". For the engineer, "sushiengine: cloned,
 main, 3 ahead". A dependency no present module needs reports as not needed, not as missing.
 
-## 4. Repository layout
+### Repository layout
 
 ```
 sushistack/
@@ -102,7 +103,7 @@ The dependency direction is one way. `sushihub/cli` imports `sushicore`, as it d
 `build_console`, `ToolConfig` and the `workspace` helpers. `sushicore` knows nothing of the hub.
 `sushihub/gui` imports neither; its only bond is the contract.
 
-## 5. Presence: a third form of module
+### Presence: a third form of module
 
 A module is present in a workspace in one of three forms, recorded in `cli/modules.local.toml`
 and shown by `hub status`:
@@ -118,7 +119,7 @@ sibling-resolution rule (`docs/architecture/WORKSPACE.md`) holds unchanged. Its 
 marker file and a manifest the release ships: product, version, platform, the bundled
 sushiruntime and sushiblas versions, and the signature `hub` verified before unpacking.
 
-## 6. Sign-in and licence
+### Sign-in and licence
 
 `hub login` opens the browser on Sushi ID's device-authorization page, shows the code in the
 terminal, polls until the grant completes, and stores the refresh token in the operating system's
@@ -136,11 +137,11 @@ hands it.
 A project is the engine's concept, so the engine owns the list of them and its start screen shows
 it. `hub` keeps no registry; it launches the editor and nothing more.
 
-Every one of these needs a Sushi ID endpoint that does not exist yet (§10). Wave 2 builds the
+Every one of these needs a Sushi ID endpoint that does not exist yet (see "What other repositories must build"). Wave 2 builds the
 `hub` side against a fake server that speaks the agreed shapes, so the two repositories can move in
 parallel.
 
-## 7. The JSON contract
+### The JSON contract
 
 Two halves, both versioned in `sushihub/contract/` as JSON Schema.
 
@@ -165,7 +166,7 @@ Tests on both sides run against the schema. On the Python side each command has 
 event stream that is validated and diffed, in the manner of `tools/record_cli_argv.py`. On the
 C++ side the bridge is fed the same recorded streams.
 
-## 8. The desktop application
+### The desktop application
 
 Dear ImGui on GLFW, C++17, one static binary, no runtime beyond the graphics driver. It matches
 the engineer's taste and the stack's toolchain; it starts in under a second and draws at the
@@ -184,29 +185,7 @@ name, a file path or a toolchain; all of it arrives in events.
 The application is installed by the install scripts beside `hub` (wave 7) and is what a licensed
 user sees first. An engineer may never open it.
 
-## 9. Waves
-
-Ordered hierarchy first, then width. Each wave states what it waits on; waves that wait on the
-same thing run in parallel. `docs/design/REMAINING_WORK.md` mirrors this table and is where
-status is kept.
-
-| Wave | Work | Waits on |
-|---|---|---|
-| 0 | Documentation skeleton; this document | nothing |
-| 1a | `cli/` → `sushihub/cli/`; the contract schema; `JsonRenderer`; `hub --describe`; `--json` on every existing command | 0 |
-| 1b | Dependencies follow the modules (§3); `hub doctor` reports by owner in dependency order; install scripts stop provisioning before a module exists | 0 |
-| 2 | The `binary` form; the marker in `ModuleProfile`; `hub login`, `hub logout`, `hub whoami` against a fake Sushi ID | 1a |
-| 3 | Sushi ID endpoints, in sushiweb | none here |
-| 4 | `sushihub/gui`: skeleton, bridge, five screens, generated forms | 1a; 2 alongside |
-| 5 | `hub add sushiengine` source-or-binary; download, verify, unpack; licence file | 2, 3 |
-| 6 | sushiengine: binary command set; `se editor --project`; runtime licence client | 5 |
-| 7 | Install scripts fetch the desktop application; both journeys walked end to end | 4, 6 |
-
-Waves 1a and 1b touch disjoint files: 1a moves `cli/` and adds to `sushicore/sushicore/renderer.py` and
-`cli.py`; 1b edits `setup/factory.py`, `setup/steps.py` and the two install scripts. They land in
-either order. The plans of the landed waves are under `docs/archive/agent/plans/`.
-
-## 10. What other repositories must build
+### What other repositories must build
 
 **sushiweb.** Four endpoints, each deferred in its own documents as "device authorization grant
 for desktop products" and to be designed there: the device authorization grant itself; a licence
@@ -223,14 +202,14 @@ runtime licence client with an offline rule. The build
 that produces releases. All of it designed in that repository; this document only names the
 marker and the manifest fields `hub` reads.
 
-## 11. Out of scope
+### Out of scope
 
 A text-mode interface. Wrapping the module CLIs (`sr build` and the like) in the desktop
 application. Distributing the open-source modules as binaries. A version resolver that matches a
 binary engine to a user's own sushiruntime build; the binary carries its own. Anything the engine
 does after it has read its licence file.
 
-## 12. Risks
+### Risks
 
 **The contract drifts.** Two languages, one schema. Mitigated by keeping both test suites against
 the same recorded streams and by landing every contract change in one commit that touches the
@@ -238,10 +217,36 @@ schema, the Python emitter and the C++ reader.
 
 **A binary release lags its dependencies.** The engine bundles sushiruntime and sushiblas, so a
 fix in either reaches a licensed user only with the next engine release. Accepted; the alternative
-is the version resolver ruled out in §11.
+is the version resolver ruled out in "Out of scope".
 
 **Sushi ID's endpoints arrive late.** Wave 2 builds against a fake; waves 5 to 7 wait. The fake's
 shapes are written down in the contract directory so the real endpoints have a target.
 
 **The generated forms are ugly.** They are the floor, not the ceiling. The five daily screens are
 drawn by hand from the start, and any form that earns attention is promoted.
+
+## Phases
+
+Ordered hierarchy first, then width. Each wave states what it waits on; waves that wait on the
+same thing run in parallel. `docs/design/REMAINING_WORK.md` mirrors this table and is where
+status is kept.
+
+| Id | Phase | State |
+| --- | --- | --- |
+| W0 | Documentation skeleton; this document. Waits on nothing. | built |
+| W1a | `cli/` → `sushihub/cli/`; the contract schema; `JsonRenderer`; `hub --describe`; `--json` on every existing command. Waits on 0. | built |
+| W1b | Dependencies follow the modules (see "Two people, one download"); `hub doctor` reports by owner in dependency order; install scripts stop provisioning before a module exists. Waits on 0. | built |
+| W2 | The `binary` form; the marker in `ModuleProfile`; `hub login`, `hub logout`, `hub whoami` against a fake Sushi ID. Waits on 1a. | built |
+| W3 | Sushi ID endpoints, in sushiweb. Waits on none here. | built |
+| W4 | `sushihub/gui`: skeleton, bridge, five screens, generated forms. Waits on 1a; 2 alongside. | built |
+| W5 | `hub add sushiengine` source-or-binary; download, verify, unpack; licence file. Waits on 2, 3. | built |
+| W6 | sushiengine: binary command set; `se editor --project`; runtime licence client. Waits on 5. | planned |
+| W7 | Install scripts fetch the desktop application; both journeys walked end to end. Waits on 4, 6. | planned |
+
+Waves 1a and 1b touch disjoint files: 1a moves `cli/` and adds to `sushicore/sushicore/renderer.py` and
+`cli.py`; 1b edits `setup/factory.py`, `setup/steps.py` and the two install scripts. They land in
+either order. The plans of the landed waves are under `docs/archive/agent/plans/`.
+
+## Open questions
+
+None.
