@@ -62,6 +62,13 @@ A manifest that will not read is reported rather than obeyed. A command acting o
 says so and stops; `hub status`, which describes the whole workspace, names the file as a warning
 and describes everything else.
 
+## What `hub link` checks
+
+`hub link <module> <path>` reads the manifest at `<path>` whether or not the catalog lists
+`<module>`, and refuses a checkout that describes another module. Linking `sushidsp`'s checkout as
+`sushiblas` is an error, not a rename, because every command afterwards would act on the wrong
+directory. A manifest that will not read stops the link the same way.
+
 ## What the manifest does not do
 
 It does not open the catalog. `hub add <name>` clones from a repo URL it must know *before* any

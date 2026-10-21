@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-21 — cli: Made `hub link` refuse a checkout whose manifest names another module, for a catalog name as for any other (`modules.py`).
 - 2026-10-21 — cli: Added sushitrack to the module catalog with the alias `st` (`catalog.toml`).
 - 2026-10-20 — docs: Moved 6 known issues with a scheduled fix and no workaround into the backlog entries that fix them (`KNOWN_ISSUES.md`, `REMAINING_WORK.md`).
 - 2026-10-19 — docs: Closed the backlog migration, which sushitrack finished last, and handed the conda environment decision to sushitrack (`REMAINING_WORK.md`).

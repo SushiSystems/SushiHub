@@ -27,6 +27,12 @@ installed in the environment that ran them; they were not run. `hub add st --dry
 
 `test_link_refuses_a_checkout_that_describes_a_different_module` never stubbed `links.write`. When
 it failed during this work it wrote two test paths into the real `.sushistack/workspace.toml`;
-both entries were restored with `hub link` and the test now stubs the write. Separately,
-`modules.link` checks that a manifest matches the name only for a module outside the catalog, so
-linking a checkout that describes another module under a catalog name is accepted.
+both entries were restored with `hub link` and the test now stubs the write.
+
+## Fixed afterwards
+
+`modules.link` checked that a manifest matched the name only for a module outside the catalog, so
+linking a checkout that describes another module under a catalog name was accepted and recorded.
+It now reads the manifest for every name and refuses a mismatch, with four tests
+(`test_manifest_precedence.py`) and a line in `MODULE_MANIFEST.md`. The suite ran 328 passed; the
+same four files as before do not collect without `jsonschema`.

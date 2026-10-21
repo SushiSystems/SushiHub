@@ -135,6 +135,59 @@ def test_link_refuses_a_checkout_that_describes_a_different_module(tmp_path, mon
                         provision=lambda dry_run: 0) == 1
 
 
+def _link_spy(monkeypatch) -> dict[str, str]:
+    """Stub the registry so a test never writes the real workspace; return what was written."""
+    written: dict[str, str] = {}
+    monkeypatch.setattr(links, "registered", lambda: {})
+    monkeypatch.setattr(links, "write", lambda name, path: written.update({name: str(path)}))
+    monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
+    return written
+
+
+def test_link_refuses_a_catalog_name_for_a_checkout_that_describes_another_module(
+        tmp_path, monkeypatch):
+    """A catalog name does not excuse a checkout that says it is something else."""
+    checkout = _describes(tmp_path / "sushidsp", "sushidsp", "sd")
+    written = _link_spy(monkeypatch)
+
+    assert modules.link("sushiblas", str(checkout), skip_install=True,
+                        provision=lambda dry_run: 0) == 1
+    assert written == {}
+
+
+def test_link_refuses_an_alias_for_a_checkout_that_describes_another_module(
+        tmp_path, monkeypatch):
+    """The alias resolves to its module first, so the same check applies to it."""
+    checkout = _describes(tmp_path / "sushidsp", "sushidsp", "sd")
+    written = _link_spy(monkeypatch)
+
+    assert modules.link("sb", str(checkout), skip_install=True,
+                        provision=lambda dry_run: 0) == 1
+    assert written == {}
+
+
+def test_link_accepts_a_catalog_name_when_the_checkout_agrees(tmp_path, monkeypatch):
+    """A manifest that names the same module changes nothing about a catalog link."""
+    checkout = _describes(tmp_path / "sushiruntime", "sushiruntime", "sr")
+    written = _link_spy(monkeypatch)
+
+    assert modules.link("sushiruntime", str(checkout), skip_install=True,
+                        provision=lambda dry_run: 0) == 0
+    assert written == {"sushiruntime": str(checkout)}
+
+
+def test_link_reports_an_unreadable_manifest_under_a_catalog_name(tmp_path, monkeypatch):
+    """A manifest that cannot be believed stops a catalog link the way it stops any other."""
+    checkout = tmp_path / "sushiruntime"
+    checkout.mkdir()
+    (checkout / MANIFEST_FILE).write_text('[module]\nname = "sushiruntime"\n', encoding="utf-8")
+    written = _link_spy(monkeypatch)
+
+    assert modules.link("sushiruntime", str(checkout), skip_install=True,
+                        provision=lambda dry_run: 0) == 1
+    assert written == {}
+
+
 def test_link_reports_a_manifest_that_will_not_read(tmp_path, monkeypatch):
     """A refused manifest reaches the user as a message, not a traceback."""
     checkout = tmp_path / "sushidsp"

@@ -224,12 +224,12 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
     if not target.is_dir():
         console.error(f"Path does not exist: {target}")
         return 1
+    try:
+        described = module_manifest.read(target)
+    except ValueError as refused:
+        console.error(str(refused))
+        return 1
     if resolved is None:
-        try:
-            described = module_manifest.read(target)
-        except ValueError as refused:
-            console.error(str(refused))
-            return 1
         if described is None:
             console.error(
                 f"Unknown module '{name}'. Choose from: "
@@ -244,6 +244,9 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
         resolved = described.name
         console.info(f"{described.name}: linking a checkout that describes itself; "
                      f"the catalog does not list it.")
+    elif described is not None and described.name != resolved:
+        console.error(f"{target} describes itself as '{described.name}', not '{resolved}'.")
+        return 1
     name = resolved
     if not (target / ".git").is_dir():
         console.warn(f"{target} is not a git checkout; linking anyway.")
