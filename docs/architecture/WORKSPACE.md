@@ -43,7 +43,7 @@ the module CLIs' installation.
 It builds one thing, the desktop application, through `hub gui build`. Building, testing and
 running a module belong to that module's CLI, which shares its machinery through `sushicore` and
 keeps its own build policy. The line between the two is drawn in
-`../archive/agent/specs/2026-08-25-cmake-driver-design.md`.
+the cmake driver design spec in the version history.
 
 ## Three forms of presence
 
@@ -56,5 +56,5 @@ root through `sushicore`'s `ModuleProfile.markers()`.
 ## The desktop application
 
 `hub` has a second face: a desktop application that reaches every `hub` command, described in
-`../../gui/README.md`. The design is `../design/HUB.md`, and what is left of it is in
+`../../gui/README.md`. The design is `../design/HUB/README.md`, and what is left of it is in
 `../design/REMAINING_WORK.md`.

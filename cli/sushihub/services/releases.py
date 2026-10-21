@@ -7,7 +7,7 @@
 
 Four steps in order: resolve, download, verify, unpack; :func:`install_release` alone knows
 the order. The shapes are in ``contract/sushi-account.md``, the reason a binary install exists
-in docs/design/HUB.md, "Presence: a third form of module", and the unpack order in cli/README.md, "Notes on the source".
+in docs/design/HUB/README.md, "Presence: a third form of module", and the unpack order in cli/README.md, "Notes on the source".
 """
 
 from __future__ import annotations

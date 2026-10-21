@@ -38,9 +38,9 @@ rest: how to install, how the workspace is laid out, what is designed and what i
 | --- | --- |
 | [Design map](design/README.md) | Which design document covers which topic, with its status |
 | [Remaining work](design/REMAINING_WORK.md) | The single backlog |
-| [The hub](design/HUB.md) | `hub` in the terminal and on the desktop, the binary distribution of sushiengine and the licence flow through Sushi Account |
-| [Workspace decoupling](design/WORKSPACE_DECOUPLING.md) | `hub` as a tool and a workspace as data: the catalog out of code, the workspace's own directory, `sushicore` and `sushihub` on PyPI |
-| [GPU backend provisioning](design/GPU_BACKEND_PROVISIONING.md) | One brick per GPU vendor and one branch per operating system, with the adapter build wired into `hub install` |
+| [The hub](design/HUB/README.md) | `hub` in the terminal and on the desktop, the binary distribution of sushiengine and the licence flow through Sushi Account |
+| [Workspace decoupling](design/WORKSPACE_DECOUPLING/README.md) | `hub` as a tool and a workspace as data: the catalog out of code, the workspace's own directory, `sushicore` and `sushihub` on PyPI |
+| [GPU backend provisioning](design/GPU_BACKEND_PROVISIONING/README.md) | One brick per GPU vendor and one branch per operating system, with the adapter build wired into `hub install` |
 
 Agent work folders are under `agent/`. Finished material is under `archive/` and is not edited:
 `archive/changelog/` holds the release sections older than the live changelog keeps, and

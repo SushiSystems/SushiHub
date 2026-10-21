@@ -132,7 +132,7 @@ source_url = "https://github.com/SushiSystems/SushiRuntime"
 
 sushiengine's file lists `getting_started`, `guides` and `architecture`, sets `api = false` and
 has no `source_url`. `sections` takes those four names and no other, so `docs/agent/`,
-`docs/archive/` and `docs/design/` cannot be published. An `exclude` entry that names no file
+the archive and `docs/design/` cannot be published. An `exclude` entry that names no file
 stops the producer, because a misspelt exclusion would publish the page it meant to hide.
 
 `docs/publish.toml` is a new entry of the `docs/` tree. The `documentation` skill in SushiSkills

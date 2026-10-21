@@ -63,7 +63,7 @@ def derived_selection(source: IDependencySource, cfg: Config) -> ToolchainSelect
     """Return what a bare ``hub install`` installs for *source* on this machine.
 
     The toolchains follow sushicore's rule. The GPU component is on whatever the
-    modules declare; ``docs/design/GPU_BACKEND_PROVISIONING.md`` §3 says why.
+    modules declare; ``docs/design/GPU_BACKEND_PROVISIONING/README.md`` §3 says why.
     """
     present = {name: found for name, found, _detail in probe.toolchain_status(cfg, False)}
     return selection.derive(source, present).merged({"gpu": True})

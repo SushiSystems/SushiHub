@@ -6,7 +6,7 @@
 """Reads how a module is present in the workspace from what is on disk.
 
 ``sushi-release.json`` marks a binary install, ``.git`` a checkout, and a path in
-``workspace.toml``'s ``[modules]`` a link. See docs/design/HUB.md, "Presence: a third form of module", and
+``workspace.toml``'s ``[modules]`` a link. See docs/design/HUB/README.md, "Presence: a third form of module", and
 cli/README.md, "Notes on the source".
 """
 

@@ -5,7 +5,7 @@ from the child's stdout, and draws what arrives. Nothing here knows a module nam
 or a path; all of that comes in events or in the catalogue `hub --describe` prints.
 
 The contract both sides validate against is `../contract/`. The design behind it is
-`../docs/design/HUB.md`, "The JSON contract" and "The desktop application".
+`../docs/design/HUB/README.md`, "The JSON contract" and "The desktop application".
 
 ## Layers
 

@@ -85,14 +85,6 @@ Next id: KI-21
 - Workaround: trust the code
 - Fix: RW-33
 
-### KI-16 The archived v0.1.0 changelog cites the hub design by its old path
-- Origin: own
-- Where: `docs/archive/changelog/v0.1.0.md`
-- Cause: the design moved to `docs/design/HUB.md`; one entry is 246 characters
-- Recognise: the cited path resolves nowhere
-- Workaround: read `docs/design/HUB.md`
-- Fix: none, the archive is frozen
-
 ## Toolchains
 
 ### KI-17 A CUDA 13 toolkit breaks a Pascal build far from the cause

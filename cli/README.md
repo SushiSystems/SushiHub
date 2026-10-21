@@ -356,7 +356,7 @@ written by one is wrong for the other.
 
 The configure turns vcpkg's manifest mode off. `hub install` fills a classic-mode tree under
 `dependencies/vcpkg` and manifest mode ignores it, which is what the failed configure in
-`../docs/archive/agent/plans/2026-09-05-wave-4b-gui-through-ss.md` showed.
+the wave 4b gui through ss plan in the version history showed.
 
 ### `sushihub/services/hub_install.py` and `sushihub/services/status_report.py`
 

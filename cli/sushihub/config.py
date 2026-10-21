@@ -100,7 +100,7 @@ def legacy_cli_dir(root: Path | None = None) -> Path:
     Only the `[cli]` theme is still read from here, through
     :class:`~sushicore.cli_console.LazyConsole`. Everything else the workspace owns
     lives in :func:`workspace_file` and everything the tool owns ships inside this
-    package. See ``docs/design/WORKSPACE_DECOUPLING.md`` section 3.3.
+    package. See ``docs/design/WORKSPACE_DECOUPLING/README.md`` section 3.3.
     """
     root = root or workspace_root()
     return root / CHECKOUT_CLI_DIR

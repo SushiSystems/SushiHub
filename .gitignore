@@ -24,3 +24,4 @@ cli/config.local.toml.bak
 
 # Generated output, such as the documentation bundle.
 /build/
+docs/archive/

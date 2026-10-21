@@ -7,7 +7,7 @@ Words this repository's documents use in a specific sense.
 | SushiHub | The tool: the `hub` command, the desktop application and this repository |
 | SushiStack | The applications SushiHub installs, and the workspace that holds them |
 | `hub` | The terminal command for dependency provisioning and module lifecycle, installed from PyPI as `sushihub`. The installer offers `sh` as an optional interactive alias, which leaves `/bin/sh` untouched |
-| Hub | `hub` as the workspace's one experience: the terminal command and the desktop application that gives each of its commands a screen. One program with two faces, designed in `docs/design/HUB.md` |
+| Hub | `hub` as the workspace's one experience: the terminal command and the desktop application that gives each of its commands a screen. One program with two faces, designed in `docs/design/HUB/README.md` |
 | Desktop application | The Dear ImGui program under `gui/`, which spawns `hub --json` and draws the events it reads |
 | Component | One of the three folders of this repository that carry code or schemas: `cli/`, `gui/`, `contract/` |
 | Workspace | A directory with the `.sushistack` marker directory at its root, module checkouts directly under it and one `dependencies/` tree beside them. See `docs/architecture/WORKSPACE.md` |
@@ -28,3 +28,12 @@ Words this repository's documents use in a specific sense.
 | Catalogue | What `hub --describe` prints: every subcommand with its arguments and options. The desktop application generates a form from it |
 | Wave | One step of a programme in `docs/design/REMAINING_WORK.md`, naming what it waits on |
 | Work folder | `docs/agent/<YYYY_MM_DD>_<WORK_NAME>/`, holding the `SPEC.md`, `PLAN.md` and `REPORT.md` of one piece of agent work |
+
+## Design topics
+
+A topic is a module or a subject that spans modules, and it has one design document.
+The list is generated in `docs/design/README.md`.
+
+**GPU_BACKEND_PROVISIONING**: A SYCL build reaches a GPU when three things are true on the machine: the vendor's toolkit is installed, the SYCL runtime has the vendor's Unified Runtime adapter, and the compiler is... See [the design](../design/GPU_BACKEND_PROVISIONING/README.md).
+
+**WORKSPACE_DECOUPLING**: The code references in this section are those of the checkout before the waves landed; the landing records are in the waves report. See [the design](../design/WORKSPACE_DECOUPLING/README.md).

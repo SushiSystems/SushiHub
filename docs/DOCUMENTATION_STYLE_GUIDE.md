@@ -12,7 +12,7 @@ the status line of a design document and the shape of a changelog entry follow t
 | SushiHub | The tool: this repository, the `sushihub` package, the `hub` command and the desktop application |
 | SushiStack | The applications SushiHub installs, and the workspace that holds them |
 | `hub` | The terminal command, always in a code span |
-| Sushi Account | The identity service at `account.sushisystems.io`; `docs/design/HUB.md` and the archive call it Sushi ID |
+| Sushi Account | The identity service at `account.sushisystems.io`; `docs/design/HUB/README.md` and the archive call it Sushi ID |
 | the desktop application | The program under `gui/` |
 | component | `cli/`, `gui/` or `contract/` in this repository |
 | module | A repository `hub` brings into a workspace; never a folder of this repository |

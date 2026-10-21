@@ -1,0 +1,151 @@
+# GPU backend provisioning: one brick per vendor, one branch per operating system
+
+**Status:** Open — P1 to P4 built; R1, E1 and X are open
+**About:** GPU backend provisioning: one brick per vendor, one branch per operating system.
+**Modules:** none
+
+## Problem
+
+A SYCL build reaches a GPU when three things are true on the machine: the vendor's toolkit is
+installed, the SYCL runtime has the vendor's Unified Runtime adapter, and the compiler is told
+where the toolkit lives. Today each of the three is answered in a different place, for one vendor
+and one operating system at a time:
+
+- `install_intel_llvm` downloads a bundle whose Windows build ships no CUDA adapter.
+- `ensure_cuda_toolkit`, `ensure_rocm` and `ensure_intel_gpu_runtime` are apt code, dispatched by an
+  `if vendor ==` chain in `install_gpu_stack`, and `_run_windows` never calls it.
+- SushiRuntime's `cmake/gpu/DetectGpu.cmake` looks for `nvcc` and `hipcc` on Linux prefixes only.
+
+Adding a vendor or an operating system touches all three places and every chain in them.
+
+The need comes from SushiEngine's `docs/design/SYCL_VULKAN_INTEROP.md` section 10 and the spike
+report `2026_09_14_CUDA_ADAPTER_SPIKE.md` among that repository's agent documents.
+
+## Decision
+
+A GPU backend answers three questions, and nothing outside the backend asks them another way.
+
+| Question | Answer |
+| --- | --- |
+| Where is the toolkit? | `locate(platform)` returns an install root or nothing. |
+| Which adapter makes the SYCL runtime reach it? | The Unified Runtime CMake option, the extra configure definitions naming the toolkit root, and the binaries the build produces. |
+| What does the compiler need? | The flags that point it at the toolkit, emitted by the backend's own CMake strategy file. |
+
+A backend that has no answer for a platform says so; it does not pretend. Every loop over
+backends treats "not provided on this platform" as an ordinary outcome, not an error.
+
+The P1 to P4 bricks live in sushicore as `sushicore/provision/gpu/` (`backend.py`, `registry.py`,
+`compiler_identity.py`, `adapter_builder.py`, `provisioning.py`, `cuda.py`, `rocm.py`,
+`level_zero.py`, `windows_installer.py`), and the files of the same names under
+`cli/sushihub/setup/gpu_backends/` re-export them. The provision steps call
+`provision_gpu_adapters` after the SYCL toolchains on Windows and Linux. The GPU component is on
+by default and provisions the vendor `detect_gpu_vendor` reports.
+
+## Design
+
+### SushiStack
+
+The paths below name the files as they were written; read them against sushicore.
+
+A package `cli/sushihub/setup/gpu_backends/`, one responsibility per file.
+
+| File | Holds |
+| --- | --- |
+| `backend.py` | `ToolkitInstall` (root, version), the `ToolkitLocator` protocol with `locate(cfg) -> ToolkitInstall \| None` and `provision(cfg, dry_run) -> bool`, and the frozen `GpuBackendSpec`: vendor name, the vendor key `probe.py` reports, locator, adapter option, adapter configure definitions from a toolkit root, adapter binaries. |
+| `cuda.py` | The CUDA spec. A Windows locator reading `CUDA_PATH`, the same variable SushiRuntime's CMake locator reads: the process value first, then the machine value in the registry, which it copies into the process when it names a toolkit. When neither does, it downloads NVIDIA's CUDA 12.6.3 network installer, checks the MD5 NVIDIA publishes, and runs it elevated with `-s nvcc_12.6 cudart_12.6 nvml_dev_12.6 -n`. Whatever the exit code, it then copies the machine `CUDA_PATH` and the new machine `PATH` entries into the process and locates again; a located toolkit is a success and the installer file is deleted. No `cupti_12.6`: the adapter CMake reads CUPTI only under `UR_ENABLE_TRACING AND UNIX`. The Linux locator is today's apt code moved here unchanged. |
+| `windows_installer.py` | Vendor-agnostic Windows installer helpers, each behind a protocol: `HttpDownloader` (fetch to `<file>.part` under `dependencies/installers/`, MD5 check, rename; a mismatching cached copy is deleted and fetched once more; network, HTTP, value and IO errors become a warning), `PowerShellElevatedRunner` (`Start-Process -Verb RunAs -Wait`, one UAC prompt; exit 1223 only when the error's `NativeErrorCode` is 1223, otherwise exit 1 with the error message), `RegistryMachineEnvironment` (HKLM environment block), and `adopt_machine_variable` and `prepend_machine_path`, bundled as `WindowsInstallerTools`. |
+| `rocm.py` | The ROCm spec, adapter option `UR_BUILD_ADAPTER_HIP`. The Linux locator is today's `ensure_rocm`; the Windows locator reports "not provided". |
+| `level_zero.py` | The Level Zero spec, adapter option `UR_BUILD_ADAPTER_L0`. The Linux locator is today's `ensure_intel_gpu_runtime`; the Windows locator reports "not provided". |
+| `registry.py` | `BACKENDS`, the ordered tuple of specs, and `backend_for_vendor(vendor)`. |
+| `adapter_builder.py` | Builds one spec's adapter for one compiler commit: sparse fetch of `unified-runtime/` at that commit into a short build directory under `dependencies/build/`, configure with only that adapter on, build its target, copy the binaries into the toolchain's `bin/`, and record the commit in the toolchain stamp through `toolchains.py`, which owns the stamp format. Skips when the stamp already names that commit for that vendor. Vendor-agnostic: it reads the spec and nothing else. |
+| `compiler_identity.py` | Reads the intel/llvm commit from `clang++ --version` of an installed toolchain. |
+| `provisioning.py` | `provision_gpu_adapters`: reads the installed toolchain's commit once, then asks every registered spec's locator for its toolkit and hands a found one to `adapter_builder.build`. Reports every outcome through console and never raises. |
+
+The GPU component of `hub install` is on unless the user turns it off in `--customize`; no
+module has to declare a dependency for it (`setup/factory.py`, `derived_selection`). It means
+"provision whatever GPU this machine has": `probe.detect_gpu_vendor` asks `nvidia-smi` or
+`rocminfo` first, then classifies the display adapters, read from `lspci` on Linux and from
+`Win32_VideoController` through PowerShell on Windows. A discrete adapter wins over an integrated
+one, and within each group NVIDIA wins over AMD, then Intel; `probe.is_integrated_adapter` is only
+that tie-break, matching best-effort name fragments with spaces and hyphens removed. An
+integrated-only machine provisions its own vendor, Level Zero for an Intel iGPU and ROCm for an
+AMD APU. "No discrete GPU detected" prints, and no adapter is built, only when no adapter names a
+known vendor.
+
+`install_gpu_stack` becomes a registry lookup and a `provision` call. The Windows and Linux install
+steps both run one loop after the toolchains: for every backend whose locator finds a toolkit,
+build its adapter for the installed compiler. The adapter build needs the MSVC environment on
+Windows, which it takes from the same `vcvars64.bat` environment snapshot the desktop
+application's build uses, once per install run.
+
+The registry holds one backend per probed vendor, so two backends for one vendor, such as Level
+Zero and OpenCL for Intel, need the lookup to return a tuple first.
+
+Adding a backend is a new spec file and one line in `registry.py`. A test registers a fake spec and
+proves the loop and the builder handle it without any other edit.
+
+### SushiRuntime
+
+Each vendor gains a locator file beside its strategy file, `cmake/gpu/locate/<Vendor>Toolkit.cmake`,
+holding one function of the same name shape: `sushiruntime_gpu_locate_cuda_toolkit`,
+`sushiruntime_gpu_locate_rocm_toolkit`, `sushiruntime_gpu_locate_intel_toolkit`. It returns the
+toolkit root, or nothing, and a description of what it searched, with its operating system
+branches inside the file. `DetectGpu.cmake` publishes the root as `SR_<VENDOR>_TOOLKIT_ROOT`. The
+CUDA function reads `CUDA_PATH` on Windows and keeps today's prefixes on Linux.
+
+`DetectGpu.cmake` calls the locate function of every vendor in `SR_GPU_VENDORS` in one loop and
+stops naming `nvcc` or `hipcc`. A vendor strategy file also publishes the compiler flags that need
+the root, such as intel/llvm's `--cuda-path`, into `gpu/GpuBackend.cmake`'s accumulators.
+
+`cli/sushiruntime/config.py`'s bundle search looks for `llvm-sycl` before `llvm-sycl-nightly`, so the
+runtime and the engine build with one compiler.
+
+### SushiEngine
+
+`cmake/Install.cmake` stages a `umf` role beside `sycl`, `adapter`, `loader` and `hwloc`, because the
+CUDA adapter imports `UMF.dll`. The adapter itself already matches the `adapter` role. The CUDA
+adapter imports only `nvcuda.dll` and `nvml.dll` from CUDA, both shipped with the driver, so no
+CUDA toolkit binary is staged.
+
+### Failure
+
+- A locator that finds no toolkit makes its backend absent. The install continues and reports it.
+- A Windows toolkit install that cannot download or verify the installer, whose UAC prompt is
+  declined, or after which no toolkit is located warns with the reason and returns success. The
+  adapter build then finds no toolkit and skips. A non-zero exit code with a located toolkit is a
+  success.
+- An adapter build that fails warns and leaves the toolchain as it was. The CPU path still works.
+- A toolchain whose commit cannot be read skips every adapter build with one warning.
+- CMake detection stays authoritative: a toolkit the installer found but CMake cannot locate
+  resolves to `cpu`, and the configure message names the variable it looked for.
+
+#### Not verified
+
+- That `nvcc_12.6` and `cudart_12.6` alone bring `lib\x64\cuda.lib` and
+  `nvvm\libdevice\libdevice.10.bc`. NVIDIA's guide maps no files to subpackages. Check both after
+  the first silent install on a machine without CUDA.
+- That a declined UAC prompt surfaces as `NativeErrorCode` 1223 through `Start-Process`. No
+  elevated run has happened.
+
+## Phases
+
+| Id | Phase | State |
+| --- | --- | --- |
+| P1 | `backend.py`, `registry.py`, `compiler_identity.py`, and the fake-spec tests. Exit: the registry and identity tests pass | built |
+| P2 | `cuda.py`, `rocm.py`, `level_zero.py`, with the Linux code moved in unchanged. Exit: the Linux behaviour is identical; the Windows CUDA locator tests pass | built |
+| P3 | `adapter_builder.py` and its tests with a fake runner. Exit: the builder test passes for the CUDA spec and the fake spec | built |
+| P4 | Install step wiring on Windows and Linux; docs. Exit: `hub install` on the RTX 3080 Ti puts `ur_adapter_cuda.dll` and `umf.dll` in `llvm-sycl/bin` | built |
+| R1 | SushiRuntime locate functions, `DetectGpu.cmake` loop, `--cuda-path`, bundle order, docs. Exit: `sr build` reports `SR_GPU_BACKEND_RESOLVED=cuda`; `Unit_NvidiaTopologyTest` runs and passes | planned |
+| E1 | SushiEngine `umf` staging role. Exit: `se build` stages `umf.dll`; the interop device-tier test runs | planned |
+| X | ROCm or Level Zero filled on real hardware. Exit: its locator bodies and one test; no other file changes | planned |
+
+### Work
+
+<!-- work:begin -->
+No open work.
+<!-- work:end -->
+
+## Open questions
+
+- `hub install` has not been run against the P4 wiring on real hardware.
+- The two unverified points under Failure.

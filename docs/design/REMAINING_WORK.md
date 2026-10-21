@@ -1,6 +1,6 @@
 # Remaining work
 
-Next id: RW-55
+Next id: RW-57
 
 ## Decisions waiting for the owner
 
@@ -21,7 +21,7 @@ Next id: RW-55
 ### RW-4 Decide how the desktop application reaches a user
 - State: decision
 - Done when: the owner has chosen how `sushihub-gui` is built and distributed
-- Source: `docs/design/WORKSPACE_DECOUPLING.md`
+- Source: `docs/design/WORKSPACE_DECOUPLING/README.md`
 
 ### RW-5 Tag v0.2.0
 - State: decision
@@ -52,7 +52,7 @@ Next id: RW-55
 - State: blocked
 - Blocked by: sushiengine RW-305
 - Done when: the engine's side of a binary install is built
-- Source: `docs/design/HUB.md`
+- Source: `docs/design/HUB/README.md`
 
 ### RW-12 Ship the desktop application through the installers, wave 7
 - State: blocked
@@ -70,7 +70,7 @@ Next id: RW-55
 - State: blocked
 - Blocked by: RW-4
 - Done when: `pipx install "sushihub[gui]"` installs it
-- Source: `docs/design/WORKSPACE_DECOUPLING.md`
+- Source: `docs/design/WORKSPACE_DECOUPLING/README.md`
 
 ### RW-15 Close the standalone programme
 - State: blocked
@@ -96,7 +96,6 @@ The site's deploy is `sushiweb RW-1`; each command line registers the `docs` gro
 - State: open
 - Done when: the licence, command line, documentation and layout, and code programmes the estate
   audit of 2026-10-05 opened are closed in every repository
-- Source: `docs/agent/2026_10_05_ESTATE_AUDIT/REPORT.md`
 
 Rules unification, the first programme, is SushiSkills' and has shipped.
 
@@ -216,7 +215,7 @@ Cause: none was written.
 - State: open
 - Done when: Mesa rusticl or ROCm with `HSA_OVERRIDE_GFX_VERSION` is tried on Linux, or ruled out;
   Windows has no path today
-- Source: `docs/design/GPU_BACKEND_PROVISIONING.md`
+- Source: `docs/design/GPU_BACKEND_PROVISIONING/README.md`
 
 ### RW-31 Measure the 7600X's integrated GPU
 - State: unmeasured
@@ -228,7 +227,7 @@ Cause: none was written.
 - Blocked by: sushicore RW-12, sushicore RW-14, sushiruntime RW-63, sushiengine RW-306
 - Done when: a CUDA 13 build, a ROCm install and build on an AMD card, R1's acceptance in the
   runtime and E1's in the engine have each passed
-- Source: `docs/design/GPU_BACKEND_PROVISIONING.md`
+- Source: `docs/design/GPU_BACKEND_PROVISIONING/README.md`
 
 
 ## Documentation
@@ -241,7 +240,7 @@ Cause: none was written.
 ### RW-34 Cut the decoupling design to wave 8
 - State: open
 - Done when: sections 1 and 3, which describe the code of 2026-09-21, are gone
-- Source: `docs/design/WORKSPACE_DECOUPLING.md`
+- Source: `docs/design/WORKSPACE_DECOUPLING/README.md`
 
 ### RW-35 Close the source comment findings
 - State: open
@@ -284,3 +283,17 @@ Cause: none was written.
 
 The backlog migration took the checking frame, `check_docs_layout.py` and `check_backlog.py`;
 the older checkers still run on `tools/common/`.
+
+## Documentation architecture
+
+### RW-55 Write the About line of each design topic by hand
+- State: open
+- Done when: each topic has an `**About:**` line of one sentence written for a cold reader
+
+The topic model generated the lines from the first sentence of each document or from its title.
+
+### RW-56 Turn the whole shared gate green
+- State: open
+- Done when: `python tools/check_all.py .` reports nothing on a clean checkout
+
+sushistack never ran the whole shared gate before the topic model copied the shared tools in. `check_source_comments.py` reports 169 646 findings, most of them under `dependencies/vcpkg`, which it should not read; `check_docs_truth.py` reports 37 and `check_test_sizes.py` 356.

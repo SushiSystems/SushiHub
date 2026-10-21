@@ -13,8 +13,8 @@ touches and the check that closes it. A plan may not contradict the design it im
 changing the design is a decision made in the design document under `docs/design/`.
 
 Live intent is in `docs/design/`, one document per topic, mapped in `docs/design/README.md`.
-`docs/design/REMAINING_WORK.md` is the only backlog. Finished work folders move to
-`docs/archive/`, which is added to and never edited. The `documentation` skill of SushiSkills
+`docs/design/REMAINING_WORK.md` is the only backlog. Finished work folders are deleted;
+the version history keeps them. The `documentation` skill of SushiSkills
 holds the full rules.
 
 ## Two components
@@ -31,7 +31,7 @@ The engine under both, `sushicore`, left this repository on 2026-09-22 and is in
 PyPI like any other dependency. Its source, its tests and its own CI are at
 `github.com/SushiSystems/SushiCore`. A change there reaches seven programs at once, so nothing in
 it may name a module or a cache variable; anything module-specific is a parameter. The reasoning
-is in `docs/archive/agent/specs/2026-08-25-cmake-driver-design.md`.
+is in the cmake driver design spec in the version history.
 
 ## Documentation lands with the code
 
