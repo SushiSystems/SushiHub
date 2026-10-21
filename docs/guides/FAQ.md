@@ -16,7 +16,7 @@ The [glossary](../reference/GLOSSARY.md) fixes the other words the manual uses.
 
 ## Which modules does SushiStack have, and how do they depend on each other?
 
-The catalog names five modules. Each has its own CLI, which builds, tests and runs it.
+The catalog names six modules. Each has its own CLI, which builds, tests and runs it.
 
 | Module | Its CLI |
 | --- | --- |
@@ -24,6 +24,7 @@ The catalog names five modules. Each has its own CLI, which builds, tests and ru
 | `sushiblas` | `sb` |
 | `sushiai` | `sa` |
 | `sushiengine` | `se` |
+| `sushitrack` | `st` |
 
 `sushiblas` depends on `sushiruntime`, and `sushiai` depends on both. Each module's CMake looks
 first for an installed package and then for a sibling checkout next to itself, such as
@@ -31,9 +32,9 @@ first for an installed package and then for a sibling checkout next to itself, s
 [The workspace](../architecture/WORKSPACE.md).
 
 `sushicore` is not a module. It is the Python engine under `hub` and every module CLI, it is
-never built, and it installs from PyPI. `sushidsp` and `sushitrack` left the stack on
-2026-09-22: they are their own products with their own CLIs, `sd` and `st`, and
-`hub add sushidsp` reports an unknown module.
+never built, and it installs from PyPI. `sushidsp` left the stack on 2026-09-22: it is its own
+product with its own CLI, `sd`, and `hub add sushidsp` reports an unknown module. `sushitrack`
+left with it and came back on 2026-10-21; `st` installs on its own or through `hub`.
 
 ## How do I install SushiHub and get all the modules?
 
@@ -111,8 +112,8 @@ module belong to that module's CLI, for example `cd sushiruntime && sr build`.
 ## How do I add a module, or use a checkout I already have?
 
 `hub add <module>` brings a module into the workspace, installs its CLI and provisions what it
-declares. It takes `sushiruntime`, `sushiengine`, `sushiai`, `sushiblas`, their aliases `sr`,
-`se`, `sa`, `sb`, or `all`. `--skip-install` leaves the dependencies to a later `hub install`.
+declares. It takes `sushiruntime`, `sushiengine`, `sushiai`, `sushiblas`, `sushitrack`, their aliases
+`sr`, `se`, `sa`, `sb`, `st`, or `all`. `--skip-install` leaves the dependencies to a later `hub install`.
 
 If the checkout already exists elsewhere on the machine, register it instead of cloning a
 second copy:

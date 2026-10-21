@@ -39,3 +39,9 @@ repo = "https://github.com/sushisystems/sushiblas.git"
 directory = "sushiblas"
 alias = "sb"
 distribution = "source"
+
+[sushitrack]
+repo = "https://github.com/sushisystems/sushitrack.git"
+directory = "sushitrack"
+alias = "st"
+distribution = "source"

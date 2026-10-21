@@ -64,7 +64,10 @@ ever provisioned. The fragment was rewritten and the reader now refuses a shape 
 - The module catalog is closed to outsiders today and the door is left open: a module describes
   itself, and the catalog is the fallback rather than the only source.
 - `sushidsp` and `sushitrack` leave the catalog. They keep their own CLIs and their own install
-  paths. What that turned out to mean, settled 2026-09-22: each provisions itself from its own
+  paths. **Reversed for `sushitrack` on 2026-10-21 by the owner:** it is in the catalog again,
+  with `st` as its alias, and still installs on its own with `pipx install cli/`; the catalog
+  only makes joining a workspace optional. `sushidsp` stays outside. The paragraphs below record
+  the decision as it stood on 2026-09-22. What that turned out to mean, settled 2026-09-22: each provisions itself from its own
   source of truth and attaches to a workspace when one is there. `sd setup` reads its dependency
   fragment and hands off to `hub install` inside a workspace; `st setup` will create its conda
   environment from `environment.yml`, and is deferred until that repository's CLI can be tested.

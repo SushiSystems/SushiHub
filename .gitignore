@@ -4,6 +4,7 @@
 /sushiengine/
 /sushiai/
 /sushiblas/
+/sushitrack/
 
 # Local machine config written by `hub install` / `hub link`.
 /.sushistack/

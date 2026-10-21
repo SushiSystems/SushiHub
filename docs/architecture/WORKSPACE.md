@@ -14,6 +14,7 @@ workspace the moment `hub init` runs in it.
   sushiblas/               added by `hub add sushiblas`
   sushiai/                 added by `hub add sushiai`
   sushiengine/             added by `hub add sushiengine`
+  sushitrack/              added by `hub add sushitrack`
 ```
 
 A contributor's workspace is a clone of this repository, because the desktop application's source

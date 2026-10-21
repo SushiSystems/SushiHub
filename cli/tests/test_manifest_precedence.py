@@ -129,8 +129,9 @@ def test_link_refuses_a_checkout_that_describes_a_different_module(tmp_path, mon
     """A manifest naming something else is a mistake, not a rename."""
     checkout = _describes(tmp_path / "sushidsp", "sushidsp", "sd")
     monkeypatch.setattr(links, "registered", lambda: {})
+    monkeypatch.setattr(links, "write", lambda name, path: None)
 
-    assert modules.link("sushitrack", str(checkout), skip_install=True,
+    assert modules.link("sushiwater", str(checkout), skip_install=True,
                         provision=lambda dry_run: 0) == 1
 
 

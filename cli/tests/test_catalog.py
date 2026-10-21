@@ -23,14 +23,15 @@ def recorder(monkeypatch):
     return spy
 
 
-def test_the_catalog_holds_the_five_stack_modules():
-    """Five modules are registered, in the order every command lists them."""
+def test_the_catalog_holds_the_six_stack_modules():
+    """Six modules are registered, in the order every command lists them."""
     assert CATALOG.names() == [
         "sushilog",
         "sushiruntime",
         "sushiengine",
         "sushiai",
         "sushiblas",
+        "sushitrack",
     ]
 
 
@@ -59,6 +60,7 @@ def test_every_module_has_a_two_letter_alias():
     assert set(CATALOG.aliases().values()) == set(CATALOG.names())
     assert CATALOG.aliases()["sr"] == "sushiruntime"
     assert CATALOG.aliases()["se"] == "sushiengine"
+    assert CATALOG.aliases()["st"] == "sushitrack"
 
 
 def test_an_empty_list_means_every_module():
@@ -96,12 +98,16 @@ def test_the_gitignore_lines_name_no_file_a_new_workspace_never_writes():
     assert "/cli/modules.local.toml" not in lines
 
 
-def test_sushidsp_and_sushitrack_are_not_stack_modules():
-    """The two products that share no dependency with the stack are not in the catalog."""
+def test_sushidsp_is_not_a_stack_module():
+    """The product that shares no dependency with the stack is not in the catalog."""
     assert CATALOG.resolve("sushidsp") is None
-    assert CATALOG.resolve("sushitrack") is None
     assert CATALOG.resolve("sd") is None
-    assert CATALOG.resolve("st") is None
+
+
+def test_sushitrack_is_a_stack_module_reached_by_name_and_alias():
+    """sushitrack is in the catalog, and `st` is the alias its own CLI answers to."""
+    assert CATALOG.resolve("sushitrack") == "sushitrack"
+    assert CATALOG.resolve("st") == "sushitrack"
 
 
 def test_the_catalog_resolves_a_name_and_an_alias_to_the_same_module():
