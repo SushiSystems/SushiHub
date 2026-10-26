@@ -43,7 +43,7 @@ def workspace(tmp_path, monkeypatch):
     fragment = checkout / "cli" / "sushistack.deps.toml"
     fragment.parent.mkdir(parents=True)
     fragment.write_text('[module]\ndepends_on = ["sushilog"]\n\n'
-                        f'[sushi.sushilog]\nversion = "v0.1.0"\ncommit = "{K_COMMIT}"\n',
+                        f'[sushisystems.sushilog]\nversion = "v0.1.0"\ncommit = "{K_COMMIT}"\n',
                         encoding="utf-8")
     monkeypatch.setattr(module_fragments, "present_modules", lambda root: {"sushiruntime": checkout})
     return tmp_path / "ws"

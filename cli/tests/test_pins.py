@@ -19,7 +19,7 @@ def _fragment(path, version, commit, extra=""):
     """Write a fragment that pins sushilog at *version* and *commit*."""
     path.parent.mkdir(parents=True)
     path.write_text(f'# kept comment\n[module]\ndepends_on = ["sushilog"{extra}]\n\n'
-                    f'[sushi.sushilog]\nversion = "{version}"\ncommit = "{commit}"\n\n'
+                    f'[sushisystems.sushilog]\nversion = "{version}"\ncommit = "{commit}"\n\n'
                     '[hwloc]\ndescription = "x"\n', encoding="utf-8")
     return path
 
@@ -36,10 +36,19 @@ def two_modules(tmp_path, monkeypatch):
 
 def test_rewrite_changes_only_the_two_keys_of_the_table():
     """Comments and other tables stay as written."""
-    text = ('# kept comment\n[sushi.sushilog]\nversion = "v0.1.0"\ncommit = "' + K_OLD + '"\n\n'
-            '[sushi.sushiruntime]\nversion = "v0.1.0"\ncommit = "' + K_OLD + '"\n')
+    text = ('# kept comment\n[sushisystems.sushilog]\nversion = "v0.1.0"\ncommit = "' + K_OLD + '"\n\n'
+            '[sushisystems.sushiruntime]\nversion = "v0.1.0"\ncommit = "' + K_OLD + '"\n')
     rewritten = pins.rewrite_pin(text, "sushilog", "v0.2.0", K_NEW)
     assert rewritten == text.replace('version = "v0.1.0"\ncommit = "' + K_OLD, 'version = "v0.2.0"\ncommit = "' + K_NEW, 1)
+
+
+def test_rewrite_renames_every_deprecated_table():
+    """A fragment on [sushi.<name>] comes back on [sushisystems.<name>], every table of it."""
+    text = ('[sushi.sushilog]\nversion = "v0.1.0"\ncommit = "' + K_OLD + '"\n\n'
+            '[sushi.sushiruntime]\nversion = "v0.1.0"\ncommit = "' + K_OLD + '"\n')
+    rewritten = pins.rewrite_pin(text, "sushilog", "v0.2.0", K_NEW)
+    assert rewritten == ('[sushisystems.sushilog]\nversion = "v0.2.0"\ncommit = "' + K_NEW + '"\n\n'
+                         '[sushisystems.sushiruntime]\nversion = "v0.1.0"\ncommit = "' + K_OLD + '"\n')
 
 
 def test_a_fragment_without_the_table_is_refused():

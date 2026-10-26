@@ -42,15 +42,23 @@ def tag_commit(repo: str, version: str) -> str | None:
     return commit if commit and K_COMMIT.fullmatch(commit) else None
 
 
-def rewrite_pin(text: str, name: str, version: str, commit: str) -> str:
-    """Return a fragment's text with the `[sushi.<name>]` table set to *version* and *commit*.
+#: The opening of a pin table under its deprecated name, `[sushi.<name>]`.
+K_DEPRECATED_HEADER = re.compile(r"^\[sushi\.", re.MULTILINE)
 
-    Only the two keys change; comments and every other line stay as written.
+
+def rewrite_pin(text: str, name: str, version: str, commit: str) -> str:
+    """Return a fragment's text with the `[sushisystems.<name>]` table set to *version* and *commit*.
+
+    Only the two keys change, and comments and every other line stay as written, except that a
+    fragment still on the deprecated `[sushi.<name>]` tables has every one renamed, since a file
+    holding both names is refused.
     """
-    table = re.compile(rf"^\[sushi\.{re.escape(name)}\]\s*$(.*?)(?=^\[|\Z)", re.MULTILINE | re.DOTALL)
+    text = K_DEPRECATED_HEADER.sub("[sushisystems.", text)
+    table = re.compile(rf"^\[sushisystems\.{re.escape(name)}\]\s*$(.*?)(?=^\[|\Z)",
+                       re.MULTILINE | re.DOTALL)
     match = table.search(text)
     if match is None:
-        raise ValueError(f"no [sushi.{name}] table")
+        raise ValueError(f"no [sushisystems.{name}] table")
     body = re.sub(r'^(version\s*=\s*)"[^"]*"', rf'\g<1>"{version}"', match.group(1), flags=re.MULTILINE)
     body = re.sub(r'^(commit\s*=\s*)"[^"]*"', rf'\g<1>"{commit}"', body, flags=re.MULTILINE)
     return text[:match.start(1)] + body + text[match.end(1):]
