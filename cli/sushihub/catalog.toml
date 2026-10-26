@@ -16,6 +16,12 @@ directory = "sushilog"
 alias = "sl"
 distribution = "source"
 
+[sushiprofiler]
+repo = "https://github.com/sushisystems/sushiprofiler.git"
+directory = "sushiprofiler"
+alias = "sp"
+distribution = "source"
+
 [sushiruntime]
 repo = "https://github.com/sushisystems/sushiruntime.git"
 directory = "sushiruntime"

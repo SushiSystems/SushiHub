@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-26 — cli: Added sushiprofiler to the module catalog with the alias `sp` (`catalog.toml`).
 - 2026-10-21 — docs: Reshaped the three design documents into the five sections with a phase table, and copied the design format checker (`docs/design/`, `tools/documentation/check_design_format.py`).
 - 2026-10-21 — cli: Made `hub link` refuse a checkout whose manifest names another module, for a catalog name as for any other (`modules.py`).
 - 2026-10-21 — cli: Added sushitrack to the module catalog with the alias `st` (`catalog.toml`).

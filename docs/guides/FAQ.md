@@ -16,7 +16,7 @@ The [glossary](../reference/GLOSSARY.md) fixes the other words the manual uses.
 
 ## Which modules does SushiStack have, and how do they depend on each other?
 
-The catalog names six modules. Each has its own CLI, which builds, tests and runs it.
+The catalog names seven modules. Each has its own CLI, which builds, tests and runs it.
 
 | Module | Its CLI |
 | --- | --- |
