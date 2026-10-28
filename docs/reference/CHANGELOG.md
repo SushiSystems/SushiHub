@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-29 — cli: Added the `backlog` and `design` groups and asked for sushicore 0.10.2 (`cli.py`).
 - 2026-10-28 — docs: Said in the install page and the FAQ that every module installs with or without `hub` and that its CLI resolves `sushicore` from PyPI (`INSTALL.md`, `FAQ.md`).
 - 2026-10-28 — cli: Added `hub pin sushicore <version>`, which sets `sushicore==<version>` in every module CLI and the hub's own `pyproject.toml` (`core_pin.py`).
 - 2026-10-28 — cli: Added sushidsp to the module catalog with the alias `sd` (`catalog.toml`).

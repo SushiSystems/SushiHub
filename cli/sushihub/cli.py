@@ -20,7 +20,9 @@ from typing import List, Optional
 
 import typer
 from sushicore import entry, provision
+from sushicore.backlog import register_backlog_commands
 from sushicore.docs_bundle import register_docs_commands
+from sushicore.design import register_design_commands
 from sushicore.provision import home as provision_home
 from sushicore.root_options import version_line, version_option
 from sushicore.typer_help import help_group
@@ -196,6 +198,20 @@ register_docs_commands(
     panel=K_WORKSPACE,
     project_root=checkout_root,
     report=lambda line: console.success(line),
+    group_cls=_help_group,
+)
+register_backlog_commands(
+    app,
+    program="hub",
+    panel=K_WORKSPACE,
+    project_root=checkout_root,
+    group_cls=_help_group,
+)
+register_design_commands(
+    app,
+    program="hub",
+    panel=K_WORKSPACE,
+    project_root=checkout_root,
     group_cls=_help_group,
 )
 
