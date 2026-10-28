@@ -1,6 +1,6 @@
 # Plan: two equal ways into every module
 
-**Status:** Open — plan written 2026-10-28, nothing started
+**Status:** Open — M1 done; G0 waits on the owner's choice of release; P1 and M2 to M8 open
 
 Carries out [SPEC.md](SPEC.md). Findings and solutions are in the spec under each module's
 heading; this file holds the order, the files per task and how each task is accepted.
@@ -28,7 +28,14 @@ the task, and the pages carry both headings.
 
 | Id | What | Who | Done when |
 | --- | --- | --- | --- |
-| G0 | Publish `sushicore` 0.9.7, or pin every module to a published version | Owner (Open question 1) | `pip index versions sushicore` lists the pinned version |
+| G0 | Publish `sushicore`, or pin every module to a published version | Owner (Open question 1) | `pip index versions sushicore` lists the pinned version |
+
+G0 on 2026-10-28: tag `v0.9.7` was pushed and its release stopped at the CI gate, on two tests
+that fail on the runners and pass on the owner's machine (a Windows rename of a directory link,
+a drive colon split on the Linux path separator). The tests are fixed in SushiCore `01cce87`.
+`v0.9.8` is prepared in the working tree (version, changelog) and not tagged: the owner chooses
+between releasing `v0.9.8`, as `v0.9.5` followed the failed `v0.9.3` and `v0.9.4`, and moving the
+unreleased `v0.9.7` tag. Every pin then moves through P1.
 
 Pages and static fixes proceed without G0. Nothing that runs a clean install does.
 
@@ -36,9 +43,10 @@ Pages and static fixes proceed without G0. Nothing that runs a clean install doe
 
 | Id | Repository | Needs | Files (spec heading) | Verification |
 | --- | --- | --- | --- | --- |
+| P1 | sushistack, sushicore | G0 | `hub pin sushicore <version>`: rewrite `cli/pyproject.toml` of every workspace module and of sushistack to `sushicore==<version>`, with `--dry-run`; one exact form in all nine | `pytest` in `cli/` with a test per rewrite |
 | C1 | sushiskills | skill | `tools/documentation/check_module_install.py`, its test, `tools/README.md`, `skills/project-tools/SKILL.md` | `python tools/check_all.py .` |
 | S0 | sushistack | none | `cli/sushihub/catalog.toml` and the tests and pages of the sushidsp entry, already edited and uncommitted | `pytest` in `cli/`: 377 passed on 2026-10-28 |
-| M1 | sushilog | C1 | sushilog | its `tools/check_all.py` and `pytest` |
+| M1 | sushilog | C1 | sushilog | its `tools/check_all.py` and `pytest`. **Done**, sushilog `13d5179`; the pin and the `bare-clone` lane wait on G0 |
 | M2 | sushiprofiler | C1 | sushiprofiler | the same |
 | M3 | sushiruntime | M1, M2 | sushiruntime, including `cmake/SushiRuntimeVcpkg.cmake` | the same, then a configure through `sr build` run by the owner |
 | M4 | sushiblas | M3 | sushiblas | the same, then `sb build` by the owner |
