@@ -1,6 +1,6 @@
 # Plan: two equal ways into every module
 
-**Status:** Open — M1 done; G0 waits on the owner's choice of release; P1 and M2 to M8 open
+**Status:** Open — M1 and M2 done; G0 waits on the owner's choice of release; P1 and M3 to M8 open
 
 Carries out [SPEC.md](SPEC.md). Findings and solutions are in the spec under each module's
 heading; this file holds the order, the files per task and how each task is accepted.
@@ -47,7 +47,7 @@ Pages and static fixes proceed without G0. Nothing that runs a clean install doe
 | C1 | sushiskills | skill | `tools/documentation/check_module_install.py`, its test, `tools/README.md`, `skills/project-tools/SKILL.md` | `python tools/check_all.py .` |
 | S0 | sushistack | none | `cli/sushihub/catalog.toml` and the tests and pages of the sushidsp entry, already edited and uncommitted | `pytest` in `cli/`: 377 passed on 2026-10-28 |
 | M1 | sushilog | C1 | sushilog | its `tools/check_all.py` and `pytest`. **Done**, sushilog `13d5179`; the pin and the `bare-clone` lane wait on G0 |
-| M2 | sushiprofiler | C1 | sushiprofiler | the same |
+| M2 | sushiprofiler | C1 | sushiprofiler | the same. **Done**, sushiprofiler pages commit; the lane waits on G0 |
 | M3 | sushiruntime | M1, M2 | sushiruntime, including `cmake/SushiRuntimeVcpkg.cmake` | the same, then a configure through `sr build` run by the owner |
 | M4 | sushiblas | M3 | sushiblas | the same, then `sb build` by the owner |
 | M5 | sushiai | M3, M4 | sushiai, including the dataset paths and `cmake/Vcpkg.cmake` | the same, then `sa build` by the owner |
