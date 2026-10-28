@@ -16,7 +16,7 @@ The [glossary](../reference/GLOSSARY.md) fixes the other words the manual uses.
 
 ## Which modules does SushiStack have, and how do they depend on each other?
 
-The catalog names seven modules. Each has its own CLI, which builds, tests and runs it.
+The catalog names eight modules. Each has its own CLI, which builds, tests and runs it.
 
 | Module | Its CLI |
 | --- | --- |
@@ -25,6 +25,7 @@ The catalog names seven modules. Each has its own CLI, which builds, tests and r
 | `sushiai` | `sa` |
 | `sushiengine` | `se` |
 | `sushitrack` | `st` |
+| `sushidsp` | `sd` |
 
 `sushiblas` depends on `sushiruntime`, and `sushiai` depends on both. Each module's CMake looks
 first for an installed package and then for a sibling checkout next to itself, such as
@@ -32,9 +33,9 @@ first for an installed package and then for a sibling checkout next to itself, s
 [The workspace](../architecture/WORKSPACE.md).
 
 `sushicore` is not a module. It is the Python engine under `hub` and every module CLI, it is
-never built, and it installs from PyPI. `sushidsp` left the stack on 2026-09-22: it is its own
-product with its own CLI, `sd`, and `hub add sushidsp` reports an unknown module. `sushitrack`
-left with it and came back on 2026-10-21; `st` installs on its own or through `hub`.
+never built, and it installs from PyPI. `sushidsp` and `sushitrack` left the stack on
+2026-09-22 and came back, `sushitrack` on 2026-10-21 and `sushidsp` on 2026-10-28; `st` and `sd`
+install on their own or through `hub`.
 
 ## How do I install SushiHub and get all the modules?
 
@@ -126,8 +127,8 @@ hub install-cli sushiruntime            # point `sr` at that checkout
 `hub link` writes the name and path into `[modules]` in `.sushistack/workspace.toml`. From then
 on `hub status`, `hub update`, `hub sync` and `hub install` treat the linked checkout like a
 cloned one. A checkout that carries `sushi-module.toml` is recognised without a catalog entry,
-so `hub link sushidsp <path>` works, but a name only a manifest knows cannot be added with
-`hub add`. See [Linking checkouts](LINKING_CHECKOUTS.md) and the
+so `hub link` accepts a module the catalog does not list, but a name only a manifest knows
+cannot be added with `hub add`. See [Linking checkouts](LINKING_CHECKOUTS.md) and the
 [module manifest](../reference/MODULE_MANIFEST.md).
 
 ## Is sushiengine available, and how do I get it?

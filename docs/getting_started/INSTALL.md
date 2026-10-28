@@ -70,8 +70,8 @@ python cli/install.py
 hub install-cli sushiruntime sushiengine sushiai sushiblas sushitrack
 ```
 
-Both resolve `sushicore` from PyPI this time. `sushidsp` left the stack the same day (see below);
-reinstall its own CLI directly rather than through `hub`, from its checkout:
+Both resolve `sushicore` from PyPI this time. `sushidsp` left the stack the same day and is back
+in the catalog (see below); reinstall its CLI from its checkout:
 `pipx install --force --editable sushidsp/cli`.
 
 To check one environment rather than trust it, look for a dead editable marker:
@@ -83,21 +83,20 @@ ls ~/pipx/venvs/sushiengine-cli/Lib/site-packages/__editable__.sushicore*
 A hit means that environment still points at the deleted directory; no such file, and a
 `sushicore/` directory beside it, means the published package is in place.
 
-### sushidsp and sushitrack left the stack on 2026-09-22; sushitrack came back on 2026-10-21
+### sushidsp and sushitrack left the stack on 2026-09-22; sushitrack came back on 2026-10-21, sushidsp on 2026-10-28
 
 They share no dependency with `sushiruntime`, `sushiblas`, `sushiai` and `sushiengine`, and are
-their own products with their own CLIs, `sd` and `st`. `hub add sushidsp` reports an unknown
-module: it is not in the catalog, so it cannot be cloned by name.
+their own products with their own CLIs, `sd` and `st`.
 
-`sushitrack` is back in the catalog since 2026-10-21, so `hub add sushitrack` clones it and
-`hub install-cli sushitrack` installs `st`. Joining is optional: `pipx install cli/` from the
-`sushitrack` checkout still gives a standalone `st`, and `hub link sushitrack <path>` attaches an
-existing checkout to a workspace later.
+`sushitrack` is back in the catalog since 2026-10-21 and `sushidsp` since 2026-10-28, so
+`hub add sushitrack` and `hub add sushidsp` clone them, and `hub install-cli` installs `st` and
+`sd`. Joining is optional: `pipx install cli/` from either checkout still gives a standalone CLI,
+and `hub link <module> <path>` attaches an existing checkout to a workspace later.
 
-The rest of this section describes `sushidsp`, and `sushitrack` before it came back. Neither was
+The rest of this section describes the two while they were outside the catalog. Neither was
 cut off. A checkout carrying `sushi-module.toml` is recognised without a
-catalog entry, so `hub link sushidsp <path>` works, `hub status` lists it, and `hub install`
-provisions what its dependency fragment declares. Each also provisions itself without `hub`:
+catalog entry, so `hub link` worked, `hub status` listed it, and `hub install`
+provisioned what its dependency fragment declares. Each also provisions itself without `hub`:
 `sd setup` and `st setup` install what the module's fragment declares into `~/.sushisystems`,
 and `sd doctor` and `st doctor` report what is still missing. `--dry-run` shows the run first.
 `sushitrack`'s Python environment is still made by hand, with

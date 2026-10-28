@@ -31,13 +31,13 @@ def _describes(directory: Path, name: str, alias: str, distribution: str = "sour
 
 def test_a_checkout_the_catalog_never_heard_of_is_known(tmp_path):
     """The acceptance criterion: no catalog entry, and `hub` knows it anyway."""
-    _describes(tmp_path / "sushidsp", "sushidsp", "sd")
+    _describes(tmp_path / "sushiwater", "sushiwater", "sw")
 
     known, problems = presence.workspace_modules(tmp_path)
 
-    assert "sushidsp" not in CATALOG
-    assert "sushidsp" in known
-    assert known["sushidsp"].alias == "sd"
+    assert "sushiwater" not in CATALOG
+    assert "sushiwater" in known
+    assert known["sushiwater"].alias == "sw"
     assert problems == []
 
 

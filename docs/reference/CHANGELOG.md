@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-10-28 — cli: Added sushidsp to the module catalog with the alias `sd` (`catalog.toml`).
 - 2026-10-26 — cli: Made `hub pin` write `[sushisystems.<name>]` pin tables and rename a fragment's deprecated `[sushi.<name>]` tables as it writes (`sushihub/services/pins.py`).
 - 2026-10-26 — cli: Added sushiprofiler to the module catalog with the alias `sp` (`catalog.toml`).
 - 2026-10-21 — docs: Reshaped the three design documents into the five sections with a phase table, and copied the design format checker (`docs/design/`, `tools/documentation/check_design_format.py`).

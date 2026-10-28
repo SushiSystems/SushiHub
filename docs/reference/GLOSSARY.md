@@ -12,8 +12,8 @@ Words this repository's documents use in a specific sense.
 | Component | One of the three folders of this repository that carry code or schemas: `cli/`, `gui/`, `contract/` |
 | Workspace | A directory with the `.sushistack` marker directory at its root, module checkouts directly under it and one `dependencies/` tree beside them. See `docs/architecture/WORKSPACE.md` |
 | Marker | The `.sushistack` directory `hub init` writes. It holds `workspace.toml`, and every `hub` and module CLI walks up to it |
-| Module | A buildable repository `hub` brings into a workspace. The catalog names seven: sushilog, sushiprofiler, sushiruntime, sushiblas, sushiai, sushiengine, sushitrack. `sushicore` is not a module: it is never built and installs from PyPI |
-| Module CLI | A module's own command: `sr`, `sb`, `sa`, `se`, `st`. It builds, tests and runs the module, and provisions it through `setup` and `doctor` |
+| Module | A buildable repository `hub` brings into a workspace. The catalog names eight: sushilog, sushiprofiler, sushiruntime, sushiblas, sushiai, sushiengine, sushitrack, sushidsp. `sushicore` is not a module: it is never built and installs from PyPI |
+| Module CLI | A module's own command: `sr`, `sb`, `sa`, `se`, `st`, `sd`. It builds, tests and runs the module, and provisions it through `setup` and `doctor` |
 | Catalog | `cli/sushihub/catalog.toml`, the modules `hub add` can clone by name. A checkout's own module manifest wins over its catalog entry |
 | Module manifest | `sushi-module.toml` at a module's root, the file a module writes to say what it is. See `docs/reference/MODULE_MANIFEST.md` |
 | Presence | The form in which a module exists in a workspace, read from disk: cloned (a checkout under the root), linked (a checkout elsewhere, registered in `[modules]` of `.sushistack/workspace.toml`), binary, or absent. `cli/sushihub/services/presence.py` answers it and `hub status` shows it |
