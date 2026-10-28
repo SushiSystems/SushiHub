@@ -16,6 +16,7 @@ from pathlib import Path
 
 from .. import console
 from ..config import workspace_root
+from . import core_pin
 from .catalog import CATALOG
 from .module_fragments import workspace_pins
 
@@ -85,8 +86,10 @@ def pin(name: str, version: str, commit: str | None, dry_run: bool) -> int:
     """Move library *name* to *version* in every module of the workspace that pins it.
 
     The commit is the one the tag points at in the library's repository, unless *commit* names
-    it. Returns the exit code.
+    it. `sushicore` is a Python package and takes the version only. Returns the exit code.
     """
+    if name == core_pin.K_LIBRARY:
+        return core_pin.pin(version, dry_run)
     if commit is None:
         repo = CATALOG[name].repo if name in CATALOG else f"https://github.com/sushisystems/{name}.git"
         commit = tag_commit(repo, version)

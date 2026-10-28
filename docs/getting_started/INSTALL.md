@@ -137,8 +137,9 @@ drop it.
 
 The rule and the base fragment live in `sushicore.provision`, so a module CLI's own `setup`
 follows them too. All six module CLIs (`sr`, `sb`, `sa`, `se`, `sd`, `st`) register `setup`,
-`doctor`, `link` and `unlink` from it since 2026-10-04. They need sushicore 0.7.0, which is not
-published yet (`../design/REMAINING_WORK.md`, the standalone programme).
+`doctor`, `link` and `unlink` from it since 2026-10-04. Each installs `sushicore` from PyPI at the
+version its own `cli/pyproject.toml` pins; the standalone programme in
+`../design/REMAINING_WORK.md` lists what is left.
 
 ## Checking the result
 

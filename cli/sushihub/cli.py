@@ -388,7 +388,8 @@ def remove(
     "pin",
     rich_help_panel=K_MODULES,
     epilog="hub pin sushilog v0.2.0  # Move every module's pin to v0.2.0\n"
-           "hub pin sushilog v0.2.0 --dry-run  # Show the modules it would move",
+           "hub pin sushilog v0.2.0 --dry-run  # Show the modules it would move\n"
+           "hub pin sushicore 0.9.8  # Require sushicore==0.9.8 in every module CLI",
 )
 def pin(
     library: str = typer.Argument(..., help="The Sushi library whose pin moves, such as sushilog."),
@@ -397,7 +398,11 @@ def pin(
         None, "--commit", help="The tag's full commit hash, when its repository is out of reach."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't rewrite."),
 ):
-    """Move one Sushi library's pin in every module of the workspace that pins it."""
+    """Move one Sushi library's pin in every module of the workspace that pins it.
+
+    [bold]sushicore[/bold] is the Python package of every CLI: its pin is the exact requirement in
+    each module's cli/pyproject.toml.
+    """
     _finish(pins_svc.pin(library, version, commit, dry_run))
 
 

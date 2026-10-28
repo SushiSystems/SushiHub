@@ -1,6 +1,6 @@
 # Two equal ways into every module
 
-**Status:** Open — audit done 2026-10-28, standard written, no module changed yet
+**Status:** Open — all eight modules changed 2026-10-28 and read clean on the checker; the `sushicore` release (Open question 1) and the bare-clone lanes remain
 
 ## Problem
 
@@ -168,6 +168,20 @@ Each solution carries the id the plan uses. `module-install` names the rule behi
    file and on `hub` in code, and reports a missing element.
 4. **`dependencies` and `module-install` do not repeat each other.** The search order for a
    Sushi library stays in `dependencies`; `module-install` cites it.
+
+## What the work found beyond the audit
+
+- `sushiengine` native lane: its `BLAS.cmake` searched `SUSHISTACK_HOME` for the SushiBLAS checkout
+  and the CLI handed none. The CLI now hands `SUSHIBLAS_DIR` (`sushiblas_dir`, then the sibling, then
+  the fetched copy), and the CMake candidates went (decision 2).
+- `sushiblas` and `sushiengine` kept their install text in `BUILDING.md`; the checker asked for
+  `INSTALL.md`, so the text moved there and `BUILDING.md` links to it.
+- `sushiai` examples: the `data` block is passed through as written and is not resolved against the
+  file, so a relative `data.root` is relative to the working directory. The examples read
+  `datasets/coco128` under the repository root, git-ignored.
+- `sushiruntime` `sr toolchain` wrote a header naming `hub install` into `config.local.toml`.
+- `sushitrack`: closing the conda pin closed KI-4 and RW-16; `sushidsp`: stating the catalog entry
+  closed KI-36 and RW-2.
 
 ## Out of scope
 

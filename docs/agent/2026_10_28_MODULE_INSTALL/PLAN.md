@@ -1,6 +1,6 @@
 # Plan: two equal ways into every module
 
-**Status:** Open — M1 and M2 done; G0 waits on the owner's choice of release; P1 and M3 to M8 open
+**Status:** Open — C1, M1 to M8 and X1 done; G0 (the `sushicore` release) waits on the owner, and P1's rewrite and L1 to L8 wait on G0
 
 Carries out [SPEC.md](SPEC.md). Findings and solutions are in the spec under each module's
 heading; this file holds the order, the files per task and how each task is accepted.
@@ -43,19 +43,19 @@ Pages and static fixes proceed without G0. Nothing that runs a clean install doe
 
 | Id | Repository | Needs | Files (spec heading) | Verification |
 | --- | --- | --- | --- | --- |
-| P1 | sushistack, sushicore | G0 | `hub pin sushicore <version>`: rewrite `cli/pyproject.toml` of every workspace module and of sushistack to `sushicore==<version>`, with `--dry-run`; one exact form in all nine | `pytest` in `cli/` with a test per rewrite |
-| C1 | sushiskills | skill | `tools/documentation/check_module_install.py`, its test, `tools/README.md`, `skills/project-tools/SKILL.md` | `python tools/check_all.py .` |
+| P1 | sushistack, sushicore | G0 for the rewrite | `hub pin sushicore <version>`: rewrite `cli/pyproject.toml` of every workspace module and of sushistack to `sushicore==<version>`, with `--dry-run`; one exact form in all nine | `pytest` in `cli/` with a test per rewrite. **Command done**, sushistack `hub pin sushicore <version>` (`core_pin.py`, 386 tests); the rewrite of the nine pins runs once G0 names the version, because the hub's own pin is published today and `==0.9.7` is not |
+| C1 | sushiskills | skill | `tools/documentation/check_module_install.py`, its test, `tools/README.md`, `skills/project-tools/SKILL.md` | `python tools/check_all.py .`. **Done**, sushiskills `ef139c2`; the eight modules read clean |
 | S0 | sushistack | none | `cli/sushihub/catalog.toml` and the tests and pages of the sushidsp entry, already edited and uncommitted | `pytest` in `cli/`: 377 passed on 2026-10-28 |
 | M1 | sushilog | C1 | sushilog | its `tools/check_all.py` and `pytest`. **Done**, sushilog `13d5179`; the pin and the `bare-clone` lane wait on G0 |
 | M2 | sushiprofiler | C1 | sushiprofiler | the same. **Done**, sushiprofiler pages commit; the lane waits on G0 |
-| M3 | sushiruntime | M1, M2 | sushiruntime, including `cmake/SushiRuntimeVcpkg.cmake` | the same, then a configure through `sr build` run by the owner |
-| M4 | sushiblas | M3 | sushiblas | the same, then `sb build` by the owner |
-| M5 | sushiai | M3, M4 | sushiai, including the dataset paths and `cmake/Vcpkg.cmake` | the same, then `sa build` by the owner |
-| M6 | sushiengine | M3, M4 | sushiengine, including `doctor.py`, `validation.py`, `test_doctor.py`, two CMake files | the same, then `se build` by the owner |
-| M7 | sushitrack | M1, M2 | sushitrack, including a new `sushi-module.toml`, the conda file, the Dockerfile, the fragment | the same, then `st build` by the owner |
-| M8 | sushidsp | M1, M2 | sushidsp, including `CMakePresets.json`, the manifest comment, RW-2 | the same, then `sd build` by the owner |
+| M3 | sushiruntime | M1, M2 | sushiruntime, including `cmake/SushiRuntimeVcpkg.cmake` | the same, then a configure through `sr build` run by the owner. **Done**, sushiruntime `8d2e5254` and `75a10618`; the CMake edit waits for the owner's configure |
+| M4 | sushiblas | M3 | sushiblas | the same, then `sb build` by the owner. **Done**, sushiblas `1839529e` and `4fa91484`; the `ci.yml` key path is fixed, the CMake edit waits for the owner's build |
+| M5 | sushiai | M3, M4 | sushiai, including the dataset paths and `cmake/Vcpkg.cmake` | the same, then `sa build` by the owner. **Done**, sushiai `b681070f` and `d589dd2a`: the dataset root is `datasets/coco128` under the repository root, resolved against the working directory because the `data` block is not resolved against the file |
+| M6 | sushiengine | M3, M4 | sushiengine, including `doctor.py`, `validation.py`, `test_doctor.py`, two CMake files | the same, then `se build` by the owner. **Done**, sushiengine `3a1ed300c` and `55dc69a0d`: the CLI hands `SUSHIBLAS_DIR`, the remedies name no hub command; 1254 CLI tests pass but two fail on a `curl` entry of the fragment, as before this change |
+| M7 | sushitrack | M1, M2 | sushitrack, including a new `sushi-module.toml`, the conda file, the Dockerfile, the fragment | the same, then `st build` by the owner. **Done**, sushitrack `fabc17f`; `ci.yml` was not changed and whether it passes without the siblings is unverified |
+| M8 | sushidsp | M1, M2 | sushidsp, including `CMakePresets.json`, the manifest comment, RW-2 | the same, then `sd build` by the owner. **Done**, sushidsp `806cee61` |
 | L1 to L8 | each module | G0, its M task | the module's `ci.yml`: one job `bare-clone` | the job is green on both operating systems |
-| X1 | sushistack | M1 to M8 | `docs/guides/FAQ.md`, `docs/getting_started/INSTALL.md`, `docs/reference/CHANGELOG.md` | `check_docs_truth.py`, `pytest` |
+| X1 | sushistack | M1 to M8 | `docs/guides/FAQ.md`, `docs/getting_started/INSTALL.md`, `docs/reference/CHANGELOG.md` | `check_docs_truth.py`, `pytest`. **Done** in this pass (install page, FAQ, changelog) |
 
 M3 to M6 edit a CMake file. Each such edit first shows, from the CLI's own code, that the CLI
 hands `VCPKG_ROOT` and `<NAME>_DIR` already; a fallback it makes unreachable is deleted

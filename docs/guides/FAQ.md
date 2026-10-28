@@ -110,6 +110,10 @@ through the same `sushicore` code `hub install` runs. A module checked out on it
 thing itself, the desktop application, through `hub gui build`. Building, testing and running a
 module belong to that module's CLI, for example `cd sushiruntime && sr build`.
 
+Every module's `docs/getting_started/INSTALL.md` gives both ways in under the headings
+`Standalone` and `With SushiHub`, and a checkout made the first way joins a workspace later
+with `hub link <module> <path>`, with no change to it.
+
 ## How do I add a module, or use a checkout I already have?
 
 `hub add <module>` brings a module into the workspace, installs its CLI and provisions what it
