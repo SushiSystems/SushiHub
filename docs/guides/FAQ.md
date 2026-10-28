@@ -172,7 +172,7 @@ product licence Sushi Account issues for `sushiengine`.
 
 ## What does not work yet?
 
-[Known issues](../reference/KNOWN_ISSUES.md) lists the open defects with the file each sits in.
+[Known issues](../backlog/README.md) lists the open defects with the file each sits in.
 The ones a new user meets first:
 
 - v0.2.0 has its release commit of 2026-10-07 and no tag, so it is not published; PyPI serves

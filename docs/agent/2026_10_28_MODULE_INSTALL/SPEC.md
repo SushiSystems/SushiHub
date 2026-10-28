@@ -131,7 +131,7 @@ Each solution carries the id the plan uses. `module-install` names the rule behi
   `D:/Projects/sushistack/dependencies/toolchains/llvm-sycl/bin/clang++.exe`. Every machine
   without that path fails the presets. Unset it; the CLI resolves the compiler.
 - `sushi-module.toml:1-2` says SushiDSP is not in the hub catalog; it is, since 2026-10-28.
-  `docs/design/REMAINING_WORK.md` RW-2 says the same and can close. `docs/design/SUSHIDSP/README.md`
+  `docs/backlog/README.md` RW-2 says the same and can close. `docs/design/SUSHIDSP/README.md`
   lines 72 and 76-81 name a registry file that moved and claim zero dependencies on the stack.
 - The README gives `git clone` and `pip install -e ./cli`; it lacks `hub add`, `hub install`
   and `hub link`. `README.md:38`, `cli/README.md:10-15` and `FAQ.md:37` say `sushicore` is not

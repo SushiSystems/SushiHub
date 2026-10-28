@@ -13,7 +13,7 @@ touches and the check that closes it. A plan may not contradict the design it im
 changing the design is a decision made in the design document under `docs/design/`.
 
 Live intent is in `docs/design/`, one document per topic, mapped in `docs/design/README.md`.
-`docs/design/REMAINING_WORK.md` is the only backlog. Finished work folders are deleted;
+`docs/backlog/README.md` is the only backlog. Finished work folders are deleted;
 the version history keeps them. The `documentation` skill of SushiSkills
 holds the full rules.
 

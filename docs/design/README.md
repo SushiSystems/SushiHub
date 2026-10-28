@@ -14,4 +14,4 @@ One topic, one document. Look a topic up here before writing; extend the documen
 
 Standalone provisioning, where every module CLI gains `setup`, `doctor`, `link` and `unlink`, is
 designed in the SushiCore repository. Its waves are mirrored in
-[REMAINING_WORK.md](REMAINING_WORK.md), which is the single backlog.
+[REMAINING_WORK.md](../backlog/README.md), which is the single backlog.

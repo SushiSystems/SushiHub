@@ -28,7 +28,7 @@ rest: how to install, how the workspace is laid out, what is designed and what i
 | [Module manifest](reference/MODULE_MANIFEST.md) | `sushi-module.toml`, the file a module writes to say what it is, and what `hub` does when it is absent |
 | [Changelog](reference/CHANGELOG.md) | What changed, by release |
 | [Glossary](reference/GLOSSARY.md) | The words this repository uses in a specific sense |
-| [Known issues](reference/KNOWN_ISSUES.md) | Open defects with where each sits, and failures that are a toolchain's or a vendor's doing |
+| [Known issues](backlog/README.md) | Open defects with where each sits, and failures that are a toolchain's or a vendor's doing |
 | [Contributing](CONTRIBUTING.md) | How a change lands and what it must carry |
 | [Documentation style guide](DOCUMENTATION_STYLE_GUIDE.md) | The names and spellings this repository's prose keeps |
 
@@ -37,7 +37,7 @@ rest: how to install, how the workspace is laid out, what is designed and what i
 | Document | Holds |
 | --- | --- |
 | [Design map](design/README.md) | Which design document covers which topic, with its status |
-| [Remaining work](design/REMAINING_WORK.md) | The single backlog |
+| [Remaining work](backlog/README.md) | The single backlog |
 | [The hub](design/HUB/README.md) | `hub` in the terminal and on the desktop, the binary distribution of sushiengine and the licence flow through Sushi Account |
 | [Workspace decoupling](design/WORKSPACE_DECOUPLING/README.md) | `hub` as a tool and a workspace as data: the catalog out of code, the workspace's own directory, `sushicore` and `sushihub` on PyPI |
 | [GPU backend provisioning](design/GPU_BACKEND_PROVISIONING/README.md) | One brick per GPU vendor and one branch per operating system, with the adapter build wired into `hub install` |

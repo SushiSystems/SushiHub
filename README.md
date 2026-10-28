@@ -32,7 +32,7 @@ python -m pytest cli
 ## Status
 
 The CLI installs dependencies and manages checkouts; planned work is in
-[`docs/design/REMAINING_WORK.md`](docs/design/REMAINING_WORK.md).
+[`docs/backlog/README.md`](docs/backlog/README.md).
 
 ## Documentation
 

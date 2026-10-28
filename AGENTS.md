@@ -8,7 +8,7 @@ When starting work on this project:
 2. Read `docs/README.md` and every page it links under the manual headings to build context before
    making changes. `docs/agent/` is a record of past work; read the design it names when your task
    touches that area.
-3. `docs/design/REMAINING_WORK.md` is the single backlog. A task that adds or finishes work updates
+3. `docs/backlog/README.md` is the single backlog. A task that adds or finishes work updates
    it in the same commit.
 
 ## How to work

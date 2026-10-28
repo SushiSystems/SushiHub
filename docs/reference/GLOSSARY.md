@@ -26,7 +26,7 @@ Words this repository's documents use in a specific sense.
 | Licence | Two things. The licence of this source is PolyForm Noncommercial 1.0.0, in `LICENSE`. The licence `hub license` lists is the product licence Sushi Account issues for sushiengine |
 | JSON contract | The shape of what `hub` prints under `--json`, one event per line, and of what `hub --describe` prints. Three schemas under `contract/` fix it for both sides |
 | Catalogue | What `hub --describe` prints: every subcommand with its arguments and options. The desktop application generates a form from it |
-| Wave | One step of a programme in `docs/design/REMAINING_WORK.md`, naming what it waits on |
+| Wave | One step of a programme in `docs/backlog/README.md`, naming what it waits on |
 | Work folder | `docs/agent/<YYYY_MM_DD>_<WORK_NAME>/`, holding the `SPEC.md`, `PLAN.md` and `REPORT.md` of one piece of agent work |
 
 ## Design topics

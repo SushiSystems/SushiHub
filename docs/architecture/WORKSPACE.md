@@ -57,4 +57,4 @@ root through `sushicore`'s `ModuleProfile.markers()`.
 
 `hub` has a second face: a desktop application that reaches every `hub` command, described in
 `../../gui/README.md`. The design is `../design/HUB/README.md`, and what is left of it is in
-`../design/REMAINING_WORK.md`.
+`../backlog/README.md`.

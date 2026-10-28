@@ -230,7 +230,7 @@ drawn by hand from the start, and any form that earns attention is promoted.
 ## Phases
 
 Ordered hierarchy first, then width. Each wave states what it waits on; waves that wait on the
-same thing run in parallel. `docs/design/REMAINING_WORK.md` mirrors this table and is where
+same thing run in parallel. `docs/backlog/README.md` mirrors this table and is where
 status is kept.
 
 | Id | Phase | State |
