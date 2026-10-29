@@ -39,7 +39,7 @@ The base URL comes from the `sushistack` package's `defaults.toml`, `[identity] 
    doubles the interval `hub` uses from then on. `access_denied` and `expired_token` end the login
    with a message.
 4. On the first `200`, `hub` stores the access token, the refresh token and the expiry in the
-   operating system's credential store through `keyring`, under service `sushistack` and username
+   operating system's credential store through `keyring`, under service `sushihub` and username
    `sushi-account`.
 5. Every later command reads the store. Within 30 seconds of the access token's expiry it posts
    the refresh token to `/api/token/refresh` and stores the new access token. A `401` there means
