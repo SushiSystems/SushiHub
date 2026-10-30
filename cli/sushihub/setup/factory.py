@@ -42,6 +42,15 @@ from .steps import (
 
 STEP_NAMES = ("detect", "install", "configure", "provision")
 
+#: What hub says where the shared provisioning code names the command that drives it.
+_HUB_WORDING = {
+    "program": "hub",
+    "rerun_command": "hub install",
+    "removal_hint": "(`hub remove --all` does it for you).",
+    "fallback_hint": "Re-run `hub install --customize` and also pick intel-llvm as a fallback.",
+    "refresh_command": "hub install --refresh-toolchains",
+}
+
 
 def _validated_toolchain(toolchain: str) -> str:
     """Return *toolchain*, or raise ``ValueError`` when it is not one of ``TOOLCHAINS``."""
@@ -115,6 +124,7 @@ def build_pipeline(
         cfg=cfg, selection=ToolchainSelection(**sel), consumer="sushistack",
         active_toolchain=active_toolchain,
         refresh_toolchains=refresh_toolchains, dry_run=dry_run,
+        **_HUB_WORDING,
     )
     return InstallPipeline(ordered), ctx
 
@@ -135,5 +145,5 @@ def build_uninstall_pipeline(
 
     step = UninstallStep(source, managers, WorkspaceSink(workspace_root()))
     ctx = InstallContext(cfg=cfg, selection=ToolchainSelection(gpu=gpu), consumer="sushistack",
-                         dry_run=dry_run, everything=everything)
+                         dry_run=dry_run, everything=everything, **_HUB_WORDING)
     return InstallPipeline([step]), ctx
