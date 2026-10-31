@@ -119,8 +119,13 @@ def _env(cfg, build_dir):
 
 
 @pytest.fixture
-def provisioned(workspace):
-    """Add the vcpkg tree `hub install` provisions to the throwaway workspace."""
+def provisioned(workspace, monkeypatch):
+    """Add the vcpkg tree `hub install` provisions to the throwaway workspace.
+
+    The packaged defaults turn vcpkg off on Linux, where apt holds the libraries, so the
+    platform is pinned to Windows: this test checks the vcpkg wiring, not the host's defaults.
+    """
+    monkeypatch.setattr("platform.system", lambda: "Windows")
     (workspace / "dependencies" / "vcpkg").mkdir(parents=True)
     return workspace
 
