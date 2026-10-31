@@ -67,7 +67,7 @@ def run_doctor(monkeypatch, fake_cfg):
         monkeypatch.setattr(DetectStep, "inventory_rows", lambda self, ctx, all_deps: list(rows))
         monkeypatch.setattr(provision_steps, "refresh_windows_path", lambda: None)
         monkeypatch.setattr(provision_home, "root", lambda: "/deps")
-        return DetectStep(MemorySource([])).run(InstallContext(cfg=fake_cfg))
+        return DetectStep(MemorySource([])).run(InstallContext(cfg=fake_cfg, rerun_command="hub install"))
 
     return run
 

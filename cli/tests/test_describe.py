@@ -82,10 +82,12 @@ def test_describe_prints_the_catalogue_as_one_compact_utf8_line():
 
 
 def test_describe_lists_every_visible_command_and_no_hidden_one():
-    """--describe names exactly the twenty-three commands the help screen shows."""
+    """--describe names exactly the twenty-three commands the help screen shows, and sushicore's groups."""
     document = json.loads(CliRunner().invoke(app, ["--describe"]).stdout)
+    names = {c["name"] for c in document["commands"]}
+    assert {name.split()[0] for name in names} >= {"backlog", "design"}
 
-    assert {c["name"] for c in document["commands"]} == {
+    assert {name for name in names if name.split()[0] not in {"backlog", "design"}} == {
         "init", "home", "status", "docs bundle",
         "add", "link", "install-cli", "update", "sync", "pin",
         "install", "doctor", "remove", "clean", "migrate",

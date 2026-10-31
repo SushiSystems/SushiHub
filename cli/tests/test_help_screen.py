@@ -12,6 +12,9 @@ from typer.testing import CliRunner
 
 from sushihub.cli import app
 
+#: The groups sushicore adds whole; their commands are sushicore's to list, so they are left out here.
+K_SUSHICORE_GROUPS = ("backlog", "design")
+
 K_GROUPS = {
     "Workspace": ["init", "home", "status", "docs"],
     "Modules": ["add", "link", "install-cli", "update", "sync", "pin"],
@@ -59,7 +62,7 @@ def test_every_command_sits_under_its_own_group(heading):
 def test_no_command_is_listed_under_a_group_it_does_not_belong_to():
     grouped = _commands_by_heading(_run("--help"))
     for heading, names in K_GROUPS.items():
-        assert set(grouped[heading]) == set(names)
+        assert set(grouped[heading]) - set(K_SUSHICORE_GROUPS) == set(names)
 
 
 def test_a_command_help_carries_examples():
