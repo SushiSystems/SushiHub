@@ -22,6 +22,8 @@ from sushihub.config import (
 )
 from sushihub.errors import WorkspaceNotFoundError
 
+pytestmark = pytest.mark.medium
+
 
 @pytest.fixture
 def unpinned(monkeypatch, tmp_path):

@@ -11,6 +11,10 @@ import ast
 import re
 from pathlib import Path
 
+import pytest
+
+pytestmark = pytest.mark.small
+
 K_SOURCE_ROOT = Path(__file__).resolve().parents[1] / "sushihub"
 
 K_RAW_STYLE_WORDS = frozenset({

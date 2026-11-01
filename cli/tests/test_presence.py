@@ -16,6 +16,10 @@ from sushihub.setup.pipeline import InstallContext
 
 from .conftest import MemorySource, dep
 
+import pytest
+
+pytestmark = pytest.mark.medium
+
 
 class Recorder:
     """Stands in for the console and keeps every line and table it was given."""

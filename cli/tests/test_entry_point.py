@@ -21,6 +21,8 @@ from sushihub.services import session
 from sushihub.services.identity import SushiAccount
 from sushihub.services.token_store import KeyringStore
 
+pytestmark = pytest.mark.medium
+
 
 def _main(monkeypatch, capsys, *args: str) -> tuple[int, list[str], list[str]]:
     """Runs ``main()`` with *args* and returns its exit code, stdout lines and stderr lines."""

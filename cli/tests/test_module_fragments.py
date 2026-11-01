@@ -9,6 +9,10 @@ from __future__ import annotations
 
 from sushihub.services import module_fragments
 
+import pytest
+
+pytestmark = pytest.mark.medium
+
 K_COMMIT = "0123456789abcdef0123456789abcdef01234567"
 
 

@@ -17,6 +17,10 @@ from sushihub.describe import ALL_PRESENCE, catalogue
 
 from .test_json_streams import _schema
 
+import pytest
+
+pytestmark = pytest.mark.small
+
 
 def test_catalogue_validates_against_its_schema():
     jsonschema.Draft202012Validator(_schema("describe.schema.json")).validate(catalogue(app))

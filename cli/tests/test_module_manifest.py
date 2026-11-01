@@ -15,6 +15,8 @@ import pytest
 
 from sushihub.services.module_manifest import MANIFEST_FILE, read
 
+pytestmark = pytest.mark.medium
+
 
 def _checkout(root, name: str, body: str):
     """Create a checkout directory *name* under *root* carrying a manifest."""

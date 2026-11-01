@@ -21,6 +21,8 @@ from sushihub.setup.steps import DetectStep
 
 from .conftest import MemorySource
 
+pytestmark = pytest.mark.small
+
 _COLUMNS = ["Component", "Status", "Owner", "Detail"]
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 

@@ -13,6 +13,8 @@ from sushihub.services import modules, pipx
 
 from .test_presence import Recorder
 
+pytestmark = pytest.mark.medium
+
 
 class _Runs:
     """Stands in for subprocess.run and records each command with a fixed return code."""

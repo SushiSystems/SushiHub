@@ -22,6 +22,8 @@ from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server 
 from .test_presence import Recorder
 from .test_releases import release_members, zip_bytes
 
+pytestmark = pytest.mark.medium
+
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):

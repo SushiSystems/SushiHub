@@ -13,6 +13,8 @@ import pytest
 
 from sushihub.services import fetched_sources, module_fragments
 
+pytestmark = pytest.mark.medium
+
 K_COMMIT = "0123456789abcdef0123456789abcdef01234567"
 
 

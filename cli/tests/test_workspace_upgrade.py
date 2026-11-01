@@ -11,6 +11,10 @@ from sushicore.provision.sinks import WorkspaceSink
 from sushicore.workspace import read_toml
 from sushihub.config import CHECKOUT_CLI_DIR, WORKSPACE_MARKER, upgrade_workspace, workspace_file
 
+import pytest
+
+pytestmark = pytest.mark.medium
+
 
 def _old_workspace(root):
     """Build a pre-2026-09-22 workspace: a marker file and the two data files."""

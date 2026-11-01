@@ -16,6 +16,8 @@ import pytest
 
 from sushihub.setup.dependency_source import SHARED_OWNER, _parse_manifest
 
+pytestmark = pytest.mark.medium
+
 
 def _fragment(tmp_path, text: str):
     """Write *text* as a fragment and return its path."""

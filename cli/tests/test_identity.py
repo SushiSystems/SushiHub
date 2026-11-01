@@ -50,6 +50,8 @@ from sushihub.services.token_store import (
     Tokens,
 )
 
+pytestmark = pytest.mark.medium
+
 
 def _workspace_with_identity(tmp_path, url: str):
     """Write a throwaway workspace whose workspace.toml pins the Sushi Account url."""

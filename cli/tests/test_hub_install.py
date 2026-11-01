@@ -11,6 +11,10 @@ from pathlib import Path
 
 from sushihub.services.hub_install import ALIAS_MARKER, read_hub_install
 
+import pytest
+
+pytestmark = pytest.mark.medium
+
 
 def _write(path: Path, text: str) -> None:
     """Create *path* and its parents, holding *text*."""

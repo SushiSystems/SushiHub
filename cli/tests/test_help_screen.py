@@ -12,6 +12,8 @@ from typer.testing import CliRunner
 
 from sushihub.cli import app
 
+pytestmark = pytest.mark.small
+
 #: The groups sushicore adds whole; their commands are sushicore's to list, so they are left out here.
 K_SUSHICORE_GROUPS = ("backlog", "design")
 

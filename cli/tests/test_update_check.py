@@ -14,6 +14,10 @@ from sushihub.services.update_check import latest_release
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_identity import _signed_in
 
+import pytest
+
+pytestmark = pytest.mark.small
+
 
 def test_names_the_latest_release_without_asking_for_a_version(fake_id):
     check = latest_release(_signed_in(fake_id), "sushiengine", "windows-x64")

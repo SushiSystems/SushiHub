@@ -19,6 +19,8 @@ from sushihub.services import links, modules, presence
 from sushihub.services.catalog import CATALOG
 from sushihub.services.module_manifest import MANIFEST_FILE
 
+pytestmark = pytest.mark.medium
+
 
 def _describes(directory: Path, name: str, alias: str, distribution: str = "source") -> Path:
     """Create *directory* carrying a manifest that names it."""

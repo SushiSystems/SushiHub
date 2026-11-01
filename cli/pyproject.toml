@@ -39,3 +39,13 @@ include = ["sushihub*"]
 
 [tool.setuptools.package-data]
 sushihub = ["py.typed", "catalog.toml", "defaults.toml", "manifests/*.deps.toml"]
+
+[tool.pytest.ini_options]
+addopts = "--strict-markers"
+testpaths = ["tests"]
+markers = [
+    "small: one process and one thread, no network, no sleep, no file outside the build tree (60 s)",
+    "medium: threads and processes, localhost, files in a temporary folder (300 s)",
+    "large: real hardware, or a run longer than medium allows (900 s)",
+    "quarantined: an intermittent test, out of every gating stage; see its known issue in docs/backlog/",
+]

@@ -19,6 +19,8 @@ from sushihub.config import WORKSPACE_MARKER
 from sushihub.errors import GuiSourcesMissingError
 from sushihub.gui_config import K_REPOSITORY_URL, GuiConfig, gui_root, load_gui_config
 
+pytestmark = pytest.mark.medium
+
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):

@@ -12,6 +12,10 @@ from sushicore.workspace import WORKSPACE_HEADER, read_toml
 
 from sushihub.services.tool_paths import rewrite_tool_paths
 
+import pytest
+
+pytestmark = pytest.mark.medium
+
 
 def _write(path, tool: dict, modules: dict | None = None) -> None:
     """Write a workspace file holding *tool* and, when given, a ``[modules]`` table."""

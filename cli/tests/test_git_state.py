@@ -12,6 +12,10 @@ from pathlib import Path
 
 from sushihub.services.git_state import fetch, read_git_state
 
+import pytest
+
+pytestmark = pytest.mark.medium
+
 
 def _git(cwd: Path, *args: str) -> str:
     """Run git in *cwd* with a fixed identity and return its stdout."""

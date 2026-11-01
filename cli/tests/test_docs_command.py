@@ -23,6 +23,8 @@ from sushihub.errors import HubError
 
 from .test_json_streams import _schema
 
+pytestmark = pytest.mark.medium
+
 K_FILES = {
     "docs/publish.toml": (
         'name = "sample"\n'

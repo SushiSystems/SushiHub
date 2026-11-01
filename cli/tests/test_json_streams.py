@@ -24,6 +24,8 @@ from sushihub.services.token_store import MemoryStore, Tokens
 
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 
+pytestmark = pytest.mark.medium
+
 CONTRACT = Path(__file__).resolve().parents[2] / "contract"
 
 

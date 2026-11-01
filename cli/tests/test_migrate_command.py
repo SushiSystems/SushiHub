@@ -31,6 +31,8 @@ from sushihub.services import migrate as migrate_svc
 
 from .test_presence import Recorder
 
+pytestmark = pytest.mark.medium
+
 _FILES = {
     "toolchains/llvm-sycl/bin/clang++.exe": b"clang",
     "tools/cmake/bin/cmake.exe": b"cmake-binary",

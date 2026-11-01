@@ -14,6 +14,8 @@ from sushihub.services import links, modules
 
 from .test_presence import Recorder
 
+pytestmark = pytest.mark.medium
+
 
 @pytest.fixture
 def registry(tmp_path, monkeypatch):

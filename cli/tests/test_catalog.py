@@ -14,6 +14,8 @@ from sushihub.services.catalog import CATALOG, load_catalog
 
 from .test_presence import Recorder
 
+pytestmark = pytest.mark.small
+
 
 @pytest.fixture
 def recorder(monkeypatch):

@@ -15,6 +15,8 @@ from sushihub.services import modules
 
 from .test_presence import Recorder
 
+pytestmark = pytest.mark.medium
+
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):

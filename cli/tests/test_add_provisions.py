@@ -7,6 +7,10 @@
 
 from sushihub.services import git_ops, links, modules
 
+import pytest
+
+pytestmark = pytest.mark.medium
+
 
 def test_add_provisions_once_after_a_new_clone(monkeypatch, tmp_path):
     calls = []

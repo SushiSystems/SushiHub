@@ -22,6 +22,8 @@ from sushihub.services.releases import ReleaseCorrupt
 from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
 from .test_identity import _signed_in
 
+pytestmark = pytest.mark.medium
+
 MANIFEST = {"product": "sushiengine", "version": "1.4.2", "platform": "windows-x64",
             "bundled": {"sushiruntime": "0.9.0"}, "signature": "base64"}
 

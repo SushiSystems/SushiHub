@@ -18,6 +18,8 @@ import pytest
 
 from sushihub.services import git_ops, modules, pipx
 
+pytestmark = pytest.mark.medium
+
 
 class Recorder:
     """Collect what the service printed, so a test can assert on one line."""

@@ -23,6 +23,8 @@ from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server 
 from .test_identity import _signed_in
 from .test_presence import binary_install, workspace
 
+pytestmark = pytest.mark.medium
+
 _SCHEMA = json.loads((Path(__file__).resolve().parents[2] / "contract" / "status.schema.json")
                      .read_text(encoding="utf-8"))
 

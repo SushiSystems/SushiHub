@@ -15,6 +15,8 @@ from sushihub.setup.factory import derived_selection
 
 from .conftest import MemorySource, dep
 
+pytestmark = pytest.mark.small
+
 
 @pytest.fixture
 def bare_machine(monkeypatch):

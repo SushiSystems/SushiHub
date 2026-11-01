@@ -11,6 +11,8 @@ import pytest
 
 from sushihub.services import module_fragments, pins
 
+pytestmark = pytest.mark.medium
+
 K_OLD = "0123456789abcdef0123456789abcdef01234567"
 K_NEW = "89abcdef0123456789abcdef0123456789abcdef"
 

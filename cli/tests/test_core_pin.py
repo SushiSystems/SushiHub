@@ -11,6 +11,8 @@ import pytest
 
 from sushihub.services import core_pin, module_fragments, pins
 
+pytestmark = pytest.mark.medium
+
 K_TEXT = ('[project]\nname = "x"\ndependencies = [\n    "typer>=0.12",\n    "sushicore{operator}",\n]\n')
 
 
