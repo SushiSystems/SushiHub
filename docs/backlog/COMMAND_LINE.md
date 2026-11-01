@@ -7,8 +7,8 @@
 | RW-21 | P2 | blocked | Add `hub add <git-url>` | a repository nobody has cloned can be added by its URL | RW-9 |  | 2026-10-19 |
 | RW-22 | P2 | open | Add `hub unlink` | a link leaves `[modules]` of `.sushistack/workspace.toml` without a hand edit |  |  | 2026-10-19 |
 | RW-23 | P2 | open | Test `install-cli` through the command | a test runs `install_cli` in `cli/sushihub/services/cli_install.py` through `hub` |  |  | 2026-10-19 |
-| RW-24 | P2 | blocked | Read `use_vcpkg` | the key `cli/sushihub/defaults.toml` sets per platform decides the vcpkg tree | sushicore RW-51 |  | 2026-10-19 |
-| RW-25 | P2 | blocked | Read the `[cli]` theme from the workspace | `cli/sushihub/console.py` reads the theme from `workspace.toml`, not from the directory `legacy_cli_dir` returns | sushicore RW-52 |  | 2026-10-19 |
+| RW-24 | P2 | open | Read `use_vcpkg` | the key `cli/sushihub/defaults.toml` sets per platform decides the vcpkg tree |  |  | 2026-10-19 |
+| RW-25 | P2 | open | Read the `[cli]` theme from the workspace | `cli/sushihub/console.py` reads the theme from `workspace.toml`, not from the directory `legacy_cli_dir` returns |  |  | 2026-10-19 |
 | RW-26 | P2 | open | Return each packaged manifest's text | `manifest_sources` in `cli/sushihub/setup/dependency_source.py` returns text, not a path out of an `importlib.resources.as_file` block, so a zipimported… |  |  | 2026-10-19 |
 | RW-28 | P2 | open | Send the sign-in code as data | `hub login` puts the user code and the verification link in its `result` payload or a structured event, and `gui/src/ui/screens/DeviceGrant.cpp` stops… |  |  | 2026-10-19 |
 | RW-43 | P2 | open | Report the install channel of a PyPI install | `hub status` says what a PyPI install is, and `contract/status.schema.json` allows it |  |  | 2026-10-19 |
@@ -24,6 +24,7 @@
 | RW-53 | P2 | open | Remove `discovery.py` | `cli/sushihub/services/discovery.py`, imported by nothing, is gone |  |  | 2026-10-19 |
 | RW-54 | P2 | open | Give the command line and the desktop application a logger | both log through the `logging` skill's interface |  |  | 2026-10-19 |
 | RW-57 | P2 | open | Stop the hub CLI reading SushiHub where the module-install rule forbids it | check_module_install.py reports nothing for cli/sushihub |  |  | 2026-10-28 |
+| RW-59 | P2 | open | Add the module-install elements: sushi-module.toml, deps file, install headings | check_module_install.py reports no missing element for this repository |  |  | 2026-11-01 |
 
 ## Known issues
 
