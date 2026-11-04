@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-05 — tools: Took the shared checkers of 2026-11-05 with a baseline of the findings they meet, which RW-60 clears.
 - 2026-10-29 — docs: Named `sushihub`, the service `token_store.py` writes, as the credential store service of the Sushi Account session (`sushi-account.md`).
 - 2026-10-29 — cli: Added the `backlog` and `design` groups and asked for sushicore 0.10.2 (`cli.py`).
 - 2026-10-28 — docs: Said in the install page and the FAQ that every module installs with or without `hub` and that its CLI resolves `sushicore` from PyPI (`INSTALL.md`, `FAQ.md`).

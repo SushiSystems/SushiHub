@@ -1,0 +1,202 @@
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_cited_paths"
+path = "cli/README.md"
+count = 9
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_cited_paths"
+path = "docs/architecture/WORKSPACE.md"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_cited_paths"
+path = "docs/getting_started/INSTALL.md"
+count = 2
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_cited_paths"
+path = "docs/guides/FAQ.md"
+count = 3
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_cited_paths"
+path = "docs/guides/LINKING_CHECKOUTS.md"
+count = 3
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_cited_paths"
+path = "docs/reference/GLOSSARY.md"
+count = 2
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_cited_paths"
+path = "docs/reference/MODULE_MANIFEST.md"
+count = 3
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_em_dash"
+path = "cli/README.md"
+count = 3
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_em_dash"
+path = "docs/reference/MODULE_MANIFEST.md"
+count = 2
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_history_words"
+path = "docs/design/WORKSPACE_DECOUPLING/README.md"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_history_words"
+path = "docs/getting_started/INSTALL.md"
+count = 3
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_named_symbols"
+path = "cli/README.md"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_named_symbols"
+path = "docs/architecture/WORKSPACE.md"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_docs_truth.py"
+rule = "rule_named_symbols"
+path = "tools/README.md"
+count = 5
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_elements"
+path = "cli/sushistack.deps.toml"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_elements"
+path = "sushi-module.toml"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_install_headings"
+path = "docs/getting_started/INSTALL.md"
+count = 2
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_machine_path"
+path = "cli/sushihub/cli.py"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/cli.py"
+count = 14
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/config.py"
+count = 3
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/services/customize.py"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/services/modules.py"
+count = 7
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/services/setup.py"
+count = 4
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/services/status_report.py"
+count = 2
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/setup/factory.py"
+count = 3
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/setup/steps.py"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "testing/check_test_sizes.py"
+rule = "rule_unsized_python_test"
+path = "tools/tests/test_check_test_additions.py"
+count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "testing/check_test_sizes.py"
+rule = "rule_unsized_python_test"
+path = "tools/tests/test_record_cli_argv.py"
+count = 5
+backlog = "RW-60"
+
+[[finding]]
+checker = "testing/check_test_sizes.py"
+rule = "rule_unsized_python_test"
+path = "tools/tests/test_test_budget_settings.py"
+count = 1
+backlog = "RW-60"

@@ -10,6 +10,7 @@
 | RW-40 | P2 | open | Finish the ignore rules | `.gitignore` names `.pytest_cache/`, `dist/`, `.venv/`, `imgui.ini` and `CMakeUserPresets.json`, and drops the two rules for old scratch folders |  |  | 2026-10-19 |
 | RW-41 | P2 | open | Move `record_cli_argv.py` into an area | `tools/record_cli_argv.py` sits under `tools/<area>/` |  |  | 2026-10-19 |
 | RW-42 | P2 | open | Take the whole shared tool set | `tools/` holds SushiSkills' checkers and `tools/check_all.py` passes |  |  | 2026-10-19 |
+| RW-60 | P2 | open | Clear the known findings of the shared checkers | tools/known_findings.toml holds no entry and tools/check_all.py is clean without it |  | `tools/check_all.py` | 2026-11-05 |
 
 ## Known issues
 

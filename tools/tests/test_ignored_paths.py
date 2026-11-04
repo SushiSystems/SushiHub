@@ -19,6 +19,9 @@ from checking.ignored_paths import drop_ignored, ignored_folders  # noqa: E402
 from documentation.check_source_comments import collect  # noqa: E402
 
 
+K_TEST_SIZE = "medium"
+
+
 def _link(link: Path, target: Path) -> bool:
     """Makes *link* a folder link to *target*, a junction on Windows; False when none can be made."""
     try:
