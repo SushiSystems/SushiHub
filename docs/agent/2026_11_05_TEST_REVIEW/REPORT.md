@@ -21,11 +21,12 @@ them through a port:
 - No gui suite carries a size prefix, so all 37 gui tests fail the size rule.
 - `test_selection`'s `build_pipeline` reaches `workspace_root()`.
 
-## The owner's decisions waiting
+## Decisions
 
-1. Ports for git, the session client, pipx and the release host. Each is a public seam of the CLI.
-2. Two deletes in `test_migrate_command.py` rest on `test_workspace_resolution.py`; chunk 002 read the
-   sibling, so they stand.
+The owner delegated these decisions on 2026-11-05. Each ruling below is final for the plan; its reason follows it.
+
+1. Ports for git, the session client, pipx, the release host and the console, each with an in-memory adapter: yes. Every seam is added as a parameter or overload whose default keeps today's behaviour, so existing callers compile unchanged and the change is a minor version. A value passed in is preferred to a reset of process-wide state.
+2. The two deletes in `test_migrate_command.py` stand. Chunk 002 read the sibling that covers them.
 
 ## Dispatches
 
