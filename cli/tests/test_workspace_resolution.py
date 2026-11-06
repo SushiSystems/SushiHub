@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import pytest
 from sushicore.errors import SushiCoreError
+from sushicore.provision.home import ENV_HOME
 
 from sushihub.config import (
     CHECKOUT_CLI_DIR,
@@ -29,6 +30,7 @@ def unpinned(monkeypatch, tmp_path):
     """Drop the SUSHISTACK_HOME the suite's conftest pins and sit in an empty directory."""
     monkeypatch.delenv("SUSHISTACK_HOME", raising=False)
     monkeypatch.delenv("SUSHISTACK_DEPS_DIR", raising=False)
+    monkeypatch.delenv(ENV_HOME, raising=False)
     monkeypatch.chdir(tmp_path)
     return tmp_path
 
@@ -62,7 +64,7 @@ def test_the_manifests_tree_no_longer_marks_a_workspace(unpinned):
         workspace_root(unpinned)
 
 
-def test_no_marker_anywhere_is_an_error_the_entry_point_reports(unpinned):
+def test_no_marker_anywhere_raises_a_sushicore_error_naming_the_marker(unpinned):
     """Resolution outside a workspace raises a sushicore error naming the marker."""
     with pytest.raises(WorkspaceNotFoundError) as caught:
         workspace_root(unpinned)
@@ -76,9 +78,9 @@ def test_find_workspace_root_answers_none_outside_a_workspace(unpinned):
 
 
 def test_find_workspace_root_finds_the_marker(unpinned):
-    """The query form resolves the same root the raising form does."""
+    """The query form resolves the directory that holds the marker."""
     (unpinned / WORKSPACE_MARKER).mkdir()
-    assert find_workspace_root(unpinned) == workspace_root(unpinned)
+    assert find_workspace_root(unpinned) == unpinned.resolve()
 
 
 def test_the_workspace_file_sits_inside_the_marker_directory(unpinned):
@@ -100,9 +102,12 @@ def test_dependencies_default_to_one_tree_under_the_root(unpinned, monkeypatch):
     assert deps_dir() == unpinned.resolve() / "dependencies"
 
 
-def test_the_dependency_override_wins(unpinned, monkeypatch, tmp_path):
-    """SUSHISTACK_DEPS_DIR replaces the tree under the root."""
+@pytest.mark.parametrize("home_set", [False, True], ids=["root-only", "with-sushisystems-home"])
+def test_the_dependency_override_wins(unpinned, monkeypatch, tmp_path, home_set):
+    """SUSHISTACK_DEPS_DIR replaces the tree under the root and over SUSHISYSTEMS_HOME."""
     monkeypatch.setenv("SUSHISTACK_HOME", str(unpinned))
+    if home_set:
+        monkeypatch.setenv(ENV_HOME, str(tmp_path / "from-env"))
     monkeypatch.setenv("SUSHISTACK_DEPS_DIR", str(tmp_path / "elsewhere"))
     assert deps_dir() == tmp_path / "elsewhere"
 

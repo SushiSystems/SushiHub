@@ -9,8 +9,9 @@ from __future__ import annotations
 import subprocess
 
 import pytest
+from sushicore.provision.home import ENV_HOME
 
-from sushihub.services import fetched_sources, module_fragments
+from sushihub.services import fetched_sources
 
 pytestmark = pytest.mark.medium
 
@@ -33,20 +34,21 @@ def sources(tmp_path, monkeypatch):
         (copy / "README.md").write_text(version, encoding="utf-8")
         _git("add", ".", cwd=copy)
         _git("-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "-m", version, cwd=copy)
-    monkeypatch.setattr(fetched_sources.home, "sources_dir", lambda: root)
+    monkeypatch.setenv(ENV_HOME, str(tmp_path))
     return root
 
 
 @pytest.fixture
 def workspace(tmp_path, monkeypatch):
-    """A workspace holding one module, sushiruntime, that pins sushilog v0.1.0."""
+    """A real workspace holding one cloned module, sushiruntime, that pins sushilog v0.1.0."""
+    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path / "ws"))
     checkout = tmp_path / "ws" / "sushiruntime"
+    (checkout / ".git").mkdir(parents=True)
     fragment = checkout / "cli" / "sushistack.deps.toml"
     fragment.parent.mkdir(parents=True)
     fragment.write_text('[module]\ndepends_on = ["sushilog"]\n\n'
                         f'[sushisystems.sushilog]\nversion = "v0.1.0"\ncommit = "{K_COMMIT}"\n',
                         encoding="utf-8")
-    monkeypatch.setattr(module_fragments, "present_modules", lambda root: {"sushiruntime": checkout})
     return tmp_path / "ws"
 
 

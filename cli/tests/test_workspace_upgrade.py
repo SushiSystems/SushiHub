@@ -87,19 +87,28 @@ def test_a_link_written_after_an_upgrade_keeps_the_tool_paths(tmp_path, monkeypa
     assert set(doc["modules"]) == {"sushiai", "sushiblas"}
 
 
-def test_hub_remove_empties_the_tool_table_and_keeps_the_registry(tmp_path, monkeypatch):
-    """`hub remove` reclaims what the install wrote and leaves the links alone."""
+def _upgraded_then_removed(root, monkeypatch) -> dict:
+    """Upgrade an old workspace, run the removal step's config clearing, and return the file read back."""
     from sushihub.config import Config
     from sushihub.setup.pipeline import InstallContext
     from sushihub.setup.steps import UninstallStep
 
-    _old_workspace(tmp_path)
-    upgrade_workspace(tmp_path)
-    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    UninstallStep(source=None, managers=[], sink=WorkspaceSink(tmp_path))._remove_config(
+    _old_workspace(root)
+    upgrade_workspace(root)
+    monkeypatch.setenv("SUSHISTACK_HOME", str(root))
+    UninstallStep(source=None, managers=[], sink=WorkspaceSink(root))._remove_config(
         InstallContext(cfg=Config(platform="windows")))
-    doc = read_toml(workspace_file(tmp_path))
-    assert doc["tool"] == {}
+    return read_toml(workspace_file(root))
+
+
+def test_hub_remove_empties_the_tool_table(tmp_path, monkeypatch):
+    """`hub remove` reclaims what the install wrote into [tool]."""
+    assert _upgraded_then_removed(tmp_path, monkeypatch)["tool"] == {}
+
+
+def test_hub_remove_keeps_the_registry(tmp_path, monkeypatch):
+    """`hub remove` leaves the links alone."""
+    doc = _upgraded_then_removed(tmp_path, monkeypatch)
     assert doc["modules"] == {"sushiai": "D:/Projects/sushiai"}
     assert doc["workspace"]["version"] == "1"
 

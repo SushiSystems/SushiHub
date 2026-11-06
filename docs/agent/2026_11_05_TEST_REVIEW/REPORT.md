@@ -29,10 +29,19 @@ The owner delegated these decisions on 2026-11-05. Each ruling below is final fo
 2. The two deletes in `test_migrate_command.py` stand. Chunk 002 read the sibling that covers them.
 3. T1, ruled by the lead on 2026-11-07: the five ports are Protocols in `cli/sushihub/services/ports.py`, carried as one `Ports` value that each command takes as a `ports` keyword, `Ports.machine()` when left out. One value rather than five parameters, because every command that reaches one port reaches the console too and the list would grow with each port. The in-memory console is sushicore's `RecordingConsole`, so the floor of `sushicore` rises to 0.10.12, the first release that ships it. The machine adapters call the module functions by name at call time, so the tests M1 has not rewritten yet keep passing.
 4. T2 and M2 change gui C++ tests, which only a build proves. The 2026-11-07 lead may not build, so both wait. The size checker reads only C++ files named `test_*`, so it reads no gui suite today; KI-21 records it.
+5. M1, ruled by the lead on 2026-11-07: a test reaches the workspace, its links and its dependency tree through a real temporary workspace named by `SUSHISTACK_HOME` and `SUSHISTACK_DEPS_DIR`, not by replacing `workspace_root`, `links.registered`, `deps_dir` or `present_modules`. These already read the environment, so no new seam is added; such a test touches the filesystem and is medium. Once no test replaces `git_ops.run`, `git_ops.source_reachable` or the `pipx` functions, `ProcessGit` and `ProcessPipx` hold the process calls themselves and the module functions they delegated to go.
+6. M1, ruled by the lead on 2026-11-07: three seams are added where a record needed one. `licence_file.licence_expiry(token)` parses the token text, `presence.parse_release(text)` parses a manifest's text, and `cli_install.install_cli` takes `ports=` like every other command. The seams M1 still lacks are backlog entries RW-61 to RW-65; the tests they name stay as they were.
 
 ## Dispatches
 
 dispatch: J15 review, 2 chunks — haiku high, 1 round each, passed, rung 1
+dispatch: M1 slice 1 (add_binary, add_provisions, cli_install, init, catalog, link) — sonnet medium, 1 round, passed with two seams added by the lead, rung 1
+dispatch: M1 slice 2 (identity, releases) — sonnet medium, 1 round, passed, rung 1
+dispatch: M1 slice 3 (migrate_command, presence, self_update, update_check) — sonnet medium, 1 round, passed with size marks fixed by the lead, rung 1
+dispatch: M1 slice 4 (gui_build, json_streams, manifest_precedence, doctor_table) — sonnet medium, 1 round, passed, rung 1
+dispatch: M1 slice 5 (workspace_resolution, selection, entry_point, describe, docs_command, git_state) — sonnet medium, 1 round, passed, rung 1
+dispatch: M1 slice 6 (twelve smaller files) — sonnet medium, 1 round, passed, rung 1
+dispatch: T2 and M2 (five gui suites) — sonnet medium, 1 round, written without a build, unproven until the final build, rung 1
 
 ## Totals
 

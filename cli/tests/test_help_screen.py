@@ -66,11 +66,10 @@ def test_no_command_is_listed_under_a_group_it_does_not_belong_to():
         assert set(grouped[heading]) - set(K_SUSHICORE_GROUPS) == set(names)
 
 
-def test_a_command_help_carries_examples():
-    out = _run("add", "--help")
-    assert "Examples" in out and "hub add sr" in out
-
-
-def test_a_gui_command_help_carries_examples():
-    out = _run("gui", "build", "--help")
-    assert "Examples" in out and "hub gui build" in out
+@pytest.mark.parametrize(("args", "example"), [
+    (("add", "--help"), "hub add sr"),
+    (("gui", "build", "--help"), "hub gui build"),
+])
+def test_a_command_help_carries_examples(args, example):
+    out = _run(*args)
+    assert "Examples" in out and example in out

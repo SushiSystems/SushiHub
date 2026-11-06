@@ -9,11 +9,14 @@ from __future__ import annotations
 import hashlib
 import io
 import json
+import platform
 import tarfile
 import zipfile
 
 import pytest
+from sushicore.console_memory import RecordingConsole
 
+from sushihub.errors import SushiAccountError
 from sushihub.services import releases
 from sushihub.services.presence import RELEASE_MANIFEST, Release
 from sushihub.services.releases import ReleaseCorrupt
@@ -63,41 +66,16 @@ class Body(io.BytesIO):
         self.headers = {"Content-Length": str(len(payload))} if declare_length else {}
 
 
-class ConsoleSpy:
-    """Stands in for the console and keeps every progress event it was given."""
-
-    def __init__(self) -> None:
-        """Start with no recorded events."""
-        self.events: list[tuple] = []
-        self.lines: list[str] = []
-
-    def progress(self, label, index, count, fraction=None) -> None:
-        """Record one progress event."""
-        self.events.append((label, index, count, fraction))
-
-    def __getattr__(self, name):
-        """Record any other console call as a printed line."""
-        def record(*args, **kwargs) -> None:
-            self.lines.extend(str(a) for a in args)
-        return record
-
-
-def test_host_platform_names_windows_x64(monkeypatch):
-    monkeypatch.setattr(releases.platform, "system", lambda: "Windows")
-    monkeypatch.setattr(releases.platform, "machine", lambda: "AMD64")
-    assert releases.host_platform() == "windows-x64"
-
-
-def test_host_platform_names_linux_x64(monkeypatch):
-    monkeypatch.setattr(releases.platform, "system", lambda: "Linux")
-    monkeypatch.setattr(releases.platform, "machine", lambda: "x86_64")
-    assert releases.host_platform() == "linux-x64"
-
-
-def test_host_platform_passes_a_machine_it_does_not_rename_through(monkeypatch):
-    monkeypatch.setattr(releases.platform, "system", lambda: "Linux")
-    monkeypatch.setattr(releases.platform, "machine", lambda: "riscv64")
-    assert releases.host_platform() == "linux-riscv64"
+@pytest.mark.parametrize("system, machine, named", [
+    ("Windows", "AMD64", "windows-x64"),
+    ("Linux", "x86_64", "linux-x64"),
+    ("Linux", "riscv64", "linux-riscv64"),
+])
+def test_host_platform_names_the_system_and_the_architecture(monkeypatch, system, machine, named):
+    """The two shipped platforms get their release names; any other machine passes through."""
+    monkeypatch.setattr(platform, "system", lambda: system)
+    monkeypatch.setattr(platform, "machine", lambda: machine)
+    assert releases.host_platform() == named
 
 
 def test_download_writes_the_file_and_reports_each_chunk(tmp_path, monkeypatch):
@@ -143,33 +121,22 @@ def test_verify_names_the_digest_when_it_differs(tmp_path):
         releases.verify(path, "0" * 64, 9)
 
 
-def test_unpack_extracts_a_zip(tmp_path):
-    (tmp_path / "a.zip").write_bytes(zip_bytes(release_members()))
-    releases.unpack(tmp_path / "a.zip", tmp_path / "out")
+@pytest.mark.parametrize("name, build", [("a.zip", zip_bytes), ("a.tar.gz", tar_bytes)])
+def test_unpack_extracts_an_archive(tmp_path, name, build):
+    """Both archive formats unpack their members, the manifest included."""
+    (tmp_path / name).write_bytes(build(release_members()))
+    releases.unpack(tmp_path / name, tmp_path / "out")
     assert (tmp_path / "out" / "bin" / "se.txt").read_text(encoding="utf-8") == "the engine"
     assert json.loads((tmp_path / "out" / RELEASE_MANIFEST).read_text(
         encoding="utf-8"))["version"] == "1.4.2"
 
 
-def test_unpack_extracts_a_tar_gz(tmp_path):
-    (tmp_path / "a.tar.gz").write_bytes(tar_bytes(release_members()))
-    releases.unpack(tmp_path / "a.tar.gz", tmp_path / "out")
-    assert (tmp_path / "out" / "bin" / "se.txt").read_text(encoding="utf-8") == "the engine"
-
-
-def test_unpack_refuses_a_member_that_escapes_the_directory(tmp_path):
-    (tmp_path / "a.zip").write_bytes(
-        zip_bytes({**release_members(), "../escaped.txt": "no"}))
+@pytest.mark.parametrize("name, build", [("a.zip", zip_bytes), ("a.tar.gz", tar_bytes)])
+def test_unpack_refuses_a_member_that_escapes_the_directory(tmp_path, name, build):
+    """A member that resolves outside the directory is refused and written nowhere."""
+    (tmp_path / name).write_bytes(build({**release_members(), "../escaped.txt": "no"}))
     with pytest.raises(ReleaseCorrupt, match="escaped.txt"):
-        releases.unpack(tmp_path / "a.zip", tmp_path / "out")
-    assert not (tmp_path / "escaped.txt").exists()
-
-
-def test_unpack_refuses_a_tar_member_that_escapes_the_directory(tmp_path):
-    (tmp_path / "a.tar.gz").write_bytes(
-        tar_bytes({**release_members(), "../escaped.txt": "no"}))
-    with pytest.raises(ReleaseCorrupt, match="escaped.txt"):
-        releases.unpack(tmp_path / "a.tar.gz", tmp_path / "out")
+        releases.unpack(tmp_path / name, tmp_path / "out")
     assert not (tmp_path / "escaped.txt").exists()
 
 
@@ -186,13 +153,29 @@ def test_unpack_refuses_a_suffix_it_does_not_know(tmp_path):
         releases.unpack(tmp_path / "a.7z", tmp_path / "out")
 
 
-def test_install_release_unpacks_it_and_returns_the_manifest(fake_id, tmp_path):
+def _install(fake_id, tmp_path, console=None) -> Release:
+    """Install sushiengine from the fake server into tmp_path and return its manifest."""
+    return releases.install_release("sushiengine", tmp_path / "sushiengine",
+                                    _signed_in(fake_id), console or RecordingConsole())
+
+
+def test_install_release_returns_the_manifest_it_unpacked(fake_id, tmp_path):
+    """The returned release is the one the unpacked manifest names."""
     fake_id.state.release_blob = zip_bytes(release_members())
-    console = ConsoleSpy()
-    release = releases.install_release(
-        "sushiengine", tmp_path / "sushiengine", _signed_in(fake_id), console)
-    assert release == Release("sushiengine", "1.4.2", "windows-x64")
+    assert _install(fake_id, tmp_path) == Release("sushiengine", "1.4.2", "windows-x64")
+
+
+def test_install_release_unpacks_the_archive_at_root(fake_id, tmp_path):
+    """The archive's members land under the module's directory."""
+    fake_id.state.release_blob = zip_bytes(release_members())
+    _install(fake_id, tmp_path)
     assert (tmp_path / "sushiengine" / "bin" / "se.txt").is_file()
+
+
+def test_install_release_leaves_nothing_beside_root(fake_id, tmp_path):
+    """The staging folder is gone once the install lands."""
+    fake_id.state.release_blob = zip_bytes(release_members())
+    _install(fake_id, tmp_path)
     assert list(tmp_path.iterdir()) == [tmp_path / "sushiengine"]
 
 
@@ -200,21 +183,29 @@ def test_install_release_reports_the_download_as_progress(fake_id, tmp_path, mon
     monkeypatch.setattr(releases, "CHUNK", 64)
     blob = zip_bytes(release_members())
     fake_id.state.release_blob = blob
-    console = ConsoleSpy()
-    releases.install_release("sushiengine", tmp_path / "sushiengine",
-                             _signed_in(fake_id), console)
-    assert console.events, "the download reported nothing"
-    assert {label for label, *_ in console.events} == {releases.DOWNLOAD_LABEL}
-    assert console.events[-1][1:] == (len(blob), len(blob), 1.0)
+    console = RecordingConsole()
+    _install(fake_id, tmp_path, console)
+    events = [call.args for call in console.calls if call.kind == "progress"]
+    assert events, "the download reported nothing"
+    assert {label for label, *_ in events} == {releases.DOWNLOAD_LABEL}
+    assert events[-1][1:] == (len(blob), len(blob), 1.0)
 
 
 def test_install_release_asks_for_this_machines_platform(fake_id, tmp_path, monkeypatch):
-    monkeypatch.setattr(releases, "host_platform", lambda: "linux-x64")
+    monkeypatch.setattr(platform, "system", lambda: "Linux")
+    monkeypatch.setattr(platform, "machine", lambda: "x86_64")
     fake_id.state.release_blob = zip_bytes(release_members(platform="linux-x64"))
-    releases.install_release("sushiengine", tmp_path / "sushiengine",
-                             _signed_in(fake_id), ConsoleSpy())
+    _install(fake_id, tmp_path)
     assert fake_id.state.resolved[-1] == {"product": "sushiengine",
                                           "platform": "linux-x64"}
+
+
+def test_install_release_raises_the_refusal_and_leaves_nothing_beside_root(fake_id, tmp_path):
+    """A refused resolve raises SushiAccountError before any download, and writes nothing."""
+    fake_id.state.rate_limited = True
+    with pytest.raises(SushiAccountError):
+        _install(fake_id, tmp_path)
+    assert list(tmp_path.iterdir()) == []
 
 
 def test_install_release_keeps_the_old_install_when_the_hash_does_not_match(
@@ -226,7 +217,8 @@ def test_install_release_keeps_the_old_install_when_the_hash_does_not_match(
     fake_id.state.release_blob = zip_bytes(release_members())
     fake_id.state.release_sha256 = "0" * 64
     with pytest.raises(ReleaseCorrupt):
-        releases.install_release("sushiengine", root, _signed_in(fake_id), ConsoleSpy())
+        releases.install_release("sushiengine", root, _signed_in(fake_id),
+                                 RecordingConsole())
     assert json.loads((root / RELEASE_MANIFEST).read_text(
         encoding="utf-8"))["version"] == "1.0.0"
     assert list(tmp_path.iterdir()) == [root]
@@ -240,7 +232,7 @@ def test_install_release_replaces_an_older_install(fake_id, tmp_path):
                                          encoding="utf-8")
     fake_id.state.release_blob = zip_bytes(release_members())
     release = releases.install_release("sushiengine", root, _signed_in(fake_id),
-                                       ConsoleSpy())
+                                       RecordingConsole())
     assert release.version == "1.4.2"
     assert not (root / "bin" / "gone.txt").exists()
     assert list(tmp_path.iterdir()) == [root]

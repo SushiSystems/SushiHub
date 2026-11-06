@@ -5,19 +5,23 @@
 """How a module is present on disk, and what every `hub` command does about it."""
 
 import json
+from pathlib import Path
 
+import pytest
 import sushicore.profile
+from sushicore.console_memory import RecordingConsole
 
-from sushihub.services import binary, git_ops, modules, pipx, presence, status_report
+from sushihub.services import modules, presence, status_report
+from sushihub.services.identity import Account, ReleaseInfo
+from sushihub.services.memory.account import InMemoryAccount
+from sushihub.services.memory.git import InMemoryGit
+from sushihub.services.memory.ports import memory_ports
 from sushihub.services.presence import Presence
 from sushihub.setup import dependency_source, steps
 from sushihub.setup.pipeline import InstallContext
 
 from .conftest import MemorySource, dep
 
-import pytest
-
-pytestmark = pytest.mark.medium
 
 
 class Recorder:
@@ -62,72 +66,77 @@ def checkout(path) -> None:
 
 
 def workspace(tmp_path, monkeypatch):
-    """Point every `hub` lookup at *tmp_path* and return it as the workspace root.
-
-    `hub`'s own self-update asks pipx how `hub` is installed, so pipx is answered
-    with "not installed here"; otherwise a test on this machine would find the
-    developer's editable install and pull their checkout.
-    """
+    """Point every `hub` lookup at *tmp_path* and return it as the workspace root."""
     monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    monkeypatch.setattr(pipx, "installed", lambda name: None)
     return tmp_path
 
 
-def test_the_manifest_name_is_the_one_sushicore_looks_for():
-    assert presence.RELEASE_MANIFEST == sushicore.profile.RELEASE_MANIFEST
+@pytest.mark.medium
+def test_a_manifest_under_the_name_sushicore_writes_is_read(tmp_path):
+    """read_release finds the manifest under the file name sushicore's profile names."""
+    (tmp_path / sushicore.profile.RELEASE_MANIFEST).write_text(
+        json.dumps({"product": "sushiengine", "version": "1.4.2", "platform": "windows-x64"}),
+        encoding="utf-8")
+    assert presence.read_release(tmp_path) == presence.Release(
+        "sushiengine", "1.4.2", "windows-x64")
 
 
-def test_read_release_reads_product_version_and_platform(tmp_path):
-    binary_install(tmp_path / "sushiengine")
-    release = presence.read_release(tmp_path / "sushiengine")
-    assert release == presence.Release("sushiengine", "1.4.2", "windows-x64")
+@pytest.mark.small
+def test_parse_release_reads_product_version_and_platform():
+    """The three fields of a manifest's text become a Release."""
+    text = json.dumps({"product": "sushiengine", "version": "1.4.2", "platform": "windows-x64"})
+    assert presence.parse_release(text) == presence.Release("sushiengine", "1.4.2", "windows-x64")
 
 
-def test_read_release_is_none_without_a_manifest(tmp_path):
+@pytest.mark.medium
+@pytest.mark.parametrize("manifest", [
+    None,
+    "{ not json",
+    json.dumps({"product": "sushiengine"}),
+], ids=["no manifest", "not json", "a field missing"])
+def test_read_release_is_none_for_an_invalid_release(tmp_path, manifest):
+    if manifest is not None:
+        (tmp_path / presence.RELEASE_MANIFEST).write_text(manifest, encoding="utf-8")
     assert presence.read_release(tmp_path) is None
 
 
-def test_read_release_is_none_when_the_manifest_is_not_json(tmp_path):
-    (tmp_path / presence.RELEASE_MANIFEST).write_text("{ not json", encoding="utf-8")
-    assert presence.read_release(tmp_path) is None
-
-
-def test_read_release_is_none_when_a_field_is_missing(tmp_path):
-    (tmp_path / presence.RELEASE_MANIFEST).write_text(
-        json.dumps({"product": "sushiengine"}), encoding="utf-8")
-    assert presence.read_release(tmp_path) is None
-
-
-def test_module_dir_follows_the_catalog_directory(tmp_path):
+@pytest.mark.small
+def test_module_dir_follows_the_catalog_directory():
     """A cataloged name resolves through CATALOG[name].directory, not the bare name."""
-    assert presence.module_dir(tmp_path, "sushiengine") == tmp_path / "sushiengine"
+    assert presence.module_dir(Path("/work"), "sushiengine") == Path("/work") / "sushiengine"
 
 
-def test_module_dir_prefers_a_link_over_the_catalog(tmp_path):
+@pytest.mark.small
+def test_module_dir_prefers_a_link_over_the_catalog():
     """A linked path wins even for a name the catalog knows."""
-    linked = {"sushiengine": str(tmp_path / "elsewhere")}
-    assert presence.module_dir(tmp_path, "sushiengine", linked) == tmp_path / "elsewhere"
+    linked = {"sushiengine": "/elsewhere"}
+    assert presence.module_dir(Path("/work"), "sushiengine", linked) == Path("/elsewhere")
 
 
-def test_module_dir_falls_back_to_the_bare_name_for_a_stale_link(tmp_path):
-    """A name the catalog no longer lists (a stale `hub link`) resolves without raising."""
-    assert presence.module_dir(tmp_path, "sushidsp") == tmp_path / "sushidsp"
+@pytest.mark.small
+def test_module_dir_falls_back_to_the_bare_name_for_a_name_the_catalog_lacks():
+    """A name the catalog no longer lists resolves under the root without raising."""
+    assert presence.module_dir(Path("/work"), "sushidsp") == Path("/work") / "sushidsp"
 
 
+@pytest.mark.medium
 def test_a_directory_with_the_manifest_is_binary(tmp_path):
     binary_install(tmp_path / "sushiengine")
     assert presence.presence_of(tmp_path, "sushiengine", {}) is Presence.BINARY
 
 
+@pytest.mark.medium
 def test_a_directory_with_git_is_cloned(tmp_path):
     checkout(tmp_path / "sushiengine")
     assert presence.presence_of(tmp_path, "sushiengine", {}) is Presence.CLONED
 
 
+@pytest.mark.medium
 def test_a_directory_that_is_not_there_is_absent(tmp_path):
     assert presence.presence_of(tmp_path, "sushiengine", {}) is Presence.ABSENT
 
 
+@pytest.mark.medium
 def test_a_linked_checkout_is_linked(tmp_path):
     elsewhere = tmp_path / "work" / "sushiengine"
     checkout(elsewhere)
@@ -135,16 +144,19 @@ def test_a_linked_checkout_is_linked(tmp_path):
     assert presence.presence_of(tmp_path, "sushiengine", linked) is Presence.LINKED
 
 
+@pytest.mark.medium
 def test_a_linked_path_without_a_checkout_is_absent(tmp_path):
     linked = {"sushiengine": str(tmp_path / "gone")}
     assert presence.presence_of(tmp_path, "sushiengine", linked) is Presence.ABSENT
 
 
+@pytest.mark.medium
 def test_describe_names_the_version_of_a_binary_install(tmp_path):
     binary_install(tmp_path / "sushiengine", version="2.0.0")
     assert presence.describe(tmp_path, "sushiengine", {}) == ("sushiengine", "binary 2.0.0")
 
 
+@pytest.mark.medium
 def test_describe_falls_back_to_the_bare_form_for_a_broken_manifest(tmp_path):
     (tmp_path / "sushiengine").mkdir()
     (tmp_path / "sushiengine" / presence.RELEASE_MANIFEST).write_text(
@@ -152,50 +164,66 @@ def test_describe_falls_back_to_the_bare_form_for_a_broken_manifest(tmp_path):
     assert presence.describe(tmp_path, "sushiengine", {}) == ("sushiengine", "binary")
 
 
-def test_describe_gives_the_directory_for_a_clone_and_an_absence(tmp_path):
+@pytest.mark.medium
+def test_describe_gives_the_directory_for_a_clone(tmp_path):
     checkout(tmp_path / "sushiengine")
     assert presence.describe(tmp_path, "sushiengine", {}) == ("sushiengine", "cloned")
+
+
+@pytest.mark.medium
+def test_describe_gives_the_name_for_an_absence(tmp_path):
     assert presence.describe(tmp_path, "sushiai", {}) == ("sushiai", "absent")
 
 
-def test_describe_gives_the_path_for_a_link_and_says_when_it_is_gone(tmp_path):
+@pytest.mark.medium
+def test_describe_gives_the_path_for_a_link(tmp_path):
     elsewhere = tmp_path / "work" / "sushiengine"
     checkout(elsewhere)
-    linked = {"sushiengine": str(elsewhere), "sushiai": str(tmp_path / "gone")}
+    linked = {"sushiengine": str(elsewhere)}
     assert presence.describe(tmp_path, "sushiengine", linked) == (str(elsewhere), "linked")
+
+
+@pytest.mark.medium
+def test_describe_says_when_a_link_is_gone(tmp_path):
+    linked = {"sushiai": str(tmp_path / "gone")}
     assert presence.describe(tmp_path, "sushiai", linked) == (
         str(tmp_path / "gone"), "linked (missing)")
 
 
-def test_status_rows_carry_the_presence_and_the_version(tmp_path, monkeypatch):
+def _row(payload: dict, name: str) -> dict:
+    """The module row of *name* in a status payload."""
+    return next(row for row in payload["modules"] if row["name"] == name)
+
+
+@pytest.mark.medium
+@pytest.mark.parametrize("name, expected", [
+    ("sushiengine", {"presence": "binary", "version": "1.4.2", "state": "binary 1.4.2"}),
+    ("sushiruntime", {"presence": "cloned", "version": None}),
+    ("sushiai", {"presence": "absent"}),
+])
+def test_status_rows_carry_the_presence_and_the_version(tmp_path, monkeypatch, name, expected):
     root = workspace(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     checkout(root / "sushiruntime")
-    rows = {row["name"]: row for row in status_report.build_status().payload["modules"]}
-    assert rows["sushiengine"]["presence"] == "binary"
-    assert rows["sushiengine"]["version"] == "1.4.2"
-    assert rows["sushiengine"]["state"] == "binary 1.4.2"
-    assert rows["sushiruntime"]["presence"] == "cloned"
-    assert rows["sushiruntime"]["version"] is None
-    assert rows["sushiai"]["presence"] == "absent"
+    row = _row(status_report.build_status(home=tmp_path).payload, name)
+    assert {key: row[key] for key in expected} == expected
 
 
+@pytest.mark.medium
 def test_update_refreshes_a_binary_module_through_sushi_id(tmp_path, monkeypatch):
     root = workspace(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
-    pulled = []
-    refreshed = []
-    monkeypatch.setattr(git_ops, "run", lambda args, cwd: pulled.append(cwd) or 0)
-    monkeypatch.setattr(binary, "update",
-                        lambda name, dest, **_ports: refreshed.append((name, dest)) or True)
-    recorder = Recorder()
-    monkeypatch.setattr(modules, "console", recorder)
-    assert modules.update(["sushiengine"]) == 0
-    assert pulled == []
-    assert refreshed == [("sushiengine", root / "sushiengine")]
-    assert not recorder.said("No modules present yet")
+    release = ReleaseInfo("1.4.2", "linux-x64", "https://cdn.test/e.zip", "00", 3, "")
+    account = InMemoryAccount(Account("acc-1", "ada@example.com", ()), signed_in=True,
+                              releases={("sushiengine", "linux-x64"): release})
+    git, out = InMemoryGit(), RecordingConsole()
+    ports = memory_ports(console=out, git=git, account=account)
+    assert modules.update(["sushiengine"], ports=ports) == 0
+    assert git.calls == []
+    assert "sushiengine: binary 1.4.2 is the latest release." in out.texts("info")
 
 
+@pytest.mark.medium
 def test_readiness_says_a_binary_module_has_nothing_to_build(tmp_path, monkeypatch, fake_cfg):
     root = workspace(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
@@ -206,14 +234,19 @@ def test_readiness_says_a_binary_module_has_nothing_to_build(tmp_path, monkeypat
     assert recorder.said("sushiengine: binary 1.4.2, nothing to build")
 
 
+def _write_fragment(root, module: str) -> None:
+    """Write a dependency fragment into *module*'s folder under *root*."""
+    fragment = root / module / dependency_source.MODULE_MANIFEST_REL
+    fragment.parent.mkdir(parents=True, exist_ok=True)
+    fragment.write_text("[vulkan]\ndescription = \"test\"\n", encoding="utf-8")
+
+
+@pytest.mark.medium
 def test_a_binary_module_contributes_no_dependency_fragment(tmp_path, monkeypatch):
     root = workspace(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     checkout(root / "sushiruntime")
-    for module in ("sushiengine", "sushiruntime"):
-        fragment = root / module / dependency_source.MODULE_MANIFEST_REL
-        fragment.parent.mkdir(parents=True, exist_ok=True)
-        fragment.write_text("[vulkan]\ndescription = \"test\"\n", encoding="utf-8")
-    owners = [owner for _, owner in dependency_source.manifest_sources()]
-    assert "sushiruntime" in owners
-    assert "sushiengine" not in owners
+    _write_fragment(root, "sushiengine")
+    _write_fragment(root, "sushiruntime")
+    owners = {owner for _, owner in dependency_source.manifest_sources()}
+    assert owners & {"sushiruntime", "sushiengine"} == {"sushiruntime"}

@@ -12,9 +12,9 @@ from pathlib import Path
 
 import pytest
 
-pytestmark = pytest.mark.small
-
 K_SOURCE_ROOT = Path(__file__).resolve().parents[1] / "sushihub"
+
+K_SOURCE_FILES = sorted(K_SOURCE_ROOT.rglob("*.py"))
 
 K_RAW_STYLE_WORDS = frozenset({
     "black", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "dim",
@@ -46,23 +46,29 @@ def _raw_tags_in(source: str) -> list[tuple[int, str]]:
     return found
 
 
-def test_scanner_reads_plain_and_fstring_constants() -> None:
-    source = 'a = "[green]x[/green]"\nb = f"[bold yellow]{n}[/bold yellow] [dim]y[/dim]"\n'
-    tags = [tag for _line, tag in _raw_tags_in(source)]
-    assert tags == [
-        "[green]", "[/green]", "[bold yellow]", "[/bold yellow]", "[dim]", "[/dim]",
-    ]
+def _tag_texts(source: str) -> list[str]:
+    """Return the text of every raw-style tag in *source*, without its line."""
+    return [tag for _line, tag in _raw_tags_in(source)]
 
 
+@pytest.mark.small
+@pytest.mark.parametrize(("source", "expected"), [
+    ('a = "[green]x[/green]"\n', ["[green]", "[/green]"]),
+    ('b = f"[bold yellow]{n}[/bold yellow] [dim]y[/dim]"\n',
+     ["[bold yellow]", "[/bold yellow]", "[dim]", "[/dim]"]),
+], ids=["plain-constant", "fstring-constant"])
+def test_scanner_reads_plain_and_fstring_constants(source, expected) -> None:
+    assert _tag_texts(source) == expected
+
+
+@pytest.mark.small
 def test_scanner_passes_theme_tokens_and_bare_bold() -> None:
     source = 'a = "[success]x[/success] [bold]y[/bold] [muted]z[/muted]"\n'
     assert _raw_tags_in(source) == []
 
 
-def test_source_names_no_raw_rich_colour() -> None:
-    offenders = [
-        f"{path.relative_to(K_SOURCE_ROOT)}:{line}  {tag}"
-        for path in sorted(K_SOURCE_ROOT.rglob("*.py"))
-        for line, tag in _raw_tags_in(path.read_text(encoding="utf-8"))
-    ]
-    assert offenders == [], "raw Rich colour names in string constants:\n" + "\n".join(offenders)
+@pytest.mark.medium
+@pytest.mark.parametrize("path", K_SOURCE_FILES, ids=lambda path: path.relative_to(K_SOURCE_ROOT).as_posix())
+def test_source_names_no_raw_rich_colour(path) -> None:
+    offenders = _raw_tags_in(path.read_text(encoding="utf-8"))
+    assert offenders == [], "raw Rich colour names in string constants"

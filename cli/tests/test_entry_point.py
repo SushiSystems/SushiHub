@@ -7,18 +7,17 @@
 from __future__ import annotations
 
 import json
+import runpy
 import sys
 
-import keyring.errors
+import keyring
+import keyring.backends.fail
 import pytest
 from sushicore.root_options import version_line
 from typer.testing import CliRunner
 
 from sushihub import DISTRIBUTION, cli, console
 from sushihub.config import CHECKOUT_CLI_DIR, WORKSPACE_MARKER, workspace_file
-from sushihub.services import session
-from sushihub.services.identity import SushiAccount
-from sushihub.services.token_store import KeyringStore
 
 pytestmark = pytest.mark.medium
 
@@ -65,6 +64,16 @@ def nowhere(tmp_path, monkeypatch):
     return tmp_path
 
 
+@pytest.fixture
+def no_keyring(monkeypatch):
+    """Leave the keyring with no backend, and the account server at a closed local port."""
+    previous = keyring.get_keyring()
+    keyring.set_keyring(keyring.backends.fail.Keyring())
+    monkeypatch.setenv("SUSHI_ACCOUNT_URL", "http://127.0.0.1:9")
+    yield
+    keyring.set_keyring(previous)
+
+
 def test_a_malformed_theme_config_gives_one_line_and_exit_one(workspace, monkeypatch, capsys):
     """A theme file that does not parse ends in one error message and exit code 1."""
     legacy = workspace / CHECKOUT_CLI_DIR
@@ -84,8 +93,7 @@ def test_a_malformed_workspace_file_gives_one_line_and_exit_one(workspace, monke
     code, out, err = _main(monkeypatch, capsys, "doctor")
 
     assert code == 1
-    assert "workspace.toml" in "".join(out + err)
-    assert "Traceback" not in "".join(out + err)
+    assert "workspace.toml" in _one_message(out + err)
 
 
 def test_a_malformed_theme_config_under_json_still_ends_in_one_result(
@@ -144,17 +152,8 @@ def test_a_successful_command_exits_zero(workspace, monkeypatch, capsys):
 
 @pytest.mark.parametrize("command", ["logout", "whoami", "license", "login"])
 def test_an_account_command_without_a_keyring_gives_one_line_and_exit_one(
-        workspace, monkeypatch, capsys, command):
+        workspace, no_keyring, monkeypatch, capsys, command):
     """Each account command reports a missing keyring backend as one error line."""
-    def refuse(*_args, **_kwargs):
-        """Fails the way keyring does on a machine with no backend."""
-        raise keyring.errors.NoKeyringError("No recommended backend was available.")
-
-    for name in ("get_password", "set_password", "delete_password"):
-        monkeypatch.setattr(keyring, name, refuse)
-    client = SushiAccount("http://127.0.0.1:9", KeyringStore(), now=lambda: 0.0)
-    monkeypatch.setattr(session, "client", lambda: client)
-
     code, out, _err = _main(monkeypatch, capsys, "--json", command)
 
     events = [json.loads(line) for line in out]
@@ -177,8 +176,12 @@ def test_version_is_listed_on_the_help_screen():
     assert "--version" in CliRunner().invoke(cli.app, ["--help"]).output
 
 
-def test_the_module_entry_runs_main():
-    """`python -m sushihub` goes through the same main() as the console script."""
-    import sushihub.__main__ as module_entry
+def test_the_module_entry_runs_the_command_line(monkeypatch, capsys):
+    """`python -m sushihub` behaves as the console script: --version prints and exits 0."""
+    monkeypatch.setattr(sys, "argv", ["sushihub", "--version"])
 
-    assert module_entry.main is cli.main
+    with pytest.raises(SystemExit) as caught:
+        runpy.run_module("sushihub", run_name="__main__")
+
+    assert caught.value.code == 0
+    assert capsys.readouterr().out.strip() == version_line(DISTRIBUTION)

@@ -9,6 +9,7 @@ argument lists it was handed, so what is proved is the command line the CLI woul
 have spawned.
 """
 
+import os
 from pathlib import Path
 
 import pytest
@@ -16,7 +17,7 @@ from sushicore.errors import SushiCoreError
 
 from sushihub.config import WORKSPACE_MARKER
 from sushihub.errors import GuiSourcesMissingError
-from sushihub.gui_config import K_REPOSITORY_URL, GuiConfig, gui_root, load_gui_config
+from sushihub.gui_config import K_REPOSITORY_URL, GuiConfig, gui_root
 
 pytestmark = pytest.mark.medium
 
@@ -41,11 +42,18 @@ def test_gui_root_defaults_to_the_workspace_the_environment_names(workspace):
 
 
 def test_gui_root_refuses_a_workspace_without_the_application_sources(workspace):
-    """A missing CMakeLists.txt raises the hub error whose hint names the clone."""
+    """A missing CMakeLists.txt raises the hub error, which the entry point reports."""
     (workspace / "gui" / "CMakeLists.txt").unlink()
     with pytest.raises(GuiSourcesMissingError) as caught:
         gui_root(workspace)
     assert isinstance(caught.value, SushiCoreError)
+
+
+def test_the_missing_sources_hint_names_the_clone_and_not_an_update(workspace):
+    """The hint sends the person to `git clone`, never to `hub update`."""
+    (workspace / "gui" / "CMakeLists.txt").unlink()
+    with pytest.raises(GuiSourcesMissingError) as caught:
+        gui_root(workspace)
     assert "git clone" in str(caught.value) and "hub update" not in str(caught.value)
 
 
@@ -58,20 +66,15 @@ def test_the_missing_sources_hint_names_the_repository_only_by_its_clone_url(wor
     assert "repository" not in str(caught.value)
 
 
-def test_the_compiler_is_left_to_cmake_when_none_is_configured(workspace):
-    assert GuiConfig(platform="windows").resolved_compiler(Path(workspace)) == ""
+@pytest.mark.small
+def test_the_compiler_is_left_to_cmake_when_none_is_configured():
+    assert GuiConfig(platform="windows").resolved_compiler(Path("unused")) == ""
 
 
-def test_an_explicit_compiler_still_wins(workspace):
+@pytest.mark.small
+def test_an_explicit_compiler_still_wins():
     cfg = GuiConfig(platform="windows", cxx="C:/tools/clang++.exe")
-    assert cfg.resolved_compiler(Path(workspace)) == "C:/tools/clang++.exe"
-
-
-def test_run_launches_the_application_by_default():
-    """The run target comes from the profile, never from the workspace's shared [tool] table."""
-    from sushihub.gui_config import GUI_PROFILE
-
-    assert GUI_PROFILE.default_target == "sushihub_gui"
+    assert cfg.resolved_compiler(Path("unused")) == "C:/tools/clang++.exe"
 
 
 class RecordingDriver:
@@ -83,6 +86,7 @@ class RecordingDriver:
         self.compiles: list[str | None] = []
         self.ctests: list[tuple] = []
         self.cleaned: list[Path] = []
+        self.events: list[str] = []
         self._configured = configured
 
     def cmake(self, cfg) -> str:
@@ -96,6 +100,7 @@ class RecordingDriver:
     def configure(self, args, cwd, env=None) -> int:
         """Record one configure command line."""
         self.configures.append(list(args))
+        self.events.append("configure")
         return 0
 
     def compile(self, cfg, build_dir, cwd, env, *, config=None, targets=()) -> int:
@@ -112,6 +117,20 @@ class RecordingDriver:
     def clean_tree(self, build_dir) -> None:
         """Record one removal of a build tree."""
         self.cleaned.append(build_dir)
+        self.events.append("clean")
+
+
+class RecordingRunner:
+    """Stand-in for the process runner that keeps each command line instead of spawning it."""
+
+    def __init__(self) -> None:
+        """Record into an empty log."""
+        self.commands: list[list[str]] = []
+
+    def run(self, cmd, cwd, env=None) -> int:
+        """Record one command line."""
+        self.commands.append(list(cmd))
+        return 0
 
 
 def _env(cfg, build_dir):
@@ -148,25 +167,45 @@ def test_the_configure_points_cmake_at_the_provisioned_vcpkg_tree(provisioned):
     assert f"-DVCPKG_ROOT={vcpkg}" in argv
 
 
-def test_the_configure_turns_manifest_mode_off_and_tests_on(provisioned):
+def test_the_configure_turns_manifest_mode_off(provisioned):
     from sushihub.services import gui
 
     driver = RecordingDriver()
     gui.build(driver=driver, env_loader=_env)
-    argv = _configure_of(driver)
-    assert "-DVCPKG_MANIFEST_MODE=OFF" in argv
-    assert "-DSUSHIHUB_GUI_BUILD_TESTS=ON" in argv
+    assert "-DVCPKG_MANIFEST_MODE=OFF" in _configure_of(driver)
 
 
-def test_the_configure_names_the_build_type_and_the_build_directory(provisioned):
+def test_the_configure_turns_the_application_tests_on(provisioned):
+    from sushihub.services import gui
+
+    driver = RecordingDriver()
+    gui.build(driver=driver, env_loader=_env)
+    assert "-DSUSHIHUB_GUI_BUILD_TESTS=ON" in _configure_of(driver)
+
+
+def test_the_configure_names_the_source_and_the_build_directory(provisioned):
+    from sushihub.services import gui
+
+    driver = RecordingDriver()
+    gui.build(driver=driver, env_loader=_env)
+    root = provisioned / "gui"
+    assert _configure_of(driver)[:6] == [
+        "cmake", "-S", str(root), "-B", str(root / "build" / "hub"), "-G"]
+
+
+def test_the_configure_names_the_build_type(provisioned):
     from sushihub.services import gui
 
     driver = RecordingDriver()
     gui.build(gui.BuildType.release, driver=driver, env_loader=_env)
-    argv = _configure_of(driver)
-    root = provisioned / "gui"
-    assert argv[:6] == ["cmake", "-S", str(root), "-B", str(root / "build" / "hub"), "-G"]
-    assert "-DCMAKE_BUILD_TYPE=Release" in argv
+    assert "-DCMAKE_BUILD_TYPE=Release" in _configure_of(driver)
+
+
+def test_the_compile_is_asked_for_the_same_build_type(provisioned):
+    from sushihub.services import gui
+
+    driver = RecordingDriver()
+    gui.build(gui.BuildType.release, driver=driver, env_loader=_env)
     assert driver.compiles == ["Release"]
 
 
@@ -201,7 +240,7 @@ def test_clean_removes_the_tree_before_configuring(provisioned):
     driver = RecordingDriver()
     gui.build(clean=True, driver=driver, env_loader=_env)
     assert driver.cleaned == [provisioned / "gui" / "build" / "hub"]
-    assert len(driver.configures) == 1
+    assert driver.events == ["clean", "configure"]
 
 
 def test_test_passes_the_filter_the_repeat_and_the_jobs_through_with_no_label(provisioned):
@@ -214,22 +253,32 @@ def test_test_passes_the_filter_the_repeat_and_the_jobs_through_with_no_label(pr
     assert driver.ctests == [(None, "Catalogue.*", 3, 2)]
 
 
-def test_test_refuses_before_the_first_build(provisioned, capsys):
+@pytest.mark.parametrize("command", [
+    lambda gui, driver: gui.test(driver=driver, env_loader=_env),
+    lambda gui, driver: gui.run(env_loader=_env),
+], ids=["test", "run"])
+def test_a_command_refuses_before_the_first_build(provisioned, capsys, command):
     from sushihub.services import gui
 
     driver = RecordingDriver()
-    assert gui.test(driver=driver, env_loader=_env) == 1
+    assert command(gui, driver) == 1
     assert driver.ctests == []
     captured = capsys.readouterr()
     assert "hub gui build" in captured.out + captured.err
 
 
-def test_run_refuses_before_the_first_build(provisioned, capsys):
+def test_run_launches_the_application_by_default(provisioned):
+    """With no target named, the program launched is the application itself."""
     from sushihub.services import gui
 
-    assert gui.run(env_loader=_env) == 1
-    captured = capsys.readouterr()
-    assert "hub gui build" in captured.out + captured.err
+    build_dir = provisioned / "gui" / "build" / "hub"
+    build_dir.mkdir(parents=True)
+    program = build_dir / ("sushihub_gui.exe" if os.name == "nt" else "sushihub_gui")
+    program.write_text("", encoding="utf-8")
+    program.chmod(0o755)
+    runner = RecordingRunner()
+    assert gui.run(runner=runner, env_loader=_env) == 0
+    assert [Path(command[0]) for command in runner.commands] == [program]
 
 
 def test_clean_removes_the_build_directory(provisioned):

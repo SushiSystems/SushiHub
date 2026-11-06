@@ -109,16 +109,39 @@ def test_summarize_returns_the_missing_rows_in_table_order():
     assert missing == [other, _MISSING_ROW]
 
 
-def test_doctor_prints_groups_then_summary_then_attention_list(monkeypatch, capsys, run_doctor):
+def _in_order(lines: list[str], *needles: str) -> bool:
+    """Report whether the first line holding each needle comes after the one before it."""
+    positions = [_index_of(lines, needle) for needle in needles]
+    return positions == sorted(positions)
+
+
+def test_doctor_prints_each_owner_group_under_the_inventory_title(monkeypatch, capsys, run_doctor):
     _use_console(monkeypatch, machine=False)
     run_doctor(_ROWS)
     lines = _human_lines(capsys)
     assert "shared" in lines and "sushiruntime" in lines
-    order = [_index_of(lines, text) for text in (
-        "Environment inventory", "sushiruntime", "1 OK | 1 missing | 1 not needed",
-        "Needs attention", "adaptivecpp  AdaptiveCpp (acpp)", "Run `hub install`")]
-    assert order == sorted(order)
-    assert not any("cuda  " in line for line in lines[order[3]:])
+    assert _in_order(lines, "Environment inventory", "sushiruntime")
+
+
+def test_doctor_prints_the_summary_after_the_groups(monkeypatch, capsys, run_doctor):
+    _use_console(monkeypatch, machine=False)
+    run_doctor(_ROWS)
+    assert _in_order(_human_lines(capsys), "sushiruntime", "1 OK | 1 missing | 1 not needed")
+
+
+def test_doctor_prints_the_attention_list_after_the_summary(monkeypatch, capsys, run_doctor):
+    _use_console(monkeypatch, machine=False)
+    run_doctor(_ROWS)
+    assert _in_order(_human_lines(capsys), "1 OK | 1 missing | 1 not needed", "Needs attention",
+                     "adaptivecpp  AdaptiveCpp (acpp)", "Run `hub install`")
+
+
+def test_doctor_leaves_a_row_nothing_needs_out_of_the_attention_list(monkeypatch, capsys,
+                                                                     run_doctor):
+    _use_console(monkeypatch, machine=False)
+    run_doctor(_ROWS)
+    lines = _human_lines(capsys)
+    assert not any("cuda  " in line for line in lines[_index_of(lines, "Needs attention"):])
 
 
 def test_doctor_prints_no_attention_list_when_nothing_is_missing(monkeypatch, capsys, run_doctor):
@@ -138,18 +161,23 @@ def test_doctor_keeps_brackets_in_a_missing_detail_on_a_terminal(monkeypatch, ca
 def test_doctor_json_table_event_is_the_ungrouped_one(monkeypatch, capsys, run_doctor):
     _use_console(monkeypatch, machine=True)
     run_doctor(_ROWS)
-    hub_console.table(_COLUMNS, [list(row) for row in _ROWS], title="Environment inventory")
     tables = [event for event in _events(capsys) if event["event"] == "table"]
-    assert len(tables) == 2 and tables[0] == tables[1]
+    assert len(tables) == 1
     assert tables[0]["columns"] == _COLUMNS and tables[0]["rows"] == [list(r) for r in _ROWS]
     assert "group_by" not in tables[0]
 
 
-def test_doctor_json_carries_summary_and_attention_as_line_events(monkeypatch, capsys, run_doctor):
+def test_doctor_json_carries_the_summary_as_a_line_event(monkeypatch, capsys, run_doctor):
     _use_console(monkeypatch, machine=True)
     run_doctor(_ROWS)
     lines = [(e["level"], e["message"]) for e in _events(capsys) if e["event"] == "line"]
     assert ("info", "1 OK | 1 missing | 1 not needed") in lines
+
+
+def test_doctor_json_carries_the_attention_list_as_line_events(monkeypatch, capsys, run_doctor):
+    _use_console(monkeypatch, machine=True)
+    run_doctor(_ROWS)
+    lines = [(e["level"], e["message"]) for e in _events(capsys) if e["event"] == "line"]
     assert ("warn", "Needs attention") in lines
     assert ("info", "adaptivecpp  AdaptiveCpp (acpp)") in lines
 

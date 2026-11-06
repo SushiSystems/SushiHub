@@ -54,16 +54,22 @@ def test_reads_nothing_from_a_subdirectory_of_someone_elses_checkout(tmp_path):
     assert read_git_state(inner) is None
 
 
+def test_reports_the_branch_of_a_checkout_with_no_upstream(tmp_path):
+    _git(tmp_path, "init", "-q")
+    _commit(tmp_path, "first")
+
+    state = read_git_state(tmp_path)
+
+    assert state is not None and state.branch == "main"
+
+
 def test_reports_no_upstream_as_null_counts(tmp_path):
     _git(tmp_path, "init", "-q")
     _commit(tmp_path, "first")
 
     state = read_git_state(tmp_path)
 
-    assert state is not None
-    assert state.branch == "main"
-    assert state.ahead is None
-    assert state.behind is None
+    assert state is not None and (state.ahead, state.behind) == (None, None)
 
 
 def test_counts_local_commits_as_ahead(tmp_path):

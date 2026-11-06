@@ -11,29 +11,36 @@ stops `hub`. The reason is in docs/reference/MODULE_MANIFEST.md.
 
 from __future__ import annotations
 
+from importlib.resources import files
+
 import pytest
 
-from sushihub.setup.dependency_source import SHARED_OWNER, _parse_manifest
+from sushihub.setup.dependency_source import (
+    SHARED_OWNER,
+    TomlDependencySource,
+    packaged_manifests,
+)
 
 pytestmark = pytest.mark.medium
 
+K_SHIPPED = sorted(path.name for path in files("sushihub").joinpath("manifests").iterdir()
+                   if path.name.endswith(".deps.toml"))
 
-def _fragment(tmp_path, text: str):
-    """Write *text* as a fragment and return its path."""
+
+def _source(tmp_path, text: str, owner: str) -> TomlDependencySource:
+    """Write *text* as a fragment owned by *owner* and return the source that reads it."""
     path = tmp_path / "sushistack.deps.toml"
     path.write_text(text, encoding="utf-8")
-    return path
+    return TomlDependencySource([(path, owner)])
 
 
 def test_every_dependency_carries_the_module_that_declared_it(tmp_path):
     """Ownership is `hub`'s question: the file says what, not who is asking."""
-    path = _fragment(tmp_path, """
+    deps = _source(tmp_path, """
 [sdl2]
 description = "Audio device backend."
 linux_apt = ["libsdl2-dev"]
-""")
-
-    deps, _ = _parse_manifest(path, "sushidsp")
+""", "sushidsp").all()
 
     assert [d.name for d in deps] == ["sdl2"]
     assert deps[0].owner == "sushidsp"
@@ -42,38 +49,33 @@ linux_apt = ["libsdl2-dev"]
 
 def test_the_module_table_still_yields_depends_on(tmp_path):
     """`hub` reads the metadata table through the same reader as everything else."""
-    path = _fragment(tmp_path, '[module]\ndepends_on = ["sushiruntime"]\n\n[hwloc]\n')
+    source = _source(tmp_path, '[module]\ndepends_on = ["sushiruntime"]\n\n[hwloc]\n', "sushiblas")
 
-    deps, depends_on = _parse_manifest(path, "sushiblas")
-
-    assert [d.name for d in deps] == ["hwloc"]
-    assert depends_on == ["sushiruntime"]
+    assert [d.name for d in source.all()] == ["hwloc"]
+    assert source.depends_on("sushiblas") == ["sushiruntime"]
 
 
 def test_a_shape_the_reader_refuses_still_stops_hub(tmp_path):
     """Delegating must not turn a refusal back into a silent skip."""
-    path = _fragment(tmp_path, '[[dependency]]\nname = "sdl2"\n')
+    source = _source(tmp_path, '[[dependency]]\nname = "sdl2"\n', "sushidsp")
 
     with pytest.raises(ValueError) as caught:
-        _parse_manifest(path, "sushidsp")
+        source.all()
 
-    assert str(path) in str(caught.value)
+    assert str(tmp_path / "sushistack.deps.toml") in str(caught.value)
 
 
 def test_a_dependency_that_names_no_owner_belongs_to_the_shared_set(tmp_path):
     """The packaged fragments have no module behind them; SHARED_OWNER says so."""
-    path = _fragment(tmp_path, "[cmake]\n")
-
-    deps, _ = _parse_manifest(path, SHARED_OWNER)
+    deps = _source(tmp_path, "[cmake]\n", SHARED_OWNER).all()
 
     assert deps[0].owner == SHARED_OWNER
 
 
-def test_the_fragments_this_package_ships_all_read():
+@pytest.mark.parametrize("fragment", K_SHIPPED)
+def test_the_fragments_this_package_ships_all_read(fragment):
     """A shipped fragment that stopped parsing would break every install."""
-    from sushihub.setup.dependency_source import packaged_manifests
-
     with packaged_manifests() as directory:
-        for fragment in sorted(directory.glob("*.deps.toml")):
-            deps, _ = _parse_manifest(fragment, fragment.stem)
-            assert deps, f"{fragment.name} declared nothing"
+        deps = TomlDependencySource([(directory / fragment, fragment)]).all()
+
+    assert deps, f"{fragment} declared nothing"

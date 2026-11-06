@@ -7,9 +7,11 @@
 from __future__ import annotations
 
 import pytest
+from sushicore.console_memory import RecordingConsole
 
 from sushihub.config import WORKSPACE_MARKER, workspace_file
 from sushihub.services import links, modules
+from sushihub.services.memory.ports import memory_ports
 
 from .test_presence import Recorder
 
@@ -114,3 +116,15 @@ def test_a_dry_run_writes_nothing(registry, recorder, tmp_path):
     assert modules.link("sushiblas", str(checkout), dry_run=True, skip_install=True) == 0
     assert not registry.exists()
     assert recorder.said(f"(dry-run) would link sushiblas -> {checkout.resolve()}")
+
+
+def test_link_warns_about_a_checkout_without_git(registry, tmp_path):
+    """A directory with no .git is linked all the same, with a warning naming it."""
+    checkout = tmp_path / "sushiblas"
+    checkout.mkdir()
+    out = RecordingConsole()
+    rc = modules.link("sushiblas", str(checkout), skip_install=True,
+                      ports=memory_ports(console=out))
+    assert rc == 0
+    assert out.texts("warn") == [f"{checkout.resolve()} is not a git checkout; linking anyway."]
+    assert "sushiblas" in registry.read_text(encoding="utf-8")

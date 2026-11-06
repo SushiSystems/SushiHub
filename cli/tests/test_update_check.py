@@ -6,28 +6,47 @@
 
 from __future__ import annotations
 
+import json
+import urllib.error
+
+import pytest
+
 from sushihub.services.identity import SushiAccount
 from sushihub.services.token_store import MemoryStore, Tokens
 from sushihub.services.update_check import latest_release
 
-from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
-from .test_identity import _signed_in
-
-import pytest
+from .test_identity import Reply, ScriptedHttp
 
 pytestmark = pytest.mark.small
 
-
-def test_names_the_latest_release_without_asking_for_a_version(fake_id):
-    check = latest_release(_signed_in(fake_id), "sushiengine", "windows-x64")
-
-    assert check.version == "1.4.2"
-    assert check.reason is None
-    assert "version" not in fake_id.state.resolved[-1]
+RELEASE = {"version": "1.4.2", "platform": "windows-x64", "url": "https://cdn.test/e.zip",
+           "sha256": "00", "size": 3, "expires_at": "2026-09-05T00:10:00Z"}
 
 
-def test_gives_the_reason_when_nobody_is_signed_in(fake_id):
-    client = SushiAccount(fake_id.url, MemoryStore(), now=lambda: 0.0)
+def _signed_in(http) -> SushiAccount:
+    """Return a client with a live session whose requests go through *http*."""
+    return SushiAccount("http://account.invalid",
+                        MemoryStore(Tokens("access-1", "refresh-1", 1e12)),
+                        http=http, now=lambda: 0.0)
+
+
+def test_names_the_latest_release():
+    check = latest_release(_signed_in(ScriptedHttp(Reply(200, RELEASE))),
+                           "sushiengine", "windows-x64")
+
+    assert (check.version, check.reason) == ("1.4.2", None)
+
+
+def test_asks_for_the_latest_release_without_a_version():
+    http = ScriptedHttp(Reply(200, RELEASE))
+
+    latest_release(_signed_in(http), "sushiengine", "windows-x64")
+
+    assert "version" not in json.loads(http.requests[-1].data)
+
+
+def test_gives_the_reason_when_nobody_is_signed_in():
+    client = SushiAccount("http://account.invalid", MemoryStore(), now=lambda: 0.0)
 
     check = latest_release(client, "sushiengine", "windows-x64")
 
@@ -35,21 +54,30 @@ def test_gives_the_reason_when_nobody_is_signed_in(fake_id):
     assert "hub login" in check.reason
 
 
-def test_gives_the_reason_when_the_account_holds_no_licence(fake_id):
-    fake_id.state.licensed = set()
+def test_gives_the_reason_when_the_account_holds_no_licence():
+    http = ScriptedHttp(Reply(403, {"error": "no_licence"}))
 
-    check = latest_release(_signed_in(fake_id), "sushiengine", "windows-x64")
+    check = latest_release(_signed_in(http), "sushiengine", "windows-x64")
 
     assert check.version is None
     assert "licence" in check.reason
 
 
-def test_gives_the_reason_when_sushi_id_is_unreachable():
-    client = SushiAccount("http://127.0.0.1:9", MemoryStore(Tokens("access-1", "refresh-1", 1e12)),
-                     now=lambda: 0.0)
+def test_gives_the_reason_when_an_unknown_product_is_asked_for():
+    http = ScriptedHttp(Reply(404, {"error": "unknown_product"}))
 
-    check = latest_release(client, "sushiengine", "windows-x64")
+    check = latest_release(_signed_in(http), "sushiunknown", "windows-x64")
+
+    assert check.version is None
+    assert "sushiunknown" in check.reason
+
+
+def test_gives_the_reason_when_sushi_id_is_unreachable():
+    def refuse(request, timeout):
+        """Fail the way urlopen does when nothing listens."""
+        raise urllib.error.URLError("connection refused")
+
+    check = latest_release(_signed_in(refuse), "sushiengine", "windows-x64")
 
     assert check.version is None
     assert "unreachable" in check.reason
-

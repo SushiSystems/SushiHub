@@ -21,40 +21,27 @@ from .. import console
 REACHABLE_TIMEOUT = 15
 
 
-def run(args: list[str], cwd: Path) -> int:
-    """Run a git command, streaming its output. Return its exit code."""
-    try:
-        return subprocess.run(["git", *args], cwd=str(cwd)).returncode
-    except FileNotFoundError:
-        console.error("git not found on PATH. Install git and try again.")
-        return 1
-
-
-def source_reachable(repo: str) -> bool:
-    """Report whether this machine's Git identity can read *repo*.
-
-    Asks the remote for its default branch and nothing else, so a private
-    repository the credentials do not open answers a non-zero exit code rather
-    than a clone that fails halfway.
-
-    Args:
-        repo: The clone URL to ask about.
-    """
-    try:
-        return subprocess.run(
-            ["git", "ls-remote", "--exit-code", "-h", repo, "HEAD"],
-            capture_output=True, timeout=REACHABLE_TIMEOUT).returncode == 0
-    except (OSError, subprocess.SubprocessError):
-        return False
-
-
 class ProcessGit:
     """Runs git as a child process; the machine adapter of :class:`~.ports.GitClient`."""
 
     def run(self, args: list[str], cwd: Path) -> int:
         """Runs `git <args>` in *cwd*, streaming its output, and returns its exit code."""
-        return run(args, cwd)
+        try:
+            return subprocess.run(["git", *args], cwd=str(cwd)).returncode
+        except FileNotFoundError:
+            console.error("git not found on PATH. Install git and try again.")
+            return 1
 
     def source_reachable(self, repo: str) -> bool:
-        """Returns whether this machine's Git identity can read *repo*."""
-        return source_reachable(repo)
+        """Returns whether this machine's Git identity can read *repo*.
+
+        Asks the remote for its default branch and nothing else, so a private repository the
+        credentials do not open answers a non-zero exit code rather than a clone that fails
+        halfway.
+        """
+        try:
+            return subprocess.run(
+                ["git", "ls-remote", "--exit-code", "-h", repo, "HEAD"],
+                capture_output=True, timeout=REACHABLE_TIMEOUT).returncode == 0
+        except (OSError, subprocess.SubprocessError):
+            return False

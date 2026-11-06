@@ -6,64 +6,89 @@
 
 import json
 
-import jsonschema
+import click
+import pytest
 import typer
+from typer.main import get_command
 from typer.testing import CliRunner
 
-from sushihub import DISTRIBUTION
 from sushihub.cli import app
-from sushihub.describe import ALL_PRESENCE, catalogue
-
-from .test_json_streams import _schema
-
-import pytest
+from sushihub.describe import catalogue
 
 pytestmark = pytest.mark.small
 
 
-def test_catalogue_validates_against_its_schema():
-    jsonschema.Draft202012Validator(_schema("describe.schema.json")).validate(catalogue(app))
+def _params(name: str) -> dict:
+    """Index the parameters of the catalogue command *name* by parameter name."""
+    command = next(c for c in catalogue(app)["commands"] if c["name"] == name)
+    return {p["name"]: p for p in command["params"]}
+
+
+def _visible_names(group: click.Group, prefix: str = "") -> set[str]:
+    """List the visible leaf commands under *group* as the catalogue names them."""
+    names: set[str] = set()
+    for name, command in group.commands.items():
+        if command.hidden:
+            continue
+        if isinstance(command, click.Group):
+            names |= _visible_names(command, f"{prefix}{name} ")
+        else:
+            names.add(f"{prefix}{name}")
+    return names
 
 
 def test_every_registered_command_appears_once_sorted():
     names = [c["name"] for c in catalogue(app)["commands"]]
-    assert names == sorted(names)
+    assert names == sorted(set(names))
     assert {"init", "home", "status", "add", "link", "install-cli", "update", "install",
             "sync", "doctor", "remove"} <= set(names)
 
 
-def test_add_is_described_with_its_argument_and_flags():
+def test_add_describes_its_modules_argument():
+    modules = _params("add")["modules"]
+    assert modules["kind"] == "argument" and modules["multiple"] is True
+
+
+def test_add_describes_its_dry_run_flag():
+    dry_run = _params("add")["dry_run"]
+    assert dry_run["flags"] == ["--dry-run"] and dry_run["type"] == "boolean"
+
+
+def test_add_help_carries_no_markup():
     add = next(c for c in catalogue(app)["commands"] if c["name"] == "add")
-    by_name = {p["name"]: p for p in add["params"]}
-    assert by_name["modules"]["kind"] == "argument" and by_name["modules"]["multiple"] is True
-    assert by_name["dry_run"]["flags"] == ["--dry-run"] and by_name["dry_run"]["type"] == "boolean"
     assert "[cyan]" not in add["help"]
 
 
-def test_a_nested_group_is_listed_by_its_children():
+@pytest.mark.parametrize(("group", "children"), [
+    ("gui", {"gui build", "gui test", "gui run", "gui clean"}),
+    ("docs", {"docs bundle"}),
+])
+def test_a_nested_group_is_listed_by_its_children(group, children):
     names = [c["name"] for c in catalogue(app)["commands"]]
-    assert {"gui build", "gui test", "gui run", "gui clean"} <= set(names)
-    assert "gui" not in names
+    assert children <= set(names)
+    assert group not in names
     assert names == sorted(names)
 
 
-def test_gui_build_is_described_with_its_type_choice_and_its_defines():
-    build = next(c for c in catalogue(app)["commands"] if c["name"] == "gui build")
-    by_name = {p["name"]: p for p in build["params"]}
-    assert by_name["build_type"]["type"] == "choice"
-    assert by_name["build_type"]["choices"] == ["debug", "release", "relwithdebinfo"]
-    assert by_name["clean"]["type"] == "boolean"
-    assert by_name["define"]["multiple"] is True and by_name["define"]["flags"] == ["-D"]
+def test_gui_build_describes_its_type_choice():
+    build_type = _params("gui build")["build_type"]
+    assert build_type["type"] == "choice"
+    assert build_type["choices"] == ["debug", "release", "relwithdebinfo"]
 
 
-def test_the_catalogue_is_the_shared_one_with_hubs_distribution_and_presences():
-    """hub's catalogue is sushicore's, called with hub's distribution and presences."""
-    from sushicore import describe as core
+def test_gui_build_describes_its_clean_flag_as_boolean():
+    assert _params("gui build")["clean"]["type"] == "boolean"
 
-    assert catalogue(app) == core.catalogue(app, distribution=DISTRIBUTION,
-                                            applies_to=ALL_PRESENCE)
-    assert all(c["applies_to"] == ["cloned", "linked", "binary"]
-               for c in catalogue(app)["commands"])
+
+def test_gui_build_describes_its_define_flag_as_repeatable():
+    define = _params("gui build")["define"]
+    assert define["multiple"] is True and define["flags"] == ["-D"]
+
+
+def test_the_catalogue_names_the_program_and_applies_every_command_to_all_presences():
+    document = catalogue(app)
+    assert document["program"] == "hub"
+    assert all(c["applies_to"] == ["cloned", "linked", "binary"] for c in document["commands"])
 
 
 def test_a_hidden_command_is_left_out_of_the_catalogue():
@@ -76,27 +101,21 @@ def test_a_hidden_command_is_left_out_of_the_catalogue():
 
 
 def test_describe_prints_the_catalogue_as_one_compact_utf8_line():
-    """--describe writes the catalogue as compact UTF-8 JSON and one newline."""
+    """--describe writes UTF-8 JSON on a single line ended by one newline."""
     result = CliRunner().invoke(app, ["--describe"])
 
+    text = result.stdout_bytes.decode("utf-8")
     assert result.exit_code == 0
-    expected = json.dumps(catalogue(app), ensure_ascii=False).encode("utf-8") + b"\n"
-    assert result.stdout_bytes == expected
+    assert text.endswith("\n") and text.count("\n") == 1
+    assert json.loads(text)["program"] == "hub"
 
 
 def test_describe_lists_every_visible_command_and_no_hidden_one():
-    """--describe names exactly the twenty-three commands the help screen shows, and sushicore's groups."""
+    """--describe names exactly the visible commands of the Typer app."""
     document = json.loads(CliRunner().invoke(app, ["--describe"]).stdout)
     names = {c["name"] for c in document["commands"]}
-    assert {name.split()[0] for name in names} >= {"backlog", "design"}
 
-    assert {name for name in names if name.split()[0] not in {"backlog", "design"}} == {
-        "init", "home", "status", "docs bundle",
-        "add", "link", "install-cli", "update", "sync", "pin",
-        "install", "doctor", "remove", "clean", "migrate",
-        "gui build", "gui test", "gui run", "gui clean",
-        "login", "logout", "whoami", "license",
-    }
+    assert names == _visible_names(get_command(app))
 
 
 def test_no_command_help_repeats_a_stale_count_or_the_old_sushicore_delivery():

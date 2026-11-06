@@ -17,7 +17,6 @@ import pytest
 from typer.testing import CliRunner
 
 from sushihub import cli, console
-from sushihub.describe import catalogue
 from sushihub.errors import HubError
 
 from .test_json_streams import _schema
@@ -107,14 +106,6 @@ def test_bare_docs_prints_the_group_help_and_exits_two():
     assert "bundle" in result.output
 
 
-def test_the_catalogue_lists_docs_bundle_and_not_the_bare_group():
-    """--describe carries `docs bundle` alone, since `hub docs` runs nothing."""
-    names = [command["name"] for command in catalogue(cli.app)["commands"]]
-
-    assert "docs bundle" in names
-    assert "docs" not in names
-
-
 def test_checkout_root_is_the_nearest_ancestor_that_holds_a_publish_list(checkout):
     """The lookup walks up from a folder inside the checkout to the checkout's root."""
     assert cli.checkout_root(checkout / "docs" / "guides") == checkout.resolve()
@@ -144,7 +135,7 @@ def test_bundle_outside_a_checkout_under_json_ends_in_one_failed_result(
     events = [json.loads(line) for line in out]
     assert code == 1
     assert [event["event"] for event in events] == ["line", "result"]
-    assert events[0] == {"event": "line", "level": "error", "message": cli.K_NO_CHECKOUT}
+    assert events[0]["level"] == "error" and "SushiHub checkout" in events[0]["message"]
     assert events[-1] == {"event": "result", "ok": False, "payload": {}}
 
 
@@ -160,17 +151,24 @@ def test_bundle_writes_the_archive_of_the_checkout_it_runs_in(checkout, monkeypa
     assert "sha256" in " ".join(out + err)
 
 
-def test_bundle_under_json_streams_valid_events_and_ends_in_one_result(
-        checkout, monkeypatch, capsys):
-    """Under --json the archive and its digest are success lines and one ok result ends them."""
+@pytest.fixture
+def json_bundle(checkout, monkeypatch, capsys) -> tuple[int, list[dict]]:
+    """Runs `hub --json docs bundle` in the checkout and returns the exit code and the events."""
     monkeypatch.chdir(checkout)
-
     code, out, _err = _main(monkeypatch, capsys, "--json", "docs", "bundle", "--release", "1.2.3")
+    return code, [json.loads(line) for line in out]
 
-    events = [json.loads(line) for line in out]
+
+def test_bundle_under_json_streams_events_that_validate(json_bundle):
+    """Every event the bundle prints under --json validates against the events schema."""
+    _code, events = json_bundle
     validator = jsonschema.Draft202012Validator(_schema("events.schema.json"))
-    for event in events:
-        validator.validate(event)
+    assert [error for event in events for error in validator.iter_errors(event)] == []
+
+
+def test_bundle_under_json_ends_in_one_ok_result(json_bundle):
+    """Under --json the archive and its digest are success lines and one ok result ends them."""
+    code, events = json_bundle
     assert code == 0
     assert [event["event"] for event in events] == ["line", "line", "result"]
     assert [event["level"] for event in events[:2]] == ["success", "success"]

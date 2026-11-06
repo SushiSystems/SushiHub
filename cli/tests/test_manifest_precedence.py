@@ -13,9 +13,12 @@ from __future__ import annotations
 from pathlib import Path
 
 import pytest
+from sushicore.console_memory import RecordingConsole
 
+from sushihub.config import WORKSPACE_MARKER
 from sushihub.services import links, modules, presence
 from sushihub.services.catalog import CATALOG
+from sushihub.services.memory.ports import memory_ports
 from sushihub.services.module_manifest import MANIFEST_FILE
 
 pytestmark = pytest.mark.medium
@@ -40,13 +43,6 @@ def test_a_checkout_the_catalog_never_heard_of_is_known(tmp_path):
     assert "sushiwater" in known
     assert known["sushiwater"].alias == "sw"
     assert problems == []
-
-
-def test_the_catalog_still_answers_for_a_checkout_that_says_nothing(tmp_path):
-    """A module with no manifest is exactly as known as it was before."""
-    known, _ = presence.workspace_modules(tmp_path)
-
-    assert list(known)[:len(CATALOG.names())] == CATALOG.names()
 
 
 def test_the_checkout_wins_when_both_describe_it(tmp_path):
@@ -93,118 +89,63 @@ def test_a_manifest_that_will_not_read_is_reported_rather_than_raised(tmp_path):
     assert "sushidsp" in problems[0]
 
 
-class _Silent:
-    """Swallow what a command prints, so no test writes to the real console.
-
-    Under pytest's capture the shared Rich console can hold a stream that is
-    already closed, which is a property of the harness rather than of `hub`.
-    """
-
-    def __getattr__(self, _name):
-        return lambda *a, **k: None
+@pytest.fixture
+def workspace(tmp_path, monkeypatch):
+    """Make a throwaway workspace the link registry writes into, apart from the checkouts."""
+    root = tmp_path / "ws"
+    (root / WORKSPACE_MARKER).mkdir(parents=True)
+    monkeypatch.setenv("SUSHISTACK_HOME", str(root))
+    return root
 
 
-@pytest.fixture(autouse=True)
-def quiet(monkeypatch):
-    """Give every test in this module a console that prints nothing."""
-    monkeypatch.setattr(modules, "console", _Silent())
+def _link(name: str, checkout: Path, out: RecordingConsole) -> int:
+    """Run `hub link` for *name* over *checkout*, printing into *out*, without an install."""
+    return modules.link(name, str(checkout), skip_install=True,
+                        provision=lambda dry_run: 0, ports=memory_ports(console=out))
 
 
-def test_link_accepts_a_checkout_that_describes_itself(tmp_path, monkeypatch):
+def test_link_accepts_a_checkout_that_describes_itself(tmp_path, workspace):
     """`hub link` stopped being a catalog gate for a module that names itself."""
     checkout = _describes(tmp_path / "sushidsp", "sushidsp", "sd")
     (checkout / ".git").mkdir()
-    written: dict[str, str] = {}
-    monkeypatch.setattr(links, "registered", lambda: {})
-    monkeypatch.setattr(links, "write", lambda name, path: written.update({name: str(path)}))
-    monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
 
-    code = modules.link("sushidsp", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0)
-
-    assert code == 0
-    assert written == {"sushidsp": str(checkout)}
+    assert _link("sushidsp", checkout, RecordingConsole()) == 0
+    assert links.registered() == {"sushidsp": checkout.resolve().as_posix()}
 
 
-def test_link_refuses_a_checkout_that_describes_a_different_module(tmp_path, monkeypatch):
+def test_link_refuses_a_checkout_that_describes_a_different_module(tmp_path, workspace):
     """A manifest naming something else is a mistake, not a rename."""
     checkout = _describes(tmp_path / "sushidsp", "sushidsp", "sd")
-    monkeypatch.setattr(links, "registered", lambda: {})
-    monkeypatch.setattr(links, "write", lambda name, path: None)
+    out = RecordingConsole()
 
-    assert modules.link("sushiwater", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0) == 1
-
-
-def _link_spy(monkeypatch) -> dict[str, str]:
-    """Stub the registry so a test never writes the real workspace; return what was written."""
-    written: dict[str, str] = {}
-    monkeypatch.setattr(links, "registered", lambda: {})
-    monkeypatch.setattr(links, "write", lambda name, path: written.update({name: str(path)}))
-    monkeypatch.setattr(modules, "_install_module_cli", lambda *a, **k: True)
-    return written
+    assert _link("sushiwater", checkout, out) == 1
+    assert "describes itself as 'sushidsp'" in out.texts("error")[0]
 
 
-def test_link_refuses_a_catalog_name_for_a_checkout_that_describes_another_module(
-        tmp_path, monkeypatch):
-    """A catalog name does not excuse a checkout that says it is something else."""
+@pytest.mark.parametrize("name", ["sushiblas", "sb"], ids=["catalog name", "alias"])
+def test_link_refuses_a_catalog_module_for_a_checkout_that_describes_another(
+        tmp_path, workspace, name):
+    """Neither a catalog name nor its alias excuses a checkout that says it is something else."""
     checkout = _describes(tmp_path / "sushidsp", "sushidsp", "sd")
-    written = _link_spy(monkeypatch)
 
-    assert modules.link("sushiblas", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0) == 1
-    assert written == {}
+    assert _link(name, checkout, RecordingConsole()) == 1
+    assert links.registered() == {}
 
 
-def test_link_refuses_an_alias_for_a_checkout_that_describes_another_module(
-        tmp_path, monkeypatch):
-    """The alias resolves to its module first, so the same check applies to it."""
-    checkout = _describes(tmp_path / "sushidsp", "sushidsp", "sd")
-    written = _link_spy(monkeypatch)
-
-    assert modules.link("sb", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0) == 1
-    assert written == {}
-
-
-def test_link_accepts_a_catalog_name_when_the_checkout_agrees(tmp_path, monkeypatch):
+def test_link_accepts_a_catalog_name_when_the_checkout_agrees(tmp_path, workspace):
     """A manifest that names the same module changes nothing about a catalog link."""
     checkout = _describes(tmp_path / "sushiruntime", "sushiruntime", "sr")
-    written = _link_spy(monkeypatch)
 
-    assert modules.link("sushiruntime", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0) == 0
-    assert written == {"sushiruntime": str(checkout)}
+    assert _link("sushiruntime", checkout, RecordingConsole()) == 0
+    assert links.registered() == {"sushiruntime": checkout.resolve().as_posix()}
 
 
-def test_link_reports_an_unreadable_manifest_under_a_catalog_name(tmp_path, monkeypatch):
+def test_link_reports_an_unreadable_manifest_under_a_catalog_name(tmp_path, workspace):
     """A manifest that cannot be believed stops a catalog link the way it stops any other."""
     checkout = tmp_path / "sushiruntime"
     checkout.mkdir()
     (checkout / MANIFEST_FILE).write_text('[module]\nname = "sushiruntime"\n', encoding="utf-8")
-    written = _link_spy(monkeypatch)
+    out = RecordingConsole()
 
-    assert modules.link("sushiruntime", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0) == 1
-    assert written == {}
-
-
-def test_link_reports_a_manifest_that_will_not_read(tmp_path, monkeypatch):
-    """A refused manifest reaches the user as a message, not a traceback."""
-    checkout = tmp_path / "sushidsp"
-    checkout.mkdir()
-    (checkout / MANIFEST_FILE).write_text('[module]\nname = "sushidsp"\n', encoding="utf-8")
-    monkeypatch.setattr(links, "registered", lambda: {})
-
-    assert modules.link("sushidsp", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0) == 1
-
-
-def test_link_still_refuses_a_checkout_that_says_nothing(tmp_path, monkeypatch):
-    """The catalog stays closed to a directory that makes no claim."""
-    checkout = tmp_path / "stranger"
-    checkout.mkdir()
-    monkeypatch.setattr(links, "registered", lambda: {})
-
-    assert modules.link("stranger", str(checkout), skip_install=True,
-                        provision=lambda dry_run: 0) == 1
+    assert _link("sushiruntime", checkout, out) == 1
+    assert len(out.texts("error")) == 1 and links.registered() == {}

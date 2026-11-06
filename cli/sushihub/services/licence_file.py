@@ -57,10 +57,23 @@ def read_licence_expiry(root: Path) -> str | None:
         absent, is not a JWT, or names no ``exp``.
     """
     try:
-        token = (root / LICENCE_FILE).read_text(encoding="utf-8").strip()
+        token = (root / LICENCE_FILE).read_text(encoding="utf-8")
     except OSError:
         return None
-    parts = token.split(".")
+    return licence_expiry(token)
+
+
+def licence_expiry(token: str) -> str | None:
+    """Return when the licence *token* stops being valid, from its ``exp`` claim.
+
+    Args:
+        token: The licence file's text, a JWT.
+
+    Returns:
+        The expiry as an iso-8601 string in UTC, or None when *token* is not a JWT or names no
+        ``exp``.
+    """
+    parts = token.strip().split(".")
     if len(parts) != 3:
         return None
     try:

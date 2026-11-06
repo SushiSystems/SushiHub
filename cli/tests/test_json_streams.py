@@ -9,19 +9,17 @@ import json
 import os
 import webbrowser
 from pathlib import Path
-from types import SimpleNamespace
 
 import jsonschema
 import pytest
 from typer.testing import CliRunner
 
+from sushihub import console
 from sushihub.cli import app
 from sushihub.config import WORKSPACE_MARKER
-from sushihub.services import session
-from sushihub.services.identity import SushiAccount
-from sushihub.services.token_store import MemoryStore, Tokens
+from sushihub.services.token_store import KeyringStore, Tokens
 
-from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
+from .test_identity import backend, fake_id  # noqa: F401  the fake server and credential store
 
 pytestmark = pytest.mark.medium
 
@@ -69,27 +67,28 @@ def workspace(tmp_path):
     return tmp_path
 
 
-def test_events_schema_accepts_each_kind():
-    v = jsonschema.Draft202012Validator(_schema("events.schema.json"))
-    for ev in [
-        {"event": "line", "level": "info", "message": "m"},
-        {"event": "command", "command": "c"},
-        {"event": "header", "title": "t"},
-        {"event": "panel", "title": "t", "body": "b"},
-        {"event": "table", "title": "", "columns": ["a"], "rows": [["1"]]},
-        {"event": "progress", "label": "l", "index": 1, "count": 2, "fraction": None},
-        {"event": "result", "ok": True, "payload": {}},
-        {"event": "prompt", "id": "prompt-1", "message": "m", "default": None},
-    ]:
-        v.validate(ev)
+@pytest.mark.parametrize("event", [
+    {"event": "line", "level": "info", "message": "m"},
+    {"event": "command", "command": "c"},
+    {"event": "header", "title": "t"},
+    {"event": "panel", "title": "t", "body": "b"},
+    {"event": "table", "title": "", "columns": ["a"], "rows": [["1"]]},
+    {"event": "progress", "label": "l", "index": 1, "count": 2, "fraction": None},
+    {"event": "result", "ok": True, "payload": {}},
+    {"event": "prompt", "id": "prompt-1", "message": "m", "default": None},
+], ids=lambda event: event["event"])
+def test_events_schema_accepts_each_kind(event):
+    jsonschema.Draft202012Validator(_schema("events.schema.json")).validate(event)
 
 
-def test_events_schema_rejects_an_unknown_key_and_level():
-    v = jsonschema.Draft202012Validator(_schema("events.schema.json"))
+@pytest.mark.parametrize("event", [
+    {"event": "line", "level": "debug", "message": "m"},
+    {"event": "header", "title": "t", "extra": 1},
+], ids=["unknown level", "unknown key"])
+def test_events_schema_rejects_what_it_does_not_know(event):
+    validator = jsonschema.Draft202012Validator(_schema("events.schema.json"))
     with pytest.raises(jsonschema.ValidationError):
-        v.validate({"event": "line", "level": "debug", "message": "m"})
-    with pytest.raises(jsonschema.ValidationError):
-        v.validate({"event": "header", "title": "t", "extra": 1})
+        validator.validate(event)
 
 
 def test_describe_schema_accepts_the_documented_example():
@@ -100,14 +99,18 @@ def test_describe_schema_accepts_the_documented_example():
              "default": None, "choices": None, "flags": [], "help": "x"}]}]})
 
 
-def test_set_machine_before_first_print_switches_to_json(capsys):
-    import importlib
+@pytest.fixture
+def human_console_after():
+    """Return the console to the terminal renderer once the test has chosen JSON."""
+    yield
+    console.set_machine(False)
 
-    from sushihub import console as c
 
-    importlib.reload(c)
-    c.set_machine(True)
-    c.info("hello")
+def test_set_machine_before_first_print_switches_to_json(workspace, monkeypatch, capsys,
+                                                         human_console_after):
+    monkeypatch.setenv("SUSHISTACK_HOME", str(workspace))
+    console.set_machine(True)
+    console.info("hello")
     assert json.loads(capsys.readouterr().out.strip())["event"] == "line"
 
 
@@ -132,54 +135,49 @@ def test_status_under_json_emits_a_table_and_a_result(workspace):
     assert "modules" in events[-1]["payload"]
 
 
+def expect_valid_events(result) -> list[dict]:
+    """Assert every event of the run fits the schema and return them."""
+    validator = jsonschema.Draft202012Validator(_schema("events.schema.json"))
+    events = _events(result)
+    assert events, result.stderr
+    for event in events:
+        validator.validate(event)
+    return events
+
+
 @pytest.mark.parametrize("args", [
     ["init"], ["home"], ["status"], ["add", "sushiruntime", "--dry-run", "--skip-install"],
-    ["update", "--dry-run"], ["link", "sushiruntime", ".", "--dry-run"],
+    ["update", "--dry-run"], ["link", "sushiruntime", ".", "--dry-run"], ["gui", "clean"],
 ])
 def test_every_read_only_command_streams_valid_events(workspace, args):
-    r = _run(["--json", *args], workspace)
-    v = jsonschema.Draft202012Validator(_schema("events.schema.json"))
-    events = _events(r)
-    assert events, r.stderr
-    for ev in events:
-        v.validate(ev)
+    events = expect_valid_events(_run(["--json", *args], workspace))
     assert events[-1]["event"] == "result"
 
 
-def test_gui_clean_under_json_streams_valid_events(workspace):
-    r = _run(["--json", "gui", "clean"], workspace)
-    v = jsonschema.Draft202012Validator(_schema("events.schema.json"))
-    events = _events(r)
-    assert events, r.stderr
-    for ev in events:
-        v.validate(ev)
-    assert events[-1]["event"] == "result" and events[-1]["ok"] is True
-
-
 @pytest.fixture
-def signed_in(fake_id, monkeypatch):
-    """Point the four Sushi Account commands at the fake server with a live session."""
-    store = MemoryStore(Tokens("access-1", "refresh-1", 1e12))
-    client = SushiAccount(fake_id.url, store,
-                     sleep=lambda seconds: setattr(fake_id.state, "approved", True))
-    monkeypatch.setattr(session, "client", lambda: client)
+def signed_in(fake_id, backend, monkeypatch):
+    """Point the four Sushi Account commands at the fake server with a live session.
+
+    The server is reached through SUSHI_ACCOUNT_URL and the session lives in the in-memory
+    credential store; the browser is the one stdlib name replaced, so no window opens.
+    """
+    monkeypatch.setenv("SUSHI_ACCOUNT_URL", fake_id.url)
     monkeypatch.setattr(webbrowser, "open", lambda uri: True)
-    return SimpleNamespace(state=fake_id.state, store=store)
+    KeyringStore().save(Tokens("access-1", "refresh-1", 1e12))
+    return fake_id
 
 
 @pytest.mark.parametrize("args", [["login"], ["logout"], ["whoami"], ["license"]])
 def test_every_sushi_id_command_streams_valid_events(workspace, signed_in, args):
-    r = _run(["--json", *args], workspace)
-    v = jsonschema.Draft202012Validator(_schema("events.schema.json"))
-    events = _events(r)
-    assert events, r.stderr
-    for ev in events:
-        v.validate(ev)
+    signed_in.state.approved = True
+    events = expect_valid_events(_run(["--json", *args], workspace))
     assert events[-1]["event"] == "result" and events[-1]["ok"] is True
 
 
 def test_login_under_json_reports_each_poll_and_ends_with_the_email(workspace, signed_in):
-    signed_in.store.clear()
+    KeyringStore().clear()
+    signed_in.state.approved = True
+    signed_in.state.slow_down_once = True
     events = _events(_run(["--json", "login"], workspace))
     polls = [e for e in events if e["event"] == "progress"]
     assert [e["index"] for e in polls] == [1, 2]
@@ -207,4 +205,4 @@ def test_license_under_json_emits_a_table_and_the_licences(workspace, signed_in)
 def test_logout_under_json_clears_the_store(workspace, signed_in):
     events = _events(_run(["--json", "logout"], workspace))
     assert events[-1] == {"event": "result", "ok": True, "payload": {}}
-    assert signed_in.store.load() is None
+    assert KeyringStore().load() is None

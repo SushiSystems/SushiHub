@@ -54,8 +54,22 @@ def read_release(root: Path) -> Release | None:
         bundled versions and the signature are wave 5's; nothing reads them yet.
     """
     try:
-        doc = json.loads((root / RELEASE_MANIFEST).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+        text = (root / RELEASE_MANIFEST).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    return parse_release(text)
+
+
+def parse_release(text: str) -> Release | None:
+    """Read a release manifest from its *text*.
+
+    Returns:
+        The product, version and platform it names, or None when *text* is not JSON or leaves one
+        of the three out.
+    """
+    try:
+        doc = json.loads(text)
+    except ValueError:
         return None
     if not isinstance(doc, dict):
         return None
