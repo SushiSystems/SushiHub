@@ -4,7 +4,6 @@
 
 | ID | Pri | State | Title | Done when | Blocked by | Source | Opened |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| RW-64 | P3 | open | Give hub pin a git port so its tag lookup is reached in memory | test_pins patches no pins function |  | `docs/agent/2026_11_05_TEST_REVIEW/REPORT.md` | 2026-11-07 |
 | RW-65 | P3 | open | Split a text parse from the file read in module_manifest and tool_paths | the manifest and tool-path value tests in test_module_manifest and test_tool_paths are small |  | `docs/agent/2026_11_05_TEST_REVIEW/REPORT.md` | 2026-11-07 |
 
 ## Known issues

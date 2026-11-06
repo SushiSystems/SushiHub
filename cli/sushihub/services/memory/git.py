@@ -27,7 +27,7 @@ class InMemoryGit:
     """Records each git command in order and answers the exit codes scripted in advance.
 
     A command with no script left exits 0. A repository counts as reachable only when it was
-    named to :meth:`reach`.
+    named to :meth:`reach`, and a tag is found only when it was named to :meth:`tag`.
     """
 
     def __init__(self) -> None:
@@ -36,6 +36,7 @@ class InMemoryGit:
         self.asked: list[str] = []
         self._codes: list[int] = []
         self._reachable: set[str] = set()
+        self._tags: dict[tuple[str, str], str] = {}
 
     def script(self, exit_code: int) -> "InMemoryGit":
         """Queues the exit code of the next unanswered command and returns this client."""
@@ -47,6 +48,11 @@ class InMemoryGit:
         self._reachable.add(repo)
         return self
 
+    def tag(self, repo: str, version: str, commit: str) -> "InMemoryGit":
+        """Makes the tag *version* of *repo* point at *commit* and returns this client."""
+        self._tags[(repo, version)] = commit
+        return self
+
     def run(self, args: list[str], cwd: Path) -> int:
         """Records the command and returns the next scripted exit code, or 0."""
         self.calls.append(GitCall(tuple(args), Path(cwd)))
@@ -56,3 +62,7 @@ class InMemoryGit:
         """Records the question and returns whether *repo* was made reachable."""
         self.asked.append(repo)
         return repo in self._reachable
+
+    def tag_commit(self, repo: str, version: str) -> str | None:
+        """Returns the commit the tag was made to point at, or None when it was not."""
+        return self._tags.get((repo, version))

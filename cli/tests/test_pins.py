@@ -7,11 +7,16 @@
 from __future__ import annotations
 
 import pytest
+from sushicore.console_memory import RecordingConsole
 
 from sushihub.services import pins
+from sushihub.services.catalog import CATALOG
+from sushihub.services.memory.git import InMemoryGit
+from sushihub.services.memory.ports import memory_ports
 
 K_OLD = "0123456789abcdef0123456789abcdef01234567"
 K_NEW = "89abcdef0123456789abcdef0123456789abcdef"
+K_SUSHILOG_REPO = CATALOG["sushilog"].repo
 
 
 def _fragment(path, version, commit, extra=""):
@@ -102,20 +107,23 @@ def test_a_dry_run_writes_nothing(two_modules, tmp_path):
 @pytest.mark.medium
 def test_pin_refuses_a_short_commit(two_modules):
     """A commit that is not 40 hex characters stops the command before any rewrite."""
-    assert pins.pin("sushilog", "v0.2.0", "abc123", dry_run=False) == 1
+    assert pins.pin("sushilog", "v0.2.0", "abc123", dry_run=False, ports=memory_ports()) == 1
 
 
 @pytest.mark.medium
-def test_pin_reads_the_commit_from_the_tag_when_none_is_given(two_modules, monkeypatch):
+def test_pin_reads_the_commit_from_the_tag_when_none_is_given(two_modules):
     """Without --commit, the tag's commit comes from the repository."""
-    monkeypatch.setattr(pins, "tag_commit", lambda repo, version: K_NEW)
-    assert pins.pin("sushilog", "v0.2.0", None, dry_run=False) == 0
+    git = InMemoryGit().tag(K_SUSHILOG_REPO, "v0.2.0", K_NEW)
+    assert pins.pin("sushilog", "v0.2.0", None, dry_run=False, ports=memory_ports(git=git)) == 0
     text = (two_modules["sushidsp"] / "cli" / "sushistack.deps.toml").read_text(encoding="utf-8")
     assert K_NEW in text
 
 
 @pytest.mark.medium
-def test_pin_fails_when_the_tag_is_not_found(two_modules, monkeypatch):
+def test_pin_fails_when_the_tag_is_not_found(two_modules):
     """An unknown tag names the repository and the --commit way out."""
-    monkeypatch.setattr(pins, "tag_commit", lambda repo, version: None)
-    assert pins.pin("sushilog", "v9.9.9", None, dry_run=False) == 1
+    out = RecordingConsole()
+    assert pins.pin("sushilog", "v9.9.9", None, dry_run=False, ports=memory_ports(console=out)) == 1
+    assert out.texts("error") == [f"sushilog: no tag v9.9.9 found in {K_SUSHILOG_REPO}. Check the "
+                                  "tag, or pass --commit with its full hash when the repository "
+                                  "is out of reach."]

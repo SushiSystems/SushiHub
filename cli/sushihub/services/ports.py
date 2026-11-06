@@ -77,6 +77,10 @@ class GitClient(Protocol):
         """Returns whether this machine's Git identity can read *repo*."""
         ...
 
+    def tag_commit(self, repo: str, version: str) -> str | None:
+        """Returns the commit the tag *version* of *repo* points at, or None when not found."""
+        ...
+
 
 class PipxInstall(Protocol):
     """How pipx holds one distribution."""

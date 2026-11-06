@@ -50,6 +50,13 @@ def test_git_reaches_only_a_repository_it_was_told_of(reached, expected):
     assert git.source_reachable("https://git.test/engine") is expected
 
 
+@pytest.mark.parametrize("version, expected", [("v1", "a" * 40), ("v2", None)])
+def test_git_finds_only_a_tag_it_was_told_of(version, expected):
+    """A tag points at the commit named to tag() and is not found otherwise."""
+    git = InMemoryGit().tag("https://git.test/engine", "v1", "a" * 40)
+    assert git.tag_commit("https://git.test/engine", version) == expected
+
+
 def test_pipx_reports_the_install_it_was_given():
     """installed() answers from the table, None for a name not in it."""
     held = Install(Path("/src/hub"))

@@ -10,37 +10,15 @@ The rule is skills/dependencies in SushiSkills, "A Sushi library as a dependency
 from __future__ import annotations
 
 import re
-import subprocess
 from pathlib import Path
 
 from .. import console
 from ..config import workspace_root
 from . import core_pin
 from .catalog import CATALOG
+from .git_ops import K_COMMIT
 from .module_fragments import workspace_pins
-
-#: A full commit hash.
-K_COMMIT = re.compile(r"[0-9a-f]{40}")
-
-#: Seconds `git ls-remote` may take.
-K_LS_REMOTE_TIMEOUT = 30
-
-
-def tag_commit(repo: str, version: str) -> str | None:
-    """Return the commit the tag *version* of *repo* points at, or None when it is not found.
-
-    An annotated tag answers with the commit it peels to, not the tag object.
-    """
-    try:
-        completed = subprocess.run(
-            ["git", "ls-remote", "--tags", repo, f"refs/tags/{version}", f"refs/tags/{version}^{{}}"],
-            capture_output=True, text=True, timeout=K_LS_REMOTE_TIMEOUT)
-    except (OSError, subprocess.SubprocessError):
-        return None
-    refs = dict(reversed(line.split("\t", 1)) for line in completed.stdout.splitlines() if "\t" in line)
-    commit = refs.get(f"refs/tags/{version}^{{}}") or refs.get(f"refs/tags/{version}")
-    return commit if commit and K_COMMIT.fullmatch(commit) else None
-
+from .ports import Ports
 
 #: The opening of a pin table under its deprecated name, `[sushi.<name>]`.
 K_DEPRECATED_HEADER = re.compile(r"^\[sushi\.", re.MULTILINE)
@@ -81,31 +59,36 @@ def move_pin(root: Path, name: str, version: str, commit: str, dry_run: bool) ->
     return moved
 
 
-def pin(name: str, version: str, commit: str | None, dry_run: bool) -> int:
+def pin(name: str, version: str, commit: str | None, dry_run: bool,
+        ports: Ports | None = None) -> int:
     """Move library *name* to *version* in every module of the workspace that pins it.
 
     The commit is the one the tag points at in the library's repository, unless *commit* names
     it. `sushicore` is a Python package and takes the version only. Returns the exit code.
+
+    @param ports What the command prints and reads tags through; this machine's when None.
     """
     if name == core_pin.K_LIBRARY:
         return core_pin.pin(version, dry_run)
+    ports = ports or Ports.machine(console)
+    out = ports.console
     if commit is None:
         repo = CATALOG[name].repo if name in CATALOG else f"https://github.com/sushisystems/{name}.git"
-        commit = tag_commit(repo, version)
+        commit = ports.git.tag_commit(repo, version)
         if commit is None:
-            console.error(f"{name}: no tag {version} found in {repo}. Check the tag, or pass "
-                          "--commit with its full hash when the repository is out of reach.")
+            out.error(f"{name}: no tag {version} found in {repo}. Check the tag, or pass "
+                      "--commit with its full hash when the repository is out of reach.")
             return 1
     if not K_COMMIT.fullmatch(commit):
-        console.error(f"{name}: '{commit}' is not a full 40-character commit hash.")
+        out.error(f"{name}: '{commit}' is not a full 40-character commit hash.")
         return 1
     moved = move_pin(workspace_root(), name, version, commit, dry_run)
     if not moved:
-        console.info(f"{name}: no module of the workspace pins it at another version.")
+        out.info(f"{name}: no module of the workspace pins it at another version.")
         return 0
     verb = "would move" if dry_run else "moved"
     for module, old in moved:
-        console.info(f"{module}: {verb} {name} from {old} to {version} ({commit[:12]}).")
+        out.info(f"{module}: {verb} {name} from {old} to {version} ({commit[:12]}).")
     if not dry_run:
-        console.success(f"{len(moved)} fragment(s) now pin {name} {version}; commit each module.")
+        out.success(f"{len(moved)} fragment(s) now pin {name} {version}; commit each module.")
     return 0
