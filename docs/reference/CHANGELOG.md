@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-07 — tools: Took the shared checkers of 2026-11-07 (`tools/testing/`).
 - 2026-11-06 — licence: Relicensed SushiHub under the Apache License 2.0 and removed `COMMERCIAL.md`; every source file's licence block follows (`LICENSE`, `tools/settings.py`).
 - 2026-11-05 — tools: Took the shared checkers of 2026-11-05 with a baseline of the findings they meet, which RW-60 clears.
 - 2026-10-29 — docs: Named `sushihub`, the service `token_store.py` writes, as the credential store service of the Sushi Account session (`sushi-account.md`).
