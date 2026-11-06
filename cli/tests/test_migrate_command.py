@@ -27,7 +27,7 @@ from sushihub.cli import app
 from sushihub.config import WORKSPACE_MARKER, deps_dir, workspace_file
 from sushihub.services import migrate as migrate_svc
 
-from .test_presence import Recorder
+from .support.console_text import Recorder
 
 pytestmark = pytest.mark.medium
 

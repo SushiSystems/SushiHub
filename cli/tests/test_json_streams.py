@@ -19,16 +19,9 @@ from sushihub.cli import app
 from sushihub.config import WORKSPACE_MARKER
 from sushihub.services.token_store import KeyringStore, Tokens
 
-from .test_identity import backend, fake_id  # noqa: F401  the fake server and credential store
+from .support.contract_files import contract_schema
 
 pytestmark = pytest.mark.medium
-
-CONTRACT = Path(__file__).resolve().parents[2] / "contract"
-
-
-def _schema(name):
-    """Load the named schema from ``contract/``."""
-    return json.loads((CONTRACT / name).read_text(encoding="utf-8"))
 
 
 def _runner() -> CliRunner:
@@ -78,7 +71,7 @@ def workspace(tmp_path):
     {"event": "prompt", "id": "prompt-1", "message": "m", "default": None},
 ], ids=lambda event: event["event"])
 def test_events_schema_accepts_each_kind(event):
-    jsonschema.Draft202012Validator(_schema("events.schema.json")).validate(event)
+    jsonschema.Draft202012Validator(contract_schema("events.schema.json")).validate(event)
 
 
 @pytest.mark.parametrize("event", [
@@ -86,13 +79,13 @@ def test_events_schema_accepts_each_kind(event):
     {"event": "header", "title": "t", "extra": 1},
 ], ids=["unknown level", "unknown key"])
 def test_events_schema_rejects_what_it_does_not_know(event):
-    validator = jsonschema.Draft202012Validator(_schema("events.schema.json"))
+    validator = jsonschema.Draft202012Validator(contract_schema("events.schema.json"))
     with pytest.raises(jsonschema.ValidationError):
         validator.validate(event)
 
 
 def test_describe_schema_accepts_the_documented_example():
-    v = jsonschema.Draft202012Validator(_schema("describe.schema.json"))
+    v = jsonschema.Draft202012Validator(contract_schema("describe.schema.json"))
     v.validate({"program": "hub", "version": "1.0.0", "contract": "1", "commands": [
         {"name": "add", "help": "h", "applies_to": ["cloned", "linked", "binary"], "params": [
             {"name": "modules", "kind": "argument", "type": "string", "multiple": True, "required": True,
@@ -117,7 +110,7 @@ def test_set_machine_before_first_print_switches_to_json(workspace, monkeypatch,
 def test_describe_prints_a_valid_catalogue(workspace):
     r = _run(["--describe"], workspace)
     assert r.exit_code == 0
-    jsonschema.Draft202012Validator(_schema("describe.schema.json")).validate(json.loads(r.stdout))
+    jsonschema.Draft202012Validator(contract_schema("describe.schema.json")).validate(json.loads(r.stdout))
 
 
 def test_home_under_json_ends_with_a_result_carrying_the_paths(workspace):
@@ -137,7 +130,7 @@ def test_status_under_json_emits_a_table_and_a_result(workspace):
 
 def expect_valid_events(result) -> list[dict]:
     """Assert every event of the run fits the schema and return them."""
-    validator = jsonschema.Draft202012Validator(_schema("events.schema.json"))
+    validator = jsonschema.Draft202012Validator(contract_schema("events.schema.json"))
     events = _events(result)
     assert events, result.stderr
     for event in events:

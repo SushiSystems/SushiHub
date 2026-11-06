@@ -14,7 +14,7 @@ from sushihub.services.catalog import CATALOG, load_catalog
 from sushihub.services.memory.git import InMemoryGit
 from sushihub.services.memory.ports import memory_ports
 
-from .test_add_binary import out, said, workspace  # noqa: F401  shared fixtures
+from .support.console_text import said
 
 pytestmark = pytest.mark.medium
 

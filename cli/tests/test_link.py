@@ -13,7 +13,7 @@ from sushihub.config import WORKSPACE_MARKER, workspace_file
 from sushihub.services import links, modules
 from sushihub.services.memory.ports import memory_ports
 
-from .test_presence import Recorder
+from .support.console_text import Recorder
 
 pytestmark = pytest.mark.medium
 

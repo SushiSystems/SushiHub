@@ -21,54 +21,14 @@ from sushihub.setup import dependency_source, steps
 from sushihub.setup.pipeline import InstallContext
 
 from .conftest import MemorySource, dep
-
-
-
-class Recorder:
-    """Stands in for the console and keeps every line and table it was given."""
-
-    def __init__(self) -> None:
-        """Start with no lines and no tables, and answer ``console.console`` with itself."""
-        self.lines: list[str] = []
-        self.tables: list[tuple[list[str], list[list[str]]]] = []
-        self.console = self
-
-    def table(self, columns: list[str], rows: list[list[str]], title: str = "") -> None:
-        """Record one table, and its cells as printed lines."""
-        self.tables.append((columns, rows))
-        self.lines.extend(str(cell) for row in rows for cell in row)
-
-    def __getattr__(self, name: str):
-        """Return a call that records its first argument as a printed line."""
-        def record(*args, **kwargs) -> None:
-            self.lines.extend(str(a) for a in args)
-        return record
-
-    def said(self, text: str) -> bool:
-        """Report whether any recorded line contains *text*."""
-        return any(text in line for line in self.lines)
-
-
-def binary_install(path, version: str = "1.4.2") -> None:
-    """Unpack a fake binary install at *path*: a directory and a release manifest."""
-    path.mkdir(parents=True, exist_ok=True)
-    (path / presence.RELEASE_MANIFEST).write_text(
-        json.dumps({"product": path.name, "version": version,
-                    "platform": "windows-x64",
-                    "bundled": {"sushiruntime": "0.9.0"},
-                    "signature": "base64"}),
-        encoding="utf-8")
+from .support.console_text import Recorder
+from .support.release_files import binary_install
+from .support.workspace_files import workspace_at
 
 
 def checkout(path) -> None:
     """Make *path* look like a git checkout."""
     (path / ".git").mkdir(parents=True)
-
-
-def workspace(tmp_path, monkeypatch):
-    """Point every `hub` lookup at *tmp_path* and return it as the workspace root."""
-    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    return tmp_path
 
 
 @pytest.mark.medium
@@ -202,7 +162,7 @@ def _row(payload: dict, name: str) -> dict:
     ("sushiai", {"presence": "absent"}),
 ])
 def test_status_rows_carry_the_presence_and_the_version(tmp_path, monkeypatch, name, expected):
-    root = workspace(tmp_path, monkeypatch)
+    root = workspace_at(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     checkout(root / "sushiruntime")
     row = _row(status_report.build_status(home=tmp_path).payload, name)
@@ -211,7 +171,7 @@ def test_status_rows_carry_the_presence_and_the_version(tmp_path, monkeypatch, n
 
 @pytest.mark.medium
 def test_update_refreshes_a_binary_module_through_sushi_id(tmp_path, monkeypatch):
-    root = workspace(tmp_path, monkeypatch)
+    root = workspace_at(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     release = ReleaseInfo("1.4.2", "linux-x64", "https://cdn.test/e.zip", "00", 3, "")
     account = InMemoryAccount(Account("acc-1", "ada@example.com", ()), signed_in=True,
@@ -225,7 +185,7 @@ def test_update_refreshes_a_binary_module_through_sushi_id(tmp_path, monkeypatch
 
 @pytest.mark.medium
 def test_readiness_says_a_binary_module_has_nothing_to_build(tmp_path, monkeypatch, fake_cfg):
-    root = workspace(tmp_path, monkeypatch)
+    root = workspace_at(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     source = MemorySource([dep("cmake"), dep("vulkan", "sushiengine")])
     recorder = Recorder()
@@ -243,7 +203,7 @@ def _write_fragment(root, module: str) -> None:
 
 @pytest.mark.medium
 def test_a_binary_module_contributes_no_dependency_fragment(tmp_path, monkeypatch):
-    root = workspace(tmp_path, monkeypatch)
+    root = workspace_at(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     checkout(root / "sushiruntime")
     _write_fragment(root, "sushiengine")

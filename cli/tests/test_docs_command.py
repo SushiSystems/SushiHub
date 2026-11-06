@@ -19,7 +19,7 @@ from typer.testing import CliRunner
 from sushihub import cli, console
 from sushihub.errors import HubError
 
-from .test_json_streams import _schema
+from .support.contract_files import contract_schema
 
 pytestmark = pytest.mark.medium
 
@@ -162,7 +162,7 @@ def json_bundle(checkout, monkeypatch, capsys) -> tuple[int, list[dict]]:
 def test_bundle_under_json_streams_events_that_validate(json_bundle):
     """Every event the bundle prints under --json validates against the events schema."""
     _code, events = json_bundle
-    validator = jsonschema.Draft202012Validator(_schema("events.schema.json"))
+    validator = jsonschema.Draft202012Validator(contract_schema("events.schema.json"))
     assert [error for event in events for error in validator.iter_errors(event)] == []
 
 

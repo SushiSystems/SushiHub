@@ -13,8 +13,8 @@ from sushihub.services.memory.git import InMemoryGit
 from sushihub.services.memory.pipx import InMemoryPipx
 from sushihub.services.memory.ports import memory_ports
 
-from .test_add_binary import out, said, workspace  # noqa: F401  shared fixtures
-from .test_presence import binary_install
+from .support.console_text import said
+from .support.release_files import binary_install
 
 pytestmark = pytest.mark.medium
 

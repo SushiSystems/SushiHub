@@ -17,10 +17,11 @@ from sushihub.services import status_report
 from sushihub.services.hub_install import ALIAS_MARKER
 from sushihub.services.identity import SushiAccount
 from sushihub.services.catalog import CATALOG
-from sushihub.services.token_store import MemoryStore, Tokens
+from sushihub.services.token_store import MemoryStore
 
-from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
-from .test_presence import binary_install, workspace
+from .support.fake_account_server import signed_in
+from .support.release_files import binary_install
+from .support.workspace_files import workspace_at
 
 pytestmark = pytest.mark.medium
 
@@ -49,12 +50,6 @@ def _never_called() -> SushiAccount:
     pytest.fail("the offline status built a Sushi Account client")
 
 
-def _signed_in(fake_id) -> SushiAccount:
-    """Build a client whose store already holds a live session on the fake server."""
-    return SushiAccount(fake_id.url, MemoryStore(Tokens("access-1", "refresh-1", 1e12)),
-                        now=lambda: 0.0)
-
-
 def _offline_rows(tmp_path) -> dict[str, dict]:
     """Return the offline status rows of the workspace under *tmp_path*, keyed by module name."""
     payload = status_report.build_status(home=tmp_path, client_factory=_never_called).payload
@@ -67,7 +62,7 @@ def _checked_row(report, name: str) -> dict:
 
 
 def test_the_offline_payload_matches_the_schema(tmp_path, monkeypatch):
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     binary_install(root / "sushiengine")
     _real_checkout(root / "sushiruntime")
 
@@ -84,14 +79,14 @@ def test_the_module_list_carries_the_catalog_and_nothing_else(tmp_path, monkeypa
     It had a row until 2026-09-22, reporting `missing` on every machine that took
     sushicore from the index, which is every machine.
     """
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     _real_checkout(root / "sushiruntime")
 
     assert list(_offline_rows(tmp_path)) == list(CATALOG.names())
 
 
 def test_a_checkout_row_carries_its_branch(tmp_path, monkeypatch):
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     _real_checkout(root / "sushiruntime")
 
     source = _offline_rows(tmp_path)["sushiruntime"]["source"]
@@ -101,21 +96,21 @@ def test_a_checkout_row_carries_its_branch(tmp_path, monkeypatch):
 
 
 def test_a_checkout_row_carries_no_binary(tmp_path, monkeypatch):
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     _real_checkout(root / "sushiruntime")
 
     assert _offline_rows(tmp_path)["sushiruntime"]["binary"] is None
 
 
 def test_a_module_that_is_absent_carries_no_source(tmp_path, monkeypatch):
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     _real_checkout(root / "sushiruntime")
 
     assert _offline_rows(tmp_path)["sushiai"]["source"] is None
 
 
 def test_a_binary_row_carries_its_platform_and_licence_expiry(tmp_path, monkeypatch):
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     binary_install(root / "sushiengine")
 
     row = _offline_rows(tmp_path)["sushiengine"]
@@ -126,7 +121,7 @@ def test_a_binary_row_carries_its_platform_and_licence_expiry(tmp_path, monkeypa
 
 
 def test_the_hub_block_reports_the_alias_under_the_given_home(tmp_path, monkeypatch):
-    workspace(tmp_path / "ws", monkeypatch)
+    workspace_at(tmp_path / "ws", monkeypatch)
     (tmp_path / ".bashrc").write_text(f"{ALIAS_MARKER}\nalias sh='hub'\n", encoding="utf-8")
 
     hub = status_report.build_status(home=tmp_path, client_factory=_never_called).payload["hub"]
@@ -136,11 +131,11 @@ def test_the_hub_block_reports_the_alias_under_the_given_home(tmp_path, monkeypa
 
 
 def test_checking_updates_fills_the_latest_release(tmp_path, monkeypatch, fake_id):
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     binary_install(root / "sushiengine", version="1.4.0")
 
     report = status_report.build_status(True, home=tmp_path,
-                                        client_factory=lambda: _signed_in(fake_id))
+                                        client_factory=lambda: signed_in(fake_id))
 
     jsonschema.validate(report.payload, _SCHEMA)
     assert report.payload["checked_updates"] is True
@@ -150,7 +145,7 @@ def test_checking_updates_fills_the_latest_release(tmp_path, monkeypatch, fake_i
 
 def _refused_report(tmp_path, monkeypatch, fake_id):
     """Check updates for one binary install with a client that holds no session."""
-    root = workspace(tmp_path / "ws", monkeypatch)
+    root = workspace_at(tmp_path / "ws", monkeypatch)
     binary_install(root / "sushiengine")
     return status_report.build_status(
         True, home=tmp_path, client_factory=lambda: SushiAccount(fake_id.url, MemoryStore()))

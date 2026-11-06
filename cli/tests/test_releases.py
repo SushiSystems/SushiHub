@@ -11,7 +11,6 @@ import io
 import json
 import platform
 import tarfile
-import zipfile
 
 import pytest
 from sushicore.console_memory import RecordingConsole
@@ -21,23 +20,10 @@ from sushihub.services import releases
 from sushihub.services.presence import RELEASE_MANIFEST, Release
 from sushihub.services.releases import ReleaseCorrupt
 
-from .test_identity import fake_id  # noqa: F401  the fake Sushi Account server fixture
-from .test_identity import _signed_in
+from .support.fake_account_server import signed_in
+from .support.release_files import K_MANIFEST, release_members, zip_bytes
 
 pytestmark = pytest.mark.medium
-
-MANIFEST = {"product": "sushiengine", "version": "1.4.2", "platform": "windows-x64",
-            "bundled": {"sushiruntime": "0.9.0"}, "signature": "base64"}
-
-
-def zip_bytes(members: dict[str, str]) -> bytes:
-    """Build a zip archive in memory out of a name-to-text map."""
-    buffer = io.BytesIO()
-    with zipfile.ZipFile(buffer, "w") as bundle:
-        for name, text in members.items():
-            bundle.writestr(name, text)
-    return buffer.getvalue()
-
 
 def tar_bytes(members: dict[str, str]) -> bytes:
     """Build a gzipped tar archive in memory out of a name-to-text map."""
@@ -49,12 +35,6 @@ def tar_bytes(members: dict[str, str]) -> bytes:
             info.size = len(blob)
             bundle.addfile(info, io.BytesIO(blob))
     return buffer.getvalue()
-
-
-def release_members(**overrides) -> dict[str, str]:
-    """The members a well-formed release archive carries."""
-    return {RELEASE_MANIFEST: json.dumps({**MANIFEST, **overrides}),
-            "bin/se.txt": "the engine"}
 
 
 class Body(io.BytesIO):
@@ -156,7 +136,7 @@ def test_unpack_refuses_a_suffix_it_does_not_know(tmp_path):
 def _install(fake_id, tmp_path, console=None) -> Release:
     """Install sushiengine from the fake server into tmp_path and return its manifest."""
     return releases.install_release("sushiengine", tmp_path / "sushiengine",
-                                    _signed_in(fake_id), console or RecordingConsole())
+                                    signed_in(fake_id), console or RecordingConsole())
 
 
 def test_install_release_returns_the_manifest_it_unpacked(fake_id, tmp_path):
@@ -212,12 +192,12 @@ def test_install_release_keeps_the_old_install_when_the_hash_does_not_match(
         fake_id, tmp_path):
     root = tmp_path / "sushiengine"
     root.mkdir()
-    (root / RELEASE_MANIFEST).write_text(json.dumps({**MANIFEST, "version": "1.0.0"}),
+    (root / RELEASE_MANIFEST).write_text(json.dumps({**K_MANIFEST, "version": "1.0.0"}),
                                          encoding="utf-8")
     fake_id.state.release_blob = zip_bytes(release_members())
     fake_id.state.release_sha256 = "0" * 64
     with pytest.raises(ReleaseCorrupt):
-        releases.install_release("sushiengine", root, _signed_in(fake_id),
+        releases.install_release("sushiengine", root, signed_in(fake_id),
                                  RecordingConsole())
     assert json.loads((root / RELEASE_MANIFEST).read_text(
         encoding="utf-8"))["version"] == "1.0.0"
@@ -228,10 +208,10 @@ def test_install_release_replaces_an_older_install(fake_id, tmp_path):
     root = tmp_path / "sushiengine"
     (root / "bin").mkdir(parents=True)
     (root / "bin" / "gone.txt").write_text("old", encoding="utf-8")
-    (root / RELEASE_MANIFEST).write_text(json.dumps({**MANIFEST, "version": "1.0.0"}),
+    (root / RELEASE_MANIFEST).write_text(json.dumps({**K_MANIFEST, "version": "1.0.0"}),
                                          encoding="utf-8")
     fake_id.state.release_blob = zip_bytes(release_members())
-    release = releases.install_release("sushiengine", root, _signed_in(fake_id),
+    release = releases.install_release("sushiengine", root, signed_in(fake_id),
                                        RecordingConsole())
     assert release.version == "1.4.2"
     assert not (root / "bin" / "gone.txt").exists()

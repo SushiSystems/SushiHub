@@ -12,7 +12,7 @@ from sushihub.services import cli_install, modules
 from sushihub.services.memory.pipx import InMemoryPipx
 from sushihub.services.memory.ports import memory_ports
 
-from .test_add_binary import out, said, workspace  # noqa: F401  shared fixtures
+from .support.console_text import said
 
 pytestmark = pytest.mark.medium
 

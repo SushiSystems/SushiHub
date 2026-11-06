@@ -474,3 +474,9 @@ vk-bootstrap and cgltf.
 the repository root, because `sushihub.console` resolves the workspace at import time and
 pytest may run from outside one. The repository root leaves `sys.path`, because a `sushicore/`
 directory there shadows the installed `sushicore` distribution as a namespace package.
+
+The shared fixtures are here too: `out` (a `RecordingConsole`), `workspace` (a throwaway workspace),
+`backend` (an in-memory credential store) and `fake_id` (the fake Sushi Account server). What they
+are built from sits in `tests/support/`: the server and the signed-in client, the scripted http seam,
+the release archives and binary installs, the console readers, the workspace pointer and the contract
+schemas. No test file imports another.

@@ -11,9 +11,7 @@ import hashlib
 import json
 
 import pytest
-from sushicore.console_memory import RecordingConsole
 
-from sushihub.config import WORKSPACE_MARKER
 from sushihub.services import binary, licence_file, modules
 from sushihub.services.catalog import CATALOG
 from sushihub.services.identity import Account, LicenceToken, ReleaseInfo
@@ -24,33 +22,13 @@ from sushihub.services.memory.ports import DEFAULT_PLATFORM, memory_ports
 from sushihub.services.presence import RELEASE_MANIFEST
 from sushihub.services.token_store import CredentialStoreError
 
-from .test_presence import binary_install
-from .test_releases import release_members, zip_bytes
+from .support.console_text import said
+from .support.release_files import binary_install, release_members, zip_bytes
 
 pytestmark = pytest.mark.medium
 
 LICENCE_EXPIRY = "2026-10-05T00:00:00Z"
 ACCOUNT = Account("acc-1", "ada@example.com", ())
-
-
-@pytest.fixture
-def workspace(tmp_path, monkeypatch):
-    """A throwaway workspace: the environment names it, and no fetched copy exists beside it."""
-    (tmp_path / WORKSPACE_MARKER).mkdir()
-    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
-    monkeypatch.setenv("SUSHISYSTEMS_HOME", str(tmp_path / "machine-home"))
-    return tmp_path
-
-
-@pytest.fixture
-def out() -> RecordingConsole:
-    """The console every command of a test prints through."""
-    return RecordingConsole()
-
-
-def said(console: RecordingConsole, text: str) -> bool:
-    """Report whether any line the console recorded contains *text*."""
-    return any(text in call.text for call in console.calls)
 
 
 def engine_account(served, version: str = "1.4.2", *, signed_in: bool = True,

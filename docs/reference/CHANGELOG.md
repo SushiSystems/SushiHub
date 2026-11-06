@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-07 — cli: Moved the fixtures and builders that test files imported from one another into `conftest.py` and `tests/support/`, so no test file imports another (`cli/tests/`).
 - 2026-11-07 — tools: Took the shared checkers of SushiSkills db89ffa, whose size checker reads the gui suites (`tools/testing/check_test_sizes.py`).
 - 2026-11-07 — cli: Gave `hub install-cli` the ports every other command takes, and split the licence token and release manifest parses from their file reads (`cli_install.py`, `licence_file.py`, `presence.py`).
 - 2026-11-07 — cli: Gave every command ports for the console, git, pipx, Sushi Account and the release host, with in-memory adapters, and asked for sushicore 0.10.12 (`ports.py`, `services/memory/`).

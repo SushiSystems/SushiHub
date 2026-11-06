@@ -15,6 +15,7 @@ import os
 import sys
 from pathlib import Path
 
+import keyring
 import pytest
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -23,14 +24,18 @@ sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != _REPO_ROOT]
 sys.modules.pop("sushicore", None)
 
 from sushicore import provision  # noqa: E402
+from sushicore.console_memory import RecordingConsole  # noqa: E402
 
 from sushihub import console  # noqa: E402
-from sushihub.config import Config  # noqa: E402
+from sushihub.config import WORKSPACE_MARKER, Config  # noqa: E402
 from sushihub.setup.dependency_source import (  # noqa: E402
     SHARED_OWNER,
     Dependency,
     IDependencySource,
 )
+
+from .support import fake_account_server  # noqa: E402
+from .support.memory_keyring import DictBackend  # noqa: E402
 
 
 @pytest.fixture(autouse=True, scope="session")
@@ -99,3 +104,37 @@ def dep(name: str, owner: str = SHARED_OWNER, *, provides: str = "",
 def fake_cfg() -> Config:
     """Return a Linux configuration that pins no tool path."""
     return Config(platform="linux")
+
+
+@pytest.fixture
+def out() -> RecordingConsole:
+    """The console every command of a test prints through."""
+    return RecordingConsole()
+
+
+@pytest.fixture
+def workspace(tmp_path, monkeypatch):
+    """A throwaway workspace: the environment names it, and no fetched copy exists beside it."""
+    (tmp_path / WORKSPACE_MARKER).mkdir()
+    monkeypatch.setenv("SUSHISTACK_HOME", str(tmp_path))
+    monkeypatch.setenv("SUSHISYSTEMS_HOME", str(tmp_path / "machine-home"))
+    return tmp_path
+
+
+@pytest.fixture
+def backend():
+    """Install the in-memory credential store for one test and restore the real one after."""
+    previous = keyring.get_keyring()
+    fake = DictBackend()
+    keyring.set_keyring(fake)
+    try:
+        yield fake
+    finally:
+        keyring.set_keyring(previous)
+
+
+@pytest.fixture
+def fake_id():
+    """Serve the fake Sushi Account from a thread on 127.0.0.1, and stop it afterwards."""
+    with fake_account_server.serve() as served:
+        yield served
