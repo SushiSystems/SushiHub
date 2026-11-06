@@ -22,7 +22,8 @@ from pathlib import Path
 from typing import Callable, Iterable
 from urllib.parse import urlparse
 
-from .identity import ReleaseInfo, SushiAccount
+from .identity import ReleaseInfo
+from .ports import AccountClient, ReleaseHost
 from .presence import RELEASE_MANIFEST, Release, read_release
 
 # How much of the body is read at a time, and so how often progress is reported.
@@ -53,6 +54,14 @@ def host_platform() -> str:
     system = platform.system().lower()
     machine = platform.machine().lower()
     return f"{system}-{_ARCHITECTURES.get(machine, machine)}"
+
+
+class MachineHost:
+    """Names this machine's platform; the machine adapter of :class:`~.ports.ReleaseHost`."""
+
+    def platform(self) -> str:
+        """Returns the platform string :func:`host_platform` derives."""
+        return host_platform()
 
 
 def download(url: str, dest: Path, *,
@@ -135,9 +144,10 @@ def unpack(archive: Path, into: Path) -> None:
             f"{archive.name}: carries no {RELEASE_MANIFEST} at its top level.")
 
 
-def install_release(name: str, root: Path, client: SushiAccount, console, *,
+def install_release(name: str, root: Path, client: AccountClient, console, *,
                     info: ReleaseInfo | None = None,
-                    http: Callable = urllib.request.urlopen) -> Release:
+                    http: Callable = urllib.request.urlopen,
+                    host: ReleaseHost | None = None) -> Release:
     """Resolve, download, verify and unpack a release of *name* at *root*.
 
     Args:
@@ -148,6 +158,7 @@ def install_release(name: str, root: Path, client: SushiAccount, console, *,
         info: The release to install; the latest one, resolved through *client*,
             when None.
         http: What opens the download URL; the seam a test replaces.
+        host: Names the platform resolved when *info* is None; this machine when None.
 
     Returns:
         The release manifest the unpacked install carries.
@@ -157,7 +168,7 @@ def install_release(name: str, root: Path, client: SushiAccount, console, *,
             archive is not a release.
         SushiAccountError: Sushi Account refused to resolve a release for this account.
     """
-    info = info or client.resolve_release(name, host_platform())
+    info = info or client.resolve_release(name, (host or MachineHost()).platform())
     root.parent.mkdir(parents=True, exist_ok=True)
     staging = Path(tempfile.mkdtemp(prefix=f".{name}-", dir=root.parent))
     try:

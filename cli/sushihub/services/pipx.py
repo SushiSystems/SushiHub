@@ -110,3 +110,23 @@ def upgrade(name: str) -> int:
         The exit code pipx reported.
     """
     return subprocess.run([*command(), "upgrade", name]).returncode
+
+
+class ProcessPipx:
+    """Runs pipx as a child process; the machine adapter of :class:`~.ports.PipxClient`."""
+
+    def available(self) -> bool:
+        """Returns whether pipx can be found on this machine."""
+        return command() is not None
+
+    def install(self, pkg_dir: Path, *, editable: bool) -> int:
+        """Installs *pkg_dir* over whatever is there and returns pipx's exit code."""
+        return install(pkg_dir, editable=editable)
+
+    def installed(self, name: str) -> Install | None:
+        """Returns how pipx holds *name*, or None when it does not hold it."""
+        return installed(name)
+
+    def upgrade(self, name: str) -> int:
+        """Upgrades *name* from the index and returns pipx's exit code."""
+        return upgrade(name)

@@ -27,6 +27,8 @@ The owner delegated these decisions on 2026-11-05. Each ruling below is final fo
 
 1. Ports for git, the session client, pipx, the release host and the console, each with an in-memory adapter: yes. Every seam is added as a parameter or overload whose default keeps today's behaviour, so existing callers compile unchanged and the change is a minor version. A value passed in is preferred to a reset of process-wide state.
 2. The two deletes in `test_migrate_command.py` stand. Chunk 002 read the sibling that covers them.
+3. T1, ruled by the lead on 2026-11-07: the five ports are Protocols in `cli/sushihub/services/ports.py`, carried as one `Ports` value that each command takes as a `ports` keyword, `Ports.machine()` when left out. One value rather than five parameters, because every command that reaches one port reaches the console too and the list would grow with each port. The in-memory console is sushicore's `RecordingConsole`, so the floor of `sushicore` rises to 0.10.12, the first release that ships it. The machine adapters call the module functions by name at call time, so the tests M1 has not rewritten yet keep passing.
+4. T2 and M2 change gui C++ tests, which only a build proves. The 2026-11-07 lead may not build, so both wait. The size checker reads only C++ files named `test_*`, so it reads no gui suite today; KI-21 records it.
 
 ## Dispatches
 

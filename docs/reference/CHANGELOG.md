@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-07 — cli: Gave every command ports for the console, git, pipx, Sushi Account and the release host, with in-memory adapters, and asked for sushicore 0.10.12 (`ports.py`, `services/memory/`).
 - 2026-11-07 — tools: Took the shared checkers of 2026-11-07 (`tools/testing/`).
 - 2026-11-06 — licence: Relicensed SushiHub under the Apache License 2.0 and removed `COMMERCIAL.md`; every source file's licence block follows (`LICENSE`, `tools/settings.py`).
 - 2026-11-05 — tools: Took the shared checkers of 2026-11-05 with a baseline of the findings they meet, which RW-60 clears.

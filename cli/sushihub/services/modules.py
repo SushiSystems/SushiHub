@@ -16,8 +16,9 @@ from .. import DISTRIBUTION, console
 from ..config import WORKSPACE_MARKER, create_workspace_file, deps_dir, workspace_root
 from ..setup.dependency_source import MODULE_MANIFEST_REL
 from . import binary as binary_svc
-from . import fetched_sources, git_ops, links, module_manifest, pipx
+from . import fetched_sources, links, module_manifest
 from .catalog import CATALOG
+from .ports import ConsolePort, Ports
 from .presence import Presence, describe, module_dir, presence_of
 
 # sushicore is not a stack module and stays out of CATALOG; see cli/README.md.
@@ -33,7 +34,7 @@ _GITIGNORE_LINES = [
 ]
 
 
-def _install_module_cli(name: str, dest: Path) -> bool:
+def _install_module_cli(name: str, dest: Path, ports: Ports | None = None) -> bool:
     """Install a cloned module's own CLI (`sr`, `se`, …) so it is ready to use.
 
     Mirrors how the umbrella installs its own `hub` CLI: pipx-install the module's
@@ -41,49 +42,56 @@ def _install_module_cli(name: str, dest: Path) -> bool:
     reaching it. Best-effort — a module without a `cli/` package, or a pipx we
     can't locate, is a warning, not a hard failure.
     """
+    ports = ports or Ports.machine(console)
+    out = ports.console
     cli_dir = dest / "cli"
     if not (cli_dir / "pyproject.toml").is_file():
-        console.info(f"{name}: no cli/ package to install; skipping CLI install.")
+        out.info(f"{name}: no cli/ package to install; skipping CLI install.")
         return True
 
-    if pipx.command() is None:
-        console.warn(f"{name}: pipx not found; skipping CLI install. Install it "
+    if not ports.pipx.available():
+        out.warn(f"{name}: pipx not found; skipping CLI install. Install it "
                      f"later with `pipx install {cli_dir}`.")
         return False
 
-    console.info(f"{name}: installing its CLI with pipx ({cli_dir}).")
-    if pipx.install(cli_dir, editable=True) != 0:
-        console.error(f"{name}: CLI install failed.")
+    out.info(f"{name}: installing its CLI with pipx ({cli_dir}).")
+    if ports.pipx.install(cli_dir, editable=True) != 0:
+        out.error(f"{name}: CLI install failed.")
         return False
     return True
 
 
-def _resolve_names(names: list[str] | None) -> list[str] | None:
+def _resolve_names(names: list[str] | None, out: ConsolePort | None = None) -> list[str] | None:
     """Expand a user module list ('all' or names) to concrete module names.
 
     Returns None on an unknown name (after reporting it), so callers can abort.
     """
+    out = out if out is not None else console
     if not names or names == ["all"]:
         return CATALOG.names()
     resolved = [(n, CATALOG.resolve(n)) for n in names]
     unknown = [given for given, found in resolved if found is None]
     if unknown:
-        console.error(f"Unknown module(s): {', '.join(unknown)}. "
+        out.error(f"Unknown module(s): {', '.join(unknown)}. "
                       f"Choose from: {', '.join(CATALOG.names())} (or their aliases: "
                       f"{', '.join(CATALOG.aliases())}; or 'all').")
         return None
     return [found for _, found in resolved]
 
 
-def init() -> int:
-    """Turn the current directory into a SushiStack workspace. Return exit code."""
-    console.header("SushiHub Init")
+def init(ports: Ports | None = None) -> int:
+    """Turn the current directory into a SushiStack workspace. Return exit code.
+
+    @param ports What the command prints through; this machine's when None.
+    """
+    out = (ports or Ports.machine(console)).console
+    out.header("SushiHub Init")
     root = Path.cwd().resolve()
 
     if (root / WORKSPACE_MARKER).is_dir():
-        console.info(f"Already a SushiStack workspace: {root}")
+        out.info(f"Already a SushiStack workspace: {root}")
     else:
-        console.success(f"Marked workspace root: {create_workspace_file(root)}")
+        out.success(f"Marked workspace root: {create_workspace_file(root)}")
 
     gitignore = root / ".gitignore"
     existing = gitignore.read_text(encoding="utf-8") if gitignore.is_file() else ""
@@ -92,11 +100,11 @@ def init() -> int:
         prefix = "" if existing.endswith("\n") or not existing else "\n"
         with gitignore.open("a", encoding="utf-8") as fh:
             fh.write(prefix + "\n".join(missing) + "\n")
-        console.success("Updated .gitignore (dependencies/ and module checkouts).")
+        out.success("Updated .gitignore (dependencies/ and module checkouts).")
 
     deps_dir().mkdir(parents=True, exist_ok=True)
-    console.info(f"Dependencies will install into: {deps_dir()}")
-    console.info("Next: `hub install` to provision deps, then `hub add sushiruntime`.")
+    out.info(f"Dependencies will install into: {deps_dir()}")
+    out.info("Next: `hub install` to provision deps, then `hub add sushiruntime`.")
     return 0
 
 
@@ -107,18 +115,20 @@ def _provision(dry_run: bool) -> int:
     return setup_svc.run("provision", dry_run=dry_run)
 
 
-def _clone(name: str, repo: str, dest: Path, root: Path) -> bool:
+def _clone(name: str, repo: str, dest: Path, root: Path, ports: Ports | None = None) -> bool:
     """Clone module *name* into *dest*, from the copy its `setup` fetched when there is one."""
+    ports = ports or Ports.machine(console)
+    out = ports.console
     copy = fetched_sources.newest_copy(name)
     if copy is not None:
-        console.info(f"{name}: cloning from the copy setup fetched, {copy.path} -> {dest}")
-        return fetched_sources.clone_from_copy(copy, repo, dest, root)
-    console.info(f"{name}: cloning {repo} -> {dest}")
-    return git_ops.run(["clone", repo, str(dest)], cwd=root) == 0
+        out.info(f"{name}: cloning from the copy setup fetched, {copy.path} -> {dest}")
+        return fetched_sources.clone_from_copy(copy, repo, dest, root, ports=ports)
+    out.info(f"{name}: cloning {repo} -> {dest}")
+    return ports.git.run(["clone", repo, str(dest)], cwd=root) == 0
 
 
 def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = False,
-        binary: bool = False, provision=None) -> int:
+        binary: bool = False, provision=None, ports: Ports | None = None) -> int:
     """Bring one or more modules into the workspace. Return exit code.
 
     A module is cloned. sushiengine alone has a second form: it is cloned when this
@@ -129,14 +139,17 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
     @param binary Install sushiengine from its release even when the source is
         within reach.
     @param provision Runs the provision pipeline; injected by tests.
+    @param ports What the command reaches the outside through; this machine's when None.
     """
-    console.header("SushiHub Add")
-    resolved = _resolve_names(names)
+    ports = ports or Ports.machine(console)
+    out = ports.console
+    out.header("SushiHub Add")
+    resolved = _resolve_names(names, out)
     if resolved is None:
         return 1
     root = workspace_root()
     if dry_run:
-        console.info("Dry-run: showing actions without cloning or installing.")
+        out.info("Dry-run: showing actions without cloning or installing.")
 
     provision = provision or _provision
     linked = links.registered()
@@ -144,50 +157,50 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
     failed = False
     for name in resolved:
         if name in linked:
-            console.info(f"{name}: linked to {linked[name]} (use `hub link` to change); skipping clone.")
+            out.info(f"{name}: linked to {linked[name]} (use `hub link` to change); skipping clone.")
             if not dry_run:
-                _install_module_cli(name, module_dir(root, name, linked))
+                _install_module_cli(name, module_dir(root, name, linked), ports)
             continue
         mod = CATALOG[name]
         dest = root / mod.directory
         state = presence_of(root, name, linked)
         if state is Presence.BINARY:
             _, text = describe(root, name, linked)
-            console.info(f"{name}: {text} at {dest}; nothing to clone.")
+            out.info(f"{name}: {text} at {dest}; nothing to clone.")
             continue
         if state is Presence.CLONED:
-            console.info(f"{name}: already cloned at {dest}")
+            out.info(f"{name}: already cloned at {dest}")
             if not dry_run:
-                _install_module_cli(name, dest)
+                _install_module_cli(name, dest, ports)
             continue
-        if mod.is_binary and (binary or not git_ops.source_reachable(mod.repo)):
+        if mod.is_binary and (binary or not ports.git.source_reachable(mod.repo)):
             if dry_run:
-                console.info(f"{name}: (dry-run) would install its release -> {dest}")
+                out.info(f"{name}: (dry-run) would install its release -> {dest}")
                 continue
-            if not binary_svc.add(name, dest, requested=binary):
+            if not binary_svc.add(name, dest, requested=binary, ports=ports):
                 failed = True
             continue
         if binary:
             sold = [n for n in CATALOG if CATALOG[n].is_binary]
-            console.error(f"{name}: only {', '.join(sold)} is sold as a binary; every "
+            out.error(f"{name}: only {', '.join(sold)} is sold as a binary; every "
                           "other module is cloned. Drop --binary.")
             failed = True
             continue
         if dry_run:
-            console.info(f"{name}: (dry-run) would clone {mod.repo} -> {dest}")
+            out.info(f"{name}: (dry-run) would clone {mod.repo} -> {dest}")
             brought_in = True
             continue
-        if not _clone(name, mod.repo, dest, root):
-            console.error(f"{name}: clone failed.")
+        if not _clone(name, mod.repo, dest, root, ports):
+            out.error(f"{name}: clone failed.")
             failed = True
             continue
         brought_in = True
         # Install the module's own CLI (sr/se/…) so it's usable right after add.
-        _install_module_cli(name, dest)
+        _install_module_cli(name, dest, ports)
     if failed:
         return 1
     if brought_in and skip_install:
-        console.info("Skipped the dependency install; run `hub install` to pick up "
+        out.info("Skipped the dependency install; run `hub install` to pick up "
                      "what the new modules need.")
     elif brought_in:
         rc = provision(dry_run)
@@ -195,12 +208,12 @@ def add(names: list[str] | None, dry_run: bool = False, skip_install: bool = Fal
             return rc
     if not dry_run:
         aliases = ", ".join(f"`{alias}`" for alias in CATALOG.aliases())
-        console.success(f"Modules ready. Build them with their own CLI ({aliases}).")
+        out.success(f"Modules ready. Build them with their own CLI ({aliases}).")
     return 0
 
 
 def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False,
-         provision=None) -> int:
+         provision=None, ports: Ports | None = None) -> int:
     """Register an existing checkout as a module, in place (no clone). Return code.
 
     For developers whose working repos live outside the workspace tree: links the
@@ -210,27 +223,29 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
     already there or *skip_install* is set.
 
     @param provision Runs the provision pipeline; injected by tests.
+    @param ports What the command reaches the outside through; this machine's when None.
     """
-    console.header("SushiHub Link")
+    out = (ports or Ports.machine(console)).console
+    out.header("SushiHub Link")
     provision = provision or _provision
     resolved = CATALOG.resolve(name)
     if name == SUSHICORE_NAME:
-        console.error(f"{SUSHICORE_NAME} is not a stack module: it is a package every "
+        out.error(f"{SUSHICORE_NAME} is not a stack module: it is a package every "
                       "Sushi CLI installs from PyPI. To work on it, install your "
                       "checkout over the release with `pip install -e <path>`.")
         return 1
     target = Path(path).expanduser().resolve()
     if not target.is_dir():
-        console.error(f"Path does not exist: {target}")
+        out.error(f"Path does not exist: {target}")
         return 1
     try:
         described = module_manifest.read(target)
     except ValueError as refused:
-        console.error(str(refused))
+        out.error(str(refused))
         return 1
     if resolved is None:
         if described is None:
-            console.error(
+            out.error(
                 f"Unknown module '{name}'. Choose from: "
                 f"{', '.join(CATALOG.names())} (or their aliases: "
                 f"{', '.join(CATALOG.aliases())}). A checkout outside that list is linkable "
@@ -238,51 +253,55 @@ def link(name: str, path: str, dry_run: bool = False, skip_install: bool = False
                 f"docs/reference/MODULE_MANIFEST.md.")
             return 1
         if described.name != name and described.alias != name:
-            console.error(f"{target} describes itself as '{described.name}', not '{name}'.")
+            out.error(f"{target} describes itself as '{described.name}', not '{name}'.")
             return 1
         resolved = described.name
-        console.info(f"{described.name}: linking a checkout that describes itself; "
+        out.info(f"{described.name}: linking a checkout that describes itself; "
                      f"the catalog does not list it.")
     elif described is not None and described.name != resolved:
-        console.error(f"{target} describes itself as '{described.name}', not '{resolved}'.")
+        out.error(f"{target} describes itself as '{described.name}', not '{resolved}'.")
         return 1
     name = resolved
     if not (target / ".git").is_dir():
-        console.warn(f"{target} is not a git checkout; linking anyway.")
+        out.warn(f"{target} is not a git checkout; linking anyway.")
     already_linked = links.registered().get(name) == str(target)
     if dry_run:
-        console.info(f"(dry-run) would link {name} -> {target}")
+        out.info(f"(dry-run) would link {name} -> {target}")
         if already_linked or skip_install:
             return 0
         return provision(True)
     links.write(name, target)
-    console.success(f"Linked {name} -> {target}")
+    out.success(f"Linked {name} -> {target}")
     fragment = target / MODULE_MANIFEST_REL
     if not fragment.is_file():
-        console.info(f"Note: cli/{fragment.name} not found there; this module adds no deps.")
+        out.info(f"Note: cli/{fragment.name} not found there; this module adds no deps.")
     if already_linked or skip_install:
-        console.info("Run `hub install` to pick up its dependencies.")
+        out.info("Run `hub install` to pick up its dependencies.")
         return 0
     return provision(False)
 
 
-def update(names: list[str] | None, dry_run: bool = False) -> int:
+def update(names: list[str] | None, dry_run: bool = False, ports: Ports | None = None) -> int:
     """Bring every present module up to date. Return exit code.
 
     A checkout, cloned or linked, is fast-forwarded with git. A binary install
     asks Sushi Account for the latest release and downloads it when its version
     differs from the installed one, then writes the licence again.
+
+    @param ports What the command reaches the outside through; this machine's when None.
     """
-    console.header("SushiHub Update")
-    resolved = _resolve_names(names)
+    ports = ports or Ports.machine(console)
+    out = ports.console
+    out.header("SushiHub Update")
+    resolved = _resolve_names(names, out)
     if resolved is None:
         return 1
     root = workspace_root()
     if dry_run:
-        console.info("Dry-run: showing actions without pulling.")
+        out.info("Dry-run: showing actions without pulling.")
 
     # hub itself is brought up to date before any module; see cli/README.md.
-    _self_update(root, dry_run=dry_run)
+    _self_update(root, dry_run, ports)
 
     linked = links.registered()
     failed = False
@@ -293,25 +312,25 @@ def update(names: list[str] | None, dry_run: bool = False) -> int:
         if state is Presence.BINARY:
             any_present = True
             if dry_run:
-                console.info(f"{name}: (dry-run) would ask Sushi Account for a newer release ({dest})")
+                out.info(f"{name}: (dry-run) would ask Sushi Account for a newer release ({dest})")
                 continue
-            if not binary_svc.update(name, dest):
+            if not binary_svc.update(name, dest, ports=ports):
                 failed = True
             continue
         if state is Presence.ABSENT:
             if names and names != ["all"]:
-                console.warn(f"{name}: not present (run `hub add {name}` or `hub link {name} <path>`).")
+                out.warn(f"{name}: not present (run `hub add {name}` or `hub link {name} <path>`).")
             continue
         any_present = True
         if dry_run:
-            console.info(f"{name}: (dry-run) would git pull ({dest})")
+            out.info(f"{name}: (dry-run) would git pull ({dest})")
             continue
-        console.info(f"{name}: git pull ({dest})")
-        if git_ops.run(["pull", "--ff-only"], cwd=dest) != 0:
-            console.error(f"{name}: update failed.")
+        out.info(f"{name}: git pull ({dest})")
+        if ports.git.run(["pull", "--ff-only"], cwd=dest) != 0:
+            out.error(f"{name}: update failed.")
             failed = True
     if not any_present:
-        console.info("No modules present yet. Add one with `hub add sushiruntime`.")
+        out.info("No modules present yet. Add one with `hub add sushiruntime`.")
     return 1 if failed else 0
 
 
@@ -323,7 +342,7 @@ def _checkout_of(package_dir: Path) -> Path | None:
     return None
 
 
-def _self_update(root: Path, dry_run: bool) -> None:
+def _self_update(root: Path, dry_run: bool, ports: Ports | None = None) -> None:
     """Bring `hub` itself up to date, the way `hub` was installed.
 
     An install from the index is upgraded with pipx. An editable install tracks a
@@ -335,48 +354,53 @@ def _self_update(root: Path, dry_run: bool) -> None:
         root: The workspace root, used only as the fallback checkout for a `hub`
             pipx does not know about.
         dry_run: Say what would happen and change nothing.
+        ports: What the update reaches the outside through.
     """
-    install = pipx.installed(DISTRIBUTION)
+    ports = ports or Ports.machine(console)
+    out = ports.console
+    install = ports.pipx.installed(DISTRIBUTION)
     if install is None:
-        _pull_checkout(root, dry_run)
+        _pull_checkout(root, dry_run, ports)
         return
     if install.editable:
         checkout = _checkout_of(install.source)
         if checkout is None:
-            console.warn(f"{DISTRIBUTION}: installed from {install.source}, which is "
+            out.warn(f"{DISTRIBUTION}: installed from {install.source}, which is "
                          "not a git checkout; nothing to update.")
             return
-        _pull_checkout(checkout, dry_run)
+        _pull_checkout(checkout, dry_run, ports)
         return
     if dry_run:
-        console.info(f"{DISTRIBUTION}: (dry-run) would upgrade from PyPI")
+        out.info(f"{DISTRIBUTION}: (dry-run) would upgrade from PyPI")
         return
-    console.info(f"{DISTRIBUTION}: upgrading from PyPI")
-    if pipx.upgrade(DISTRIBUTION) != 0:
-        console.warn(f"{DISTRIBUTION}: self-update failed; continuing with the "
+    out.info(f"{DISTRIBUTION}: upgrading from PyPI")
+    if ports.pipx.upgrade(DISTRIBUTION) != 0:
+        out.warn(f"{DISTRIBUTION}: self-update failed; continuing with the "
                      "installed version. Run `pipx upgrade sushihub` by hand if "
                      "`hub` behaves stale.")
 
 
-def _pull_checkout(root: Path, dry_run: bool) -> None:
+def _pull_checkout(root: Path, dry_run: bool, ports: Ports | None = None) -> None:
     """Fast-forward the checkout `hub` runs from, when it is one.
 
     A `hub` installed from the index has no checkout; this is the other branch,
     and it says nothing at all when *root* is not a git tree, because that is the
     ordinary case for a workspace created by `hub init`.
     """
+    ports = ports or Ports.machine(console)
+    out = ports.console
     if not (root / ".git").is_dir():
         return
     if dry_run:
-        console.info(f"{DISTRIBUTION}: (dry-run) would git pull ({root})")
+        out.info(f"{DISTRIBUTION}: (dry-run) would git pull ({root})")
         return
-    console.info(f"{DISTRIBUTION}: git pull ({root})")
-    if git_ops.run(["pull", "--ff-only"], cwd=root) != 0:
-        console.warn(f"{DISTRIBUTION}: self-update failed; continuing with the "
+    out.info(f"{DISTRIBUTION}: git pull ({root})")
+    if ports.git.run(["pull", "--ff-only"], cwd=root) != 0:
+        out.warn(f"{DISTRIBUTION}: self-update failed; continuing with the "
                      "current checkout. Pull it by hand if `hub` behaves stale.")
 
 
-def sync(dry_run: bool) -> int:
+def sync(dry_run: bool, ports: Ports | None = None) -> int:
     """Bring the workspace to a working state in one shot.
 
     Fast-forwards the workspace and every present module first (via `hub update`),
@@ -384,14 +408,17 @@ def sync(dry_run: bool) -> int:
     the provision pipeline runs with today's fixes rather than whatever was
     checked out last. Module cloning stays explicit (`hub add`) so `sync` never
     pulls in repos the user did not ask for.
+
+    @param ports What the command reaches the outside through; this machine's when None.
     """
     from . import setup as setup_svc
 
-    console.header("SushiHub Sync")
+    ports = ports or Ports.machine(console)
+    ports.console.header("SushiHub Sync")
     if dry_run:
-        _self_update(workspace_root(), dry_run)
+        _self_update(workspace_root(), dry_run, ports)
         return setup_svc.run("provision", dry_run=dry_run)
-    rc = update(["all"])
+    rc = update(["all"], ports=ports)
     if rc != 0:
         return rc
     return setup_svc.run("provision", dry_run=dry_run)

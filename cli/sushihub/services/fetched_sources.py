@@ -20,7 +20,7 @@ from pathlib import Path
 from sushicore.provision import home
 
 from .. import console
-from . import git_ops
+from .ports import Ports
 from .module_fragments import workspace_pins
 
 #: The parts of a release tag, compared as numbers so v0.10.0 sorts after v0.9.1.
@@ -64,21 +64,26 @@ def unused_copies(root: Path) -> list[FetchedCopy]:
     return [copy for copy in fetched_copies() if (copy.name, copy.version) not in pinned]
 
 
-def clone_from_copy(copy: FetchedCopy, repo: str, dest: Path, cwd: Path) -> bool:
+def clone_from_copy(copy: FetchedCopy, repo: str, dest: Path, cwd: Path, *,
+                    ports: Ports | None = None) -> bool:
     """Clone *dest* from *copy*, then point its remote at *repo* and fetch its history.
 
     The clone needs no network; the fetch does, and when it fails the checkout keeps only the
     copy's tag until `hub update` runs online.
 
+    Args:
+        ports: What runs git and where the warning goes; this machine's when None.
+
     Returns:
         Whether the clone succeeded.
     """
-    if git_ops.run(["clone", str(copy.path), str(dest)], cwd=cwd) != 0:
+    ports = ports or Ports.machine(console)
+    if ports.git.run(["clone", str(copy.path), str(dest)], cwd=cwd) != 0:
         return False
-    git_ops.run(["remote", "set-url", "origin", repo], cwd=dest)
+    ports.git.run(["remote", "set-url", "origin", repo], cwd=dest)
     unshallow = ["--unshallow"] if (dest / ".git" / "shallow").exists() else []
-    if git_ops.run(["fetch", *unshallow, "--tags", "origin"], cwd=dest) != 0:
-        console.warn(f"{copy.name}: cloned from {copy.path}, but the fetch from {repo} failed; "
+    if ports.git.run(["fetch", *unshallow, "--tags", "origin"], cwd=dest) != 0:
+        ports.console.warn(f"{copy.name}: cloned from {copy.path}, but the fetch from {repo} failed; "
                      f"the checkout holds only {copy.version} until `hub update` runs online.")
     return True
 

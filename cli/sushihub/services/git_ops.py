@@ -46,3 +46,15 @@ def source_reachable(repo: str) -> bool:
             capture_output=True, timeout=REACHABLE_TIMEOUT).returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
+
+
+class ProcessGit:
+    """Runs git as a child process; the machine adapter of :class:`~.ports.GitClient`."""
+
+    def run(self, args: list[str], cwd: Path) -> int:
+        """Runs `git <args>` in *cwd*, streaming its output, and returns its exit code."""
+        return run(args, cwd)
+
+    def source_reachable(self, repo: str) -> bool:
+        """Returns whether this machine's Git identity can read *repo*."""
+        return source_reachable(repo)

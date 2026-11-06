@@ -187,7 +187,7 @@ def test_update_refreshes_a_binary_module_through_sushi_id(tmp_path, monkeypatch
     refreshed = []
     monkeypatch.setattr(git_ops, "run", lambda args, cwd: pulled.append(cwd) or 0)
     monkeypatch.setattr(binary, "update",
-                        lambda name, dest: refreshed.append((name, dest)) or True)
+                        lambda name, dest, **_ports: refreshed.append((name, dest)) or True)
     recorder = Recorder()
     monkeypatch.setattr(modules, "console", recorder)
     assert modules.update(["sushiengine"]) == 0

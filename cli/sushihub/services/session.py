@@ -20,6 +20,7 @@ from .. import console
 from ..config import identity_url
 from ..errors import SushiAccountError
 from .identity import Account, SushiAccount
+from .ports import Ports
 from .token_store import KeyringStore
 
 # The label every progress event of the login carries.
@@ -36,12 +37,13 @@ class Outcome(NamedTuple):
 def _reported(command: Callable[..., Outcome]) -> Callable[..., Outcome]:
     """Returns *command* wrapped to end a Sushi Account failure in one error line and code 1."""
     @functools.wraps(command)
-    def wrapper(*args, **kwargs) -> Outcome:
-        """Runs the command and reports the failure it raised."""
+    def wrapper(*args, ports: Ports | None = None, **kwargs) -> Outcome:
+        """Runs the command against *ports*, this machine's when None, and reports its failure."""
+        ports = ports or Ports.machine(console)
         try:
-            return command(*args, **kwargs)
+            return command(*args, ports=ports, **kwargs)
         except SushiAccountError as error:
-            console.error(str(error))
+            ports.console.error(str(error))
             return Outcome(1, {})
 
     return wrapper
@@ -53,7 +55,7 @@ def client() -> SushiAccount:
 
 
 @_reported
-def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
+def login(open_browser: Callable[[str], bool] | None = None, *, ports: Ports) -> Outcome:
     """Run the device grant to its end and store the session.
 
     Prints the user code and the verification URI, opens that URI in the
@@ -62,39 +64,44 @@ def login(open_browser: Callable[[str], bool] | None = None) -> Outcome:
     Args:
         open_browser: What opens the verification URI; :func:`webbrowser.open`
             when None.
+        ports: What the login reaches the outside through; this machine's when the caller
+            gives none.
     """
-    id_client = client()
+    out = ports.console
+    id_client = ports.account()
     code = id_client.start_device_login()
 
-    console.info(f"Your Sushi Account code is {code.user_code}.")
-    console.info(f"Open {code.verification_uri} and enter it.")
+    out.info(f"Your Sushi Account code is {code.user_code}.")
+    out.info(f"Open {code.verification_uri} and enter it.")
     (open_browser or webbrowser.open)(code.verification_uri)
 
     id_client.wait_for_token(
-        code, on_poll=lambda polls: console.progress(LOGIN_LABEL, polls, 0, None))
+        code, on_poll=lambda polls: out.progress(LOGIN_LABEL, polls, 0, None))
 
     account = id_client.me()
     email = account.email if account else ""
-    console.success(f"Signed in to Sushi Account as {email}." if email else "Signed in to Sushi Account.")
+    out.success(f"Signed in to Sushi Account as {email}." if email else "Signed in to Sushi Account.")
     return Outcome(0, {"email": email})
 
 
 @_reported
-def logout() -> Outcome:
+def logout(*, ports: Ports) -> Outcome:
     """Forget the stored session, whether or not there was one."""
-    client().logout()
-    console.success("Signed out of Sushi Account.")
+    out = ports.console
+    ports.account().logout()
+    out.success("Signed out of Sushi Account.")
     return Outcome(0, {})
 
 
 @_reported
-def whoami() -> Outcome:
+def whoami(*, ports: Ports) -> Outcome:
     """Print the signed-in account as a two-column table."""
-    account = client().me()
+    out = ports.console
+    account = ports.account().me()
     if account is None:
-        console.warn("Not signed in. Run `hub login`.")
+        out.warn("Not signed in. Run `hub login`.")
         return Outcome(1, {})
-    console.table(
+    out.table(
         ["Field", "Value"],
         [["Account", account.account_id],
          ["Email", account.email],
@@ -105,16 +112,17 @@ def whoami() -> Outcome:
 
 
 @_reported
-def license() -> Outcome:
+def license(*, ports: Ports) -> Outcome:
     """Print the licences the signed-in account holds, one row each."""
-    account = client().me()
+    out = ports.console
+    account = ports.account().me()
     if account is None:
-        console.warn("Not signed in. Run `hub login`.")
+        out.warn("Not signed in. Run `hub login`.")
         return Outcome(1, {})
     if not account.licenses:
-        console.info("No licences on this account.")
+        out.info("No licences on this account.")
         return Outcome(0, {"licenses": []})
-    console.table(
+    out.table(
         ["Product", "Holder", "Expires"],
         [[item.product, item.holder, item.expires_at or "never"]
          for item in account.licenses],

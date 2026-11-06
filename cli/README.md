@@ -220,7 +220,7 @@ for the library.
 
 `hub` imports `sushicore` for its console, its config schema, its workspace helpers, the provision
 pipeline, the `--describe` catalogue, `--version` and the entry point. It is an ordinary PyPI
-dependency (`sushicore>=0.9.1` in `pyproject.toml`), resolved by the same pipx install that
+dependency (`sushicore>=0.10.12` in `pyproject.toml`), resolved by the same pipx install that
 installs `hub`. It is not a module: `hub link sushicore <path>` is refused. To work on both, install
 your sushicore checkout editable into `hub`'s venv, as `../docs/guides/LINKING_CHECKOUTS.md` says.
 
@@ -375,10 +375,24 @@ opener are constructor arguments, so a test can run the whole grant against a fa
 thread with no wall-clock wait.
 
 One factory, `session.client`, decides which server and which credential store every Sushi
-Account call in `hub` talks to, so a test replaces the pair in one place.
+Account call in `hub` talks to. A command reaches it through the account port of
+`sushihub.services.ports`, so a test passes an in-memory account instead.
 
 The client never names a credential store. In production the `TokenStore` it takes is
 `KeyringStore`; in tests it is `MemoryStore`, which is gone when the process is.
+
+### `sushihub/services/ports.py` and `sushihub/services/memory/`
+
+`ports.py` declares the five ports a command reaches the outside through: the console, git, pipx,
+the Sushi Account client and the release host, carried together as one `Ports` value. `add`,
+`link`, `update`, `sync` and `init` in `modules`, `add` and `update` in `binary`, the four commands
+of `session` and `fetched_sources.clone_from_copy` take it as a `ports` argument; left out, it is
+`Ports.machine()`, so every caller that passes none behaves as before. The machine adapters are
+`console`, `git_ops.ProcessGit`, `pipx.ProcessPipx`, `SushiAccount` and `releases.MachineHost`.
+
+`memory/` holds the in-memory adapters: `InMemoryGit`, `InMemoryPipx`, `InMemoryAccount` and
+`FixedHost`, with sushicore's `RecordingConsole` for the console. `memory_ports()` builds a `Ports`
+from them. None starts a process, opens a connection or prints.
 
 ### `sushihub/services/licence_file.py`
 
