@@ -8,9 +8,10 @@ from __future__ import annotations
 
 import json
 import re
+from pathlib import Path
 
 import pytest
-from sushicore import build_console
+from sushicore import build_console, provision
 from sushicore.provision import home as provision_home
 from sushicore.provision import steps as provision_steps
 
@@ -31,32 +32,23 @@ _NOT_NEEDED_ROW = ("cuda", "NOT NEEDED", "sushiruntime", "no present module decl
 _ROWS = [_OK_ROW, _MISSING_ROW, _NOT_NEEDED_ROW]
 
 
-class _FixedConsole:
-    """Stands in for the hub's lazy console with one console built by the test."""
+@pytest.fixture
+def bind_console(monkeypatch):
+    """Return a function that points sushicore's provision output at a console built for a test.
 
-    def __init__(self, built, machine: bool) -> None:
-        """Hold the console to serve and whether it renders JSON events."""
-        self._built = built
-        self.machine = machine
+    The binding made for the session is put back after the test.
+    """
+    def bind(*, machine: bool) -> None:
+        """Bind a fake 100-column colour terminal, or JSON events when *machine*."""
+        monkeypatch.setenv("COLUMNS", "100")
+        monkeypatch.setenv("FORCE_COLOR", "1")
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        built = build_console([], machine=machine)
+        provision.bind_console(lambda: built)
 
-    def get(self):
-        """Return the console built by the test, as ``LazyConsole.get`` does."""
-        return self._built
-
-    def attribute(self, name: str):
-        """Resolve a console attribute the way ``LazyConsole.attribute`` does."""
-        if name == "console":
-            return self._built.console
-        return getattr(self._built, name)
-
-
-def _use_console(monkeypatch, *, machine: bool) -> None:
-    """Route the hub's console to a fake 100-column colour terminal, or to JSON events."""
-    monkeypatch.setenv("COLUMNS", "100")
-    monkeypatch.setenv("FORCE_COLOR", "1")
-    monkeypatch.delenv("NO_COLOR", raising=False)
-    built = build_console([], machine=machine)
-    monkeypatch.setattr(hub_console, "_lazy", _FixedConsole(built, machine))
+    yield bind
+    provision.bind_console(lambda: hub_console)
+    provision_home.bind_root(None)
 
 
 @pytest.fixture
@@ -65,10 +57,10 @@ def run_doctor(monkeypatch, fake_cfg):
 
     def run(rows):
         """Run the step over *rows* and return its result."""
-        monkeypatch.setattr(DetectStep, "inventory_rows", lambda self, ctx, all_deps: list(rows))
         monkeypatch.setattr(provision_steps, "refresh_windows_path", lambda: None)
-        monkeypatch.setattr(provision_home, "root", lambda: "/deps")
-        return DetectStep(MemorySource([])).run(InstallContext(cfg=fake_cfg, rerun_command="hub install"))
+        provision_home.bind_root(lambda: Path("/deps"))
+        step = DetectStep(MemorySource([]), inventory=lambda ctx, all_deps: list(rows))
+        return step.run(InstallContext(cfg=fake_cfg, rerun_command="hub install"))
 
     return run
 
@@ -115,51 +107,51 @@ def _in_order(lines: list[str], *needles: str) -> bool:
     return positions == sorted(positions)
 
 
-def test_doctor_prints_each_owner_group_under_the_inventory_title(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=False)
+def test_doctor_prints_each_owner_group_under_the_inventory_title(bind_console, capsys, run_doctor):
+    bind_console(machine=False)
     run_doctor(_ROWS)
     lines = _human_lines(capsys)
     assert "shared" in lines and "sushiruntime" in lines
     assert _in_order(lines, "Environment inventory", "sushiruntime")
 
 
-def test_doctor_prints_the_summary_after_the_groups(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=False)
+def test_doctor_prints_the_summary_after_the_groups(bind_console, capsys, run_doctor):
+    bind_console(machine=False)
     run_doctor(_ROWS)
     assert _in_order(_human_lines(capsys), "sushiruntime", "1 OK | 1 missing | 1 not needed")
 
 
-def test_doctor_prints_the_attention_list_after_the_summary(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=False)
+def test_doctor_prints_the_attention_list_after_the_summary(bind_console, capsys, run_doctor):
+    bind_console(machine=False)
     run_doctor(_ROWS)
     assert _in_order(_human_lines(capsys), "1 OK | 1 missing | 1 not needed", "Needs attention",
                      "adaptivecpp  AdaptiveCpp (acpp)", "Run `hub install`")
 
 
-def test_doctor_leaves_a_row_nothing_needs_out_of_the_attention_list(monkeypatch, capsys,
+def test_doctor_leaves_a_row_nothing_needs_out_of_the_attention_list(bind_console, capsys,
                                                                      run_doctor):
-    _use_console(monkeypatch, machine=False)
+    bind_console(machine=False)
     run_doctor(_ROWS)
     lines = _human_lines(capsys)
     assert not any("cuda  " in line for line in lines[_index_of(lines, "Needs attention"):])
 
 
-def test_doctor_prints_no_attention_list_when_nothing_is_missing(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=False)
+def test_doctor_prints_no_attention_list_when_nothing_is_missing(bind_console, capsys, run_doctor):
+    bind_console(machine=False)
     run_doctor([_OK_ROW, _NOT_NEEDED_ROW])
     text = "\n".join(_human_lines(capsys))
     assert "1 OK | 1 not needed" in text
     assert "missing" not in text and "Needs attention" not in text and "hub install" not in text
 
 
-def test_doctor_keeps_brackets_in_a_missing_detail_on_a_terminal(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=False)
+def test_doctor_keeps_brackets_in_a_missing_detail_on_a_terminal(bind_console, capsys, run_doctor):
+    bind_console(machine=False)
     run_doctor([("hdf5", "MISSING", "sushiengine", "HDF5 (hdf5[core,zlib])")])
     assert "hdf5  HDF5 (hdf5[core,zlib])" in "\n".join(_human_lines(capsys))
 
 
-def test_doctor_json_table_event_is_the_ungrouped_one(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=True)
+def test_doctor_json_table_event_is_the_ungrouped_one(bind_console, capsys, run_doctor):
+    bind_console(machine=True)
     run_doctor(_ROWS)
     tables = [event for event in _events(capsys) if event["event"] == "table"]
     assert len(tables) == 1
@@ -167,29 +159,29 @@ def test_doctor_json_table_event_is_the_ungrouped_one(monkeypatch, capsys, run_d
     assert "group_by" not in tables[0]
 
 
-def test_doctor_json_carries_the_summary_as_a_line_event(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=True)
+def test_doctor_json_carries_the_summary_as_a_line_event(bind_console, capsys, run_doctor):
+    bind_console(machine=True)
     run_doctor(_ROWS)
     lines = [(e["level"], e["message"]) for e in _events(capsys) if e["event"] == "line"]
     assert ("info", "1 OK | 1 missing | 1 not needed") in lines
 
 
-def test_doctor_json_carries_the_attention_list_as_line_events(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=True)
+def test_doctor_json_carries_the_attention_list_as_line_events(bind_console, capsys, run_doctor):
+    bind_console(machine=True)
     run_doctor(_ROWS)
     lines = [(e["level"], e["message"]) for e in _events(capsys) if e["event"] == "line"]
     assert ("warn", "Needs attention") in lines
     assert ("info", "adaptivecpp  AdaptiveCpp (acpp)") in lines
 
 
-def test_doctor_json_message_holds_a_bracketed_detail_unescaped(monkeypatch, capsys, run_doctor):
-    _use_console(monkeypatch, machine=True)
+def test_doctor_json_message_holds_a_bracketed_detail_unescaped(bind_console, capsys, run_doctor):
+    bind_console(machine=True)
     run_doctor([("hdf5", "MISSING", "sushiengine", "HDF5 (hdf5[core,zlib])")])
     messages = [e["message"] for e in _events(capsys) if e["event"] == "line"]
     assert "hdf5  HDF5 (hdf5[core,zlib])" in messages
 
 
 @pytest.mark.parametrize("machine", [False, True])
-def test_doctor_reports_success_whatever_is_missing(monkeypatch, run_doctor, machine):
-    _use_console(monkeypatch, machine=machine)
+def test_doctor_reports_success_whatever_is_missing(bind_console, run_doctor, machine):
+    bind_console(machine=machine)
     assert run_doctor(_ROWS).name == "OK"

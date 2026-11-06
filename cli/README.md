@@ -469,6 +469,11 @@ working repository outside the workspace tree, contributes its fragment like one
 On Linux `VcpkgManager` is the only route for the ports that have no apt package at all:
 vk-bootstrap and cgltf.
 
+`detect_step.DetectStep` is sushicore's detect step with one addition: an `inventory` argument, a
+function from the context and the dependency list to the inventory rows. Left out, the step probes the
+machine as sushicore does; given, the step prints and reports those rows, which is how `hub doctor`'s
+output is tested without a machine to probe.
+
 ### `tests/conftest.py`
 
 `MemorySource` exists so that no test reads a manifest, touches the network or writes into

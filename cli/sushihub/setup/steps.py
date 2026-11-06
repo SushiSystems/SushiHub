@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from sushicore.provision.steps import (  # noqa: F401
     ConfigureStep,
-    DetectStep,
     InstallDepsStep,
     UninstallStep,
 )
@@ -16,6 +15,7 @@ from sushicore.provision.steps import (  # noqa: F401
 from .. import console
 from ..services.ports import ConsolePort
 from .dependency_source import SHARED_OWNER, Dependency, IDependencySource
+from .detect_step import DetectStep  # noqa: F401
 from .ordering import owner_order
 from .pipeline import InstallContext
 

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-07 — cli: Gave the doctor's detect step an `inventory` argument, so its output is tested without probing the machine (`detect_step.py`, `steps.py`).
 - 2026-11-07 — cli: Gave `hub migrate` and the readiness step a console port, so their tests read a recording console instead of replacing the module console (`migrate.py`, `steps.py`, `ports.py`).
 - 2026-11-07 — cli: Moved the fixtures and builders that test files imported from one another into `conftest.py` and `tests/support/`, so no test file imports another (`cli/tests/`).
 - 2026-11-07 — tools: Took the shared checkers of SushiSkills db89ffa, whose size checker reads the gui suites (`tools/testing/check_test_sizes.py`).
