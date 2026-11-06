@@ -17,8 +17,25 @@ from typing import Callable, Protocol, Sequence
 from .identity import Account, DeviceCode, LicenceToken, ReleaseInfo
 
 
+class RichPrinter(Protocol):
+    """The Rich console behind a :class:`ConsolePort`, for lines that carry markup."""
+
+    def print(self, *objects: object, **options: object) -> None:
+        """Prints *objects* with Rich markup."""
+        ...
+
+
 class ConsolePort(Protocol):
     """The console calls a command prints through."""
+
+    @property
+    def console(self) -> RichPrinter:
+        """Returns the Rich console behind this one."""
+        ...
+
+    def prompt(self, message: str, default: str | None = None) -> str:
+        """Asks *message* and returns the answer, or *default* when the answer is empty."""
+        ...
 
     def header(self, title: str) -> None:
         """Prints a section header."""

@@ -386,8 +386,10 @@ The client never names a credential store. In production the `TokenStore` it tak
 `ports.py` declares the five ports a command reaches the outside through: the console, git, pipx,
 the Sushi Account client and the release host, carried together as one `Ports` value. `add`,
 `link`, `update`, `sync` and `init` in `modules`, `add` and `update` in `binary`, the four commands
-of `session` and `fetched_sources.clone_from_copy` take it as a `ports` argument; left out, it is
-`Ports.machine()`, so every caller that passes none behaves as before. The machine adapters are
+of `session`, `run`, `rollback` and `finalize` in `migrate`, and `fetched_sources.clone_from_copy`
+take it as a `ports` argument; left out, it is `Ports.machine()`, so every caller that passes none
+behaves as before. `setup.steps.report_readiness` takes only the console, as `out`, and prints
+through the terminal's when it is left out. The machine adapters are
 `console`, `git_ops.ProcessGit`, `pipx.ProcessPipx`, `SushiAccount` and `releases.MachineHost`.
 
 `memory/` holds the in-memory adapters: `InMemoryGit`, `InMemoryPipx`, `InMemoryAccount` and

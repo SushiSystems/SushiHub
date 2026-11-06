@@ -14,6 +14,7 @@ from sushicore.provision.steps import (  # noqa: F401
 )
 
 from .. import console
+from ..services.ports import ConsolePort
 from .dependency_source import SHARED_OWNER, Dependency, IDependencySource
 from .ordering import owner_order
 from .pipeline import InstallContext
@@ -70,11 +71,12 @@ def _missing_requirements(ctx: InstallContext, required: list[Dependency]) -> li
 
 
 def report_readiness(source: IDependencySource, ctx: InstallContext,
-                     all_deps: list[Dependency]) -> None:
+                     all_deps: list[Dependency], out: ConsolePort | None = None) -> None:
     """Print, per catalogue module in build order, how it is present and whether it can build.
 
     Args:
         source: The dependency source whose ``all()`` produced *all_deps*.
+        out: Where the report is printed; the terminal's console when None.
     """
     from ..config import find_workspace_root
     from ..services import links
@@ -85,25 +87,26 @@ def report_readiness(source: IDependencySource, ctx: InstallContext,
     if root is None:
         return
 
+    out = out if out is not None else console
     linked = links.registered()
-    console.info("Module readiness:")
+    out.info("Module readiness:")
     for name in owner_order(source, CATALOG):
         dest = module_dir(root, name, linked)
         state = presence_of(root, name, linked)
         if state is Presence.BINARY:
             _, text = describe(root, name, linked)
-            console.console.print(
+            out.console.print(
                 f"  [success]{name}: {text}, nothing to build[/success]")
             continue
         if state is Presence.ABSENT:
             verb = "linked but missing at" if name in linked else "not cloned yet"
             hint = f" ({dest})" if name in linked else f" (hub add {name})"
-            console.console.print(f"  [muted]{name}: {verb}{hint}[/muted]")
+            out.console.print(f"  [muted]{name}: {verb}{hint}[/muted]")
             continue
         missing = _missing_requirements(ctx, _effective_required(source, name, all_deps))
         if missing:
-            console.console.print(
+            out.console.print(
                 f"  [warn]{name}: needs {', '.join(missing)}[/warn]")
         else:
-            console.console.print(f"  [success]{name}: ready to build[/success]")
+            out.console.print(f"  [success]{name}: ready to build[/success]")
 

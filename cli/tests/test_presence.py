@@ -21,7 +21,7 @@ from sushihub.setup import dependency_source, steps
 from sushihub.setup.pipeline import InstallContext
 
 from .conftest import MemorySource, dep
-from .support.console_text import Recorder
+from .support.console_text import printed
 from .support.release_files import binary_install
 from .support.workspace_files import workspace_at
 
@@ -184,14 +184,12 @@ def test_update_refreshes_a_binary_module_through_sushi_id(tmp_path, monkeypatch
 
 
 @pytest.mark.medium
-def test_readiness_says_a_binary_module_has_nothing_to_build(tmp_path, monkeypatch, fake_cfg):
+def test_readiness_says_a_binary_module_has_nothing_to_build(tmp_path, monkeypatch, fake_cfg, out):
     root = workspace_at(tmp_path, monkeypatch)
     binary_install(root / "sushiengine")
     source = MemorySource([dep("cmake"), dep("vulkan", "sushiengine")])
-    recorder = Recorder()
-    monkeypatch.setattr(steps, "console", recorder)
-    steps.report_readiness(source, InstallContext(cfg=fake_cfg), source.all())
-    assert recorder.said("sushiengine: binary 1.4.2, nothing to build")
+    steps.report_readiness(source, InstallContext(cfg=fake_cfg), source.all(), out)
+    assert printed(out, "sushiengine: binary 1.4.2, nothing to build")
 
 
 def _write_fragment(root, module: str) -> None:

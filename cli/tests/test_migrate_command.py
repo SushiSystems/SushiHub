@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 from typer.testing import CliRunner
 
+from sushicore.console_memory import RecordingConsole
 from sushicore.config_base import write_toml_document
 from sushicore.provision import home, user_environment
 from sushicore.provision.links import is_dir_link, link_target
@@ -26,8 +27,10 @@ from sushicore.workspace import WORKSPACE_HEADER, read_toml
 from sushihub.cli import app
 from sushihub.config import WORKSPACE_MARKER, deps_dir, workspace_file
 from sushihub.services import migrate as migrate_svc
+from sushihub.services.memory.ports import memory_ports
+from sushihub.services.ports import Ports
 
-from .support.console_text import Recorder
+from .support.console_text import said
 
 pytestmark = pytest.mark.medium
 
@@ -60,11 +63,9 @@ def workspace(tmp_path, monkeypatch) -> Path:
 
 
 @pytest.fixture
-def recorder(monkeypatch) -> Recorder:
-    """Capture every line `hub migrate` prints."""
-    spy = Recorder()
-    monkeypatch.setattr(migrate_svc, "console", spy)
-    return spy
+def ports(out) -> Ports:
+    """Ports whose console is the test's recording console."""
+    return memory_ports(console=out)
 
 
 def _snapshot(root: Path) -> dict[str, bytes]:
@@ -80,235 +81,235 @@ def _stored_home() -> str | None:
     return user_environment.read_user_variable(home.ENV_HOME)
 
 
-def _unsaid(recorder: Recorder, texts: list[str]) -> list[str]:
+def _unsaid(out: RecordingConsole, texts: list[str]) -> list[str]:
     """Return the *texts* no printed line contains."""
-    return [text for text in texts if not recorder.said(text)]
+    return [text for text in texts if not said(out, text)]
 
 
-def test_dry_run_prints_every_component_and_the_space(workspace, recorder, tmp_path):
+def test_dry_run_prints_every_component_and_the_space(workspace, tmp_path, ports, out):
     """--dry-run names both roots, each component and the space."""
-    assert migrate_svc.run(dry_run=True) == 0
-    assert _unsaid(recorder, [
+    assert migrate_svc.run(dry_run=True, ports=ports) == 0
+    assert _unsaid(out, [
         "toolchains: 1 file, 5 B", "tools: 1 file, 12 B", "vcpkg: 1 file, 7 B",
         f"from: {workspace.as_posix()}/dependencies",
         f"to:   {tmp_path.as_posix()}/default",
         "total: 24 B", "enough space: yes", "Dry-run: nothing was changed."]) == []
 
 
-def test_dry_run_changes_nothing(workspace, recorder, tmp_path):
+def test_dry_run_changes_nothing(workspace, tmp_path, ports):
     """--dry-run touches no file and makes no link or target."""
     before = _snapshot(workspace)
-    migrate_svc.run(dry_run=True)
+    migrate_svc.run(dry_run=True, ports=ports)
     assert _snapshot(workspace) == before
     assert not (tmp_path / "default").exists()
     assert not is_dir_link(workspace / "dependencies")
 
 
-def test_run_with_yes_links_the_old_path(workspace, recorder, tmp_path):
+def test_run_with_yes_links_the_old_path(workspace, tmp_path, ports):
     """A confirmed run leaves a link at the old path that still reads the files."""
     target = tmp_path / "default"
-    assert migrate_svc.run(assume_yes=True) == 0
+    assert migrate_svc.run(assume_yes=True, ports=ports) == 0
     assert link_target(workspace / "dependencies").resolve() == target.resolve()
     assert (workspace / "dependencies/tools/cmake/bin/cmake.exe").read_bytes() == b"cmake-binary"
 
 
-def test_run_with_yes_writes_the_registry(workspace, recorder, tmp_path):
+def test_run_with_yes_writes_the_registry(workspace, tmp_path, ports):
     """A confirmed run records every component in the registry of the new root."""
-    migrate_svc.run(assume_yes=True)
+    migrate_svc.run(assume_yes=True, ports=ports)
     registry = Registry(tmp_path / "default" / "registry.toml")
     registry.load()
     assert {(c.name, c.consumers) for c in registry.components()} == {
         ("llvm-sycl", ("hub",)), ("cmake", ("hub",)), ("vcpkg", ("hub",))}
 
 
-def test_run_asks_before_moving_and_stops_on_no(workspace, recorder, monkeypatch):
+def test_run_asks_before_moving_and_stops_on_no(workspace):
     """Without --yes the move waits for an answer, and "n" changes nothing."""
-    recorder.prompt = lambda *_args: "n"
-    assert migrate_svc.run() == 1
-    assert recorder.said("Aborted.")
+    out = RecordingConsole(answer="n")
+    assert migrate_svc.run(ports=memory_ports(console=out)) == 1
+    assert said(out, "Aborted.")
     assert not is_dir_link(workspace / "dependencies")
 
 
-def test_run_to_the_default_root_leaves_the_variable_unset(workspace, recorder):
+def test_run_to_the_default_root_leaves_the_variable_unset(workspace, ports, out):
     """Moving to the default root sets no SUSHISYSTEMS_HOME and says so."""
-    assert migrate_svc.run(assume_yes=True) == 0
+    assert migrate_svc.run(assume_yes=True, ports=ports) == 0
     assert _stored_home() is None
-    assert recorder.said("is the default root")
+    assert said(out, "is the default root")
 
 
-def test_run_to_another_path_sets_the_variable(workspace, recorder, tmp_path):
+def test_run_to_another_path_sets_the_variable(workspace, tmp_path, ports):
     """Moving elsewhere stores SUSHISYSTEMS_HOME."""
     target = tmp_path / "elsewhere"
-    assert migrate_svc.run(target, assume_yes=True) == 0
+    assert migrate_svc.run(target, assume_yes=True, ports=ports) == 0
     assert _stored_home() == target.as_posix()
 
 
-def test_run_to_another_path_prints_the_facts_of_the_move(workspace, recorder, tmp_path):
+def test_run_to_another_path_prints_the_facts_of_the_move(workspace, tmp_path, ports, out):
     """Moving elsewhere prints the four facts of the move."""
     target = tmp_path / "elsewhere"
-    migrate_svc.run(target, assume_yes=True)
-    assert _unsaid(recorder, [
+    migrate_svc.run(target, assume_yes=True, ports=ports)
+    assert _unsaid(out, [
         f"The dependency tree is now at {target.as_posix()}.",
         f"{workspace.as_posix()}/dependencies is a link to it",
         f"SUSHISYSTEMS_HOME was set to {target.as_posix()}",
         "Terminals opened before now must be reopened to see it."]) == []
 
 
-def test_run_rewrites_the_tool_paths_of_the_workspace_file(workspace, recorder, tmp_path):
+def test_run_rewrites_the_tool_paths_of_the_workspace_file(workspace, tmp_path, ports):
     """The [tool] value that named the old tree names the new root afterwards."""
     target = tmp_path / "elsewhere"
-    migrate_svc.run(target, assume_yes=True)
+    migrate_svc.run(target, assume_yes=True, ports=ports)
     tool = read_toml(workspace_file(workspace))["tool"]
     assert tool["vcpkg_root"] == f"{target.as_posix()}/vcpkg"
 
 
-def _journal_after_a_run(tmp_path) -> dict[str, dict]:
+def _journal_after_a_run(tmp_path, ports) -> dict[str, dict]:
     """Migrate with the variable already set, and return the journal entries by step."""
     user_environment.write_user_variable(home.ENV_HOME, "/somewhere/else")
     target = tmp_path / "elsewhere"
-    migrate_svc.run(target, assume_yes=True)
+    migrate_svc.run(target, assume_yes=True, ports=ports)
     return {e["step"]: e for e in MigrationJournal(target).entries()}
 
 
-def test_run_journals_the_earlier_variable(workspace, recorder, tmp_path):
+def test_run_journals_the_earlier_variable(workspace, tmp_path, ports):
     """The journal holds the value SUSHISYSTEMS_HOME had before the move."""
-    assert _journal_after_a_run(tmp_path)["environment"] == {
+    assert _journal_after_a_run(tmp_path, ports)["environment"] == {
         "step": "environment", "name": "SUSHISYSTEMS_HOME", "previous": "/somewhere/else"}
 
 
-def test_run_journals_the_workspace_rewrite(workspace, recorder, tmp_path):
+def test_run_journals_the_workspace_rewrite(workspace, tmp_path, ports):
     """The journal holds a workspace step."""
-    assert "workspace" in _journal_after_a_run(tmp_path)
+    assert "workspace" in _journal_after_a_run(tmp_path, ports)
 
 
-def test_run_journals_the_registry_it_created(workspace, recorder, tmp_path):
+def test_run_journals_the_registry_it_created(workspace, tmp_path, ports):
     """The journal records that the registry did not exist before the move."""
-    assert _journal_after_a_run(tmp_path)["registry"]["created"] is True
+    assert _journal_after_a_run(tmp_path, ports)["registry"]["created"] is True
 
 
-def test_a_second_run_reports_the_finished_move(workspace, recorder, tmp_path):
+def test_a_second_run_reports_the_finished_move(workspace, tmp_path, ports, out):
     """Running again after success exits zero and moves nothing."""
     target = tmp_path / "elsewhere"
-    migrate_svc.run(target, assume_yes=True)
+    migrate_svc.run(target, assume_yes=True, ports=ports)
     journal = (target / JOURNAL).read_text(encoding="utf-8")
-    assert migrate_svc.run(assume_yes=True) == 0
-    assert recorder.said("already migrated")
+    assert migrate_svc.run(assume_yes=True, ports=ports) == 0
+    assert said(out, "already migrated")
     assert (target / JOURNAL).read_text(encoding="utf-8") == journal
 
 
-def test_run_refuses_a_target_that_holds_a_component(workspace, recorder, tmp_path):
+def test_run_refuses_a_target_that_holds_a_component(workspace, tmp_path, ports, out):
     """A target that already holds a component's name stops the run before the prompt."""
     (tmp_path / "default" / "vcpkg").mkdir(parents=True)
-    assert migrate_svc.run(assume_yes=True) == 1
-    assert recorder.said("already exists")
+    assert migrate_svc.run(assume_yes=True, ports=ports) == 1
+    assert said(out, "already exists")
     assert not is_dir_link(workspace / "dependencies")
 
 
-def _rollback_after_a_run(tmp_path) -> Path:
+def _rollback_after_a_run(tmp_path, ports) -> Path:
     """Migrate with the variable already set, roll back, and return the target."""
     user_environment.write_user_variable(home.ENV_HOME, "/somewhere/else")
     target = tmp_path / "elsewhere"
-    migrate_svc.run(target, assume_yes=True)
-    assert migrate_svc.rollback() == 0
+    migrate_svc.run(target, assume_yes=True, ports=ports)
+    assert migrate_svc.rollback(ports=ports) == 0
     return target
 
 
-def test_rollback_restores_the_tree_and_the_file(workspace, recorder, tmp_path):
+def test_rollback_restores_the_tree_and_the_file(workspace, tmp_path, ports):
     """--rollback puts back the folder and the tool paths of the workspace file."""
     before = _snapshot(workspace)
-    _rollback_after_a_run(tmp_path)
+    _rollback_after_a_run(tmp_path, ports)
     assert not is_dir_link(workspace / "dependencies")
     assert _snapshot(workspace) == before
 
 
-def test_rollback_restores_the_earlier_variable(workspace, recorder, tmp_path):
+def test_rollback_restores_the_earlier_variable(workspace, tmp_path, ports):
     """--rollback puts back the value SUSHISYSTEMS_HOME had before the move."""
-    _rollback_after_a_run(tmp_path)
+    _rollback_after_a_run(tmp_path, ports)
     assert _stored_home() == "/somewhere/else"
 
 
-def test_rollback_removes_the_registry_and_the_journal(workspace, recorder, tmp_path):
+def test_rollback_removes_the_registry_and_the_journal(workspace, tmp_path, ports):
     """--rollback leaves neither the registry nor the journal in the target."""
-    target = _rollback_after_a_run(tmp_path)
+    target = _rollback_after_a_run(tmp_path, ports)
     assert not (target / "registry.toml").exists()
     assert not (target / JOURNAL).exists()
 
 
-def test_rollback_removes_a_variable_that_was_not_set_before(workspace, recorder, tmp_path):
+def test_rollback_removes_a_variable_that_was_not_set_before(workspace, tmp_path, ports):
     """--rollback unsets SUSHISYSTEMS_HOME when the migration was the one that set it."""
-    migrate_svc.run(tmp_path / "elsewhere", assume_yes=True)
-    assert migrate_svc.rollback() == 0
+    migrate_svc.run(tmp_path / "elsewhere", assume_yes=True, ports=ports)
+    assert migrate_svc.rollback(ports=ports) == 0
     assert _stored_home() is None
 
 
-def test_rollback_with_nothing_to_undo_exits_zero(workspace, recorder):
+def test_rollback_with_nothing_to_undo_exits_zero(workspace, ports, out):
     """--rollback before any migration reports that and changes nothing."""
     before = _snapshot(workspace)
-    assert migrate_svc.rollback() == 0
-    assert recorder.said("nothing to roll back")
+    assert migrate_svc.rollback(ports=ports) == 0
+    assert said(out, "nothing to roll back")
     assert _snapshot(workspace) == before
 
 
-def _finalized(tmp_path) -> Path:
+def _finalized(tmp_path, ports) -> Path:
     """Migrate, finalize, and return the target."""
     target = tmp_path / "elsewhere"
-    migrate_svc.run(target, assume_yes=True)
-    assert migrate_svc.finalize() == 0
+    migrate_svc.run(target, assume_yes=True, ports=ports)
+    assert migrate_svc.finalize(ports=ports) == 0
     return target
 
 
-def test_finalize_deletes_the_old_copy(workspace, recorder, tmp_path):
+def test_finalize_deletes_the_old_copy(workspace, tmp_path, ports):
     """--finalize removes dependencies.pre-migrate."""
-    _finalized(tmp_path)
+    _finalized(tmp_path, ports)
     assert not (workspace / "dependencies.pre-migrate").exists()
 
 
-def test_finalize_keeps_the_link_and_the_new_tree(workspace, recorder, tmp_path):
+def test_finalize_keeps_the_link_and_the_new_tree(workspace, tmp_path, ports):
     """--finalize leaves the link and the files in the new tree."""
-    target = _finalized(tmp_path)
+    target = _finalized(tmp_path, ports)
     assert is_dir_link(workspace / "dependencies")
     assert (target / "vcpkg/installed/x.lib").is_file()
 
 
-def test_rollback_after_finalize_keeps_the_link(workspace, recorder, tmp_path):
+def test_rollback_after_finalize_keeps_the_link(workspace, tmp_path, ports):
     """--rollback after --finalize exits zero and the link stays."""
-    _finalized(tmp_path)
-    assert migrate_svc.rollback() == 0
+    _finalized(tmp_path, ports)
+    assert migrate_svc.rollback(ports=ports) == 0
     assert is_dir_link(workspace / "dependencies")
 
 
-def test_finalize_before_a_migration_refuses(workspace, recorder):
+def test_finalize_before_a_migration_refuses(workspace, ports, out):
     """--finalize on a workspace that was never migrated exits one and deletes nothing."""
     before = _snapshot(workspace)
-    assert migrate_svc.finalize() == 1
-    assert recorder.said("is not a link")
+    assert migrate_svc.finalize(ports=ports) == 1
+    assert said(out, "is not a link")
     assert _snapshot(workspace) == before
 
 
-def test_finalize_with_drop_link_removes_the_link(workspace, recorder, tmp_path):
+def test_finalize_with_drop_link_removes_the_link(workspace, tmp_path, ports):
     """--finalize --drop-link removes the link once SUSHISYSTEMS_HOME names the tree."""
     target = tmp_path / "elsewhere"
-    migrate_svc.run(target, assume_yes=True)
-    assert migrate_svc.finalize(drop_link=True) == 0
+    migrate_svc.run(target, assume_yes=True, ports=ports)
+    assert migrate_svc.finalize(drop_link=True, ports=ports) == 0
     assert not (workspace / "dependencies").exists()
     assert not is_dir_link(workspace / "dependencies")
     assert (target / "vcpkg/installed/x.lib").is_file()
 
 
-def test_drop_link_is_refused_when_nothing_else_names_the_tree(workspace, recorder):
+def test_drop_link_is_refused_when_nothing_else_names_the_tree(workspace, ports, out):
     """--drop-link keeps the link when SUSHISYSTEMS_HOME does not name the new root."""
-    migrate_svc.run(assume_yes=True)
-    assert migrate_svc.finalize(drop_link=True) == 1
-    assert recorder.said("The link was kept.")
+    migrate_svc.run(assume_yes=True, ports=ports)
+    assert migrate_svc.finalize(drop_link=True, ports=ports) == 1
+    assert said(out, "The link was kept.")
     assert is_dir_link(workspace / "dependencies")
     assert (workspace / "dependencies.pre-migrate").is_dir()
 
 
-def test_deps_dir_follows_the_link_after_a_migration(workspace, recorder, tmp_path):
+def test_deps_dir_follows_the_link_after_a_migration(workspace, tmp_path, ports):
     """After the move the dependency directory is the new root, and the old one after rollback."""
-    migrate_svc.run(assume_yes=True)
+    migrate_svc.run(assume_yes=True, ports=ports)
     assert deps_dir().resolve() == (tmp_path / "default").resolve()
-    migrate_svc.rollback()
+    migrate_svc.rollback(ports=ports)
     assert deps_dir() == workspace / "dependencies"
 
 

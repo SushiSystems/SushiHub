@@ -20,6 +20,7 @@ from sushicore.provision.registry import Registry
 
 from .. import console
 from ..config import workspace_file, workspace_root
+from .ports import ConsolePort, Ports
 from .tool_paths import rewrite_tool_paths
 
 K_CONSUMER = "hub"
@@ -49,6 +50,11 @@ def new_root(target: Path | None) -> Path:
     return link_target(old_root()) or home.default_root()
 
 
+def _console(ports: Ports | None) -> ConsolePort:
+    """Return the console of *ports*, or the terminal's when *ports* is None."""
+    return ports.console if ports is not None else console
+
+
 def render_plan(plan: engine.MigrationPlan) -> list[str]:
     """Return the lines that describe *plan*: the roots, each component, the totals."""
     lines = [
@@ -65,75 +71,89 @@ def render_plan(plan: engine.MigrationPlan) -> list[str]:
     return lines
 
 
-def run(target: Path | None = None, dry_run: bool = False, assume_yes: bool = False) -> int:
-    """Move the dependency tree to *target* and return a process exit code."""
-    console.header("SushiHub Migrate")
+def run(target: Path | None = None, dry_run: bool = False, assume_yes: bool = False,
+        ports: Ports | None = None) -> int:
+    """Move the dependency tree to *target* and return a process exit code.
+
+    @param ports What the command prints through; this machine's when None.
+    """
+    out = _console(ports)
+    out.header("SushiHub Migrate")
     try:
         plan = engine.plan(old_root(), new_root(target))
     except engine.MigrationError as error:
-        console.error(str(error))
+        out.error(str(error))
         return 1
     for line in render_plan(plan):
-        console.info(line)
+        out.info(line)
     if dry_run:
-        console.info("Dry-run: nothing was changed.")
+        out.info("Dry-run: nothing was changed.")
         return 0
     if not plan.already_migrated and not plan.enough_space:
-        console.error("Not enough free space on the target. Nothing was changed.")
+        out.error("Not enough free space on the target. Nothing was changed.")
         return 1
-    if not plan.already_migrated and not _confirmed(assume_yes):
-        console.info("Aborted.")
+    if not plan.already_migrated and not _confirmed(out, assume_yes):
+        out.info("Aborted.")
         return 1
     try:
-        engine.migrate(plan, console.info)
+        engine.migrate(plan, out.info)
     except (engine.MigrationError, LockTimeout) as error:
-        console.error(str(error))
-        console.info("Run `hub migrate` again to go on, or `hub migrate --rollback` to undo.")
+        out.error(str(error))
+        out.info("Run `hub migrate` again to go on, or `hub migrate --rollback` to undo.")
         return 1
-    _settle(plan.old_root, plan.new_root)
+    _settle(out, plan.old_root, plan.new_root)
     return 0
 
 
-def rollback(target: Path | None = None) -> int:
-    """Undo a migration that was not finalized and return a process exit code."""
-    console.header("SushiHub Migrate: rollback")
+def rollback(target: Path | None = None, ports: Ports | None = None) -> int:
+    """Undo a migration that was not finalized and return a process exit code.
+
+    @param ports What the command prints through; this machine's when None.
+    """
+    out = _console(ports)
+    out.header("SushiHub Migrate: rollback")
     old, new = old_root(), new_root(target)
     try:
         for entry in reversed(engine.MigrationJournal(new).entries()):
-            _unsettle(entry, old, new)
-        engine.rollback(old, new, console.info)
+            _unsettle(out, entry, old, new)
+        engine.rollback(old, new, out.info)
     except (engine.MigrationError, LockTimeout) as error:
-        console.error(str(error))
+        out.error(str(error))
         return 1
     return 0
 
 
-def finalize(target: Path | None = None, drop_link: bool = False) -> int:
-    """Delete the copy a migration set aside, and the link too when *drop_link* is set."""
-    console.header("SushiHub Migrate: finalize")
+def finalize(target: Path | None = None, drop_link: bool = False,
+             ports: Ports | None = None) -> int:
+    """Delete the copy a migration set aside, and the link too when *drop_link* is set.
+
+    @param ports What the command prints through; this machine's when None.
+    """
+    out = _console(ports)
+    out.header("SushiHub Migrate: finalize")
     old, new = old_root(), new_root(target)
     if drop_link and not _is_named_by_environment(new):
-        console.error(
+        out.error(
             f"{home.ENV_HOME} does not name {new.as_posix()}, so without the link at "
             f"{old.as_posix()} hub would not find the tree. The link was kept.")
         return 1
     try:
-        engine.finalize(old, new, console.info, drop_link=drop_link)
+        engine.finalize(old, new, out.info, drop_link=drop_link)
     except (engine.MigrationError, LockTimeout) as error:
-        console.error(str(error))
+        out.error(str(error))
         return 1
-    console.success("Finalized. `hub migrate --rollback` can no longer undo the move.")
+    out.success("Finalized. `hub migrate --rollback` can no longer undo the move.")
     return 0
 
 
-def _confirmed(assume_yes: bool) -> bool:
+def _confirmed(out: ConsolePort, assume_yes: bool) -> bool:
     """Report whether the user agreed to the move, asking unless *assume_yes* is set."""
     if assume_yes:
         return True
-    return console.prompt("Move the tree now? (y/N)", "n").strip().lower() in ("y", "yes")
+    return out.prompt("Move the tree now? (y/N)", "n").strip().lower() in ("y", "yes")
 
 
-def _settle(old: Path, new: Path) -> None:
+def _settle(out: ConsolePort, old: Path, new: Path) -> None:
     """Record the tree in the registry, the workspace file and the user's environment.
 
     Each step is journaled before it is taken, so a rollback undoes it, and a step
@@ -142,7 +162,7 @@ def _settle(old: Path, new: Path) -> None:
     """
     journal = engine.MigrationJournal(new)
     if not journal.exists():
-        console.info("Nothing left to do.")
+        out.info("Nothing left to do.")
         return
     taken = {entry["step"] for entry in journal.entries()}
     if K_STEP_REGISTRY not in taken:
@@ -159,10 +179,10 @@ def _settle(old: Path, new: Path) -> None:
         previous = user_environment.read_user_variable(home.ENV_HOME)
         journal.append(K_STEP_ENVIRONMENT, name=home.ENV_HOME, previous=previous)
         _name_in_environment(new)
-    _report_settled(old, new)
+    _report_settled(out, old, new)
 
 
-def _unsettle(entry: dict, old: Path, new: Path) -> None:
+def _unsettle(out: ConsolePort, entry: dict, old: Path, new: Path) -> None:
     """Reverse one step :func:`_settle` journaled; any other step is sushicore's."""
     step = entry["step"]
     if step == K_STEP_ENVIRONMENT:
@@ -170,10 +190,10 @@ def _unsettle(entry: dict, old: Path, new: Path) -> None:
             user_environment.remove_user_variable(entry["name"])
         else:
             user_environment.write_user_variable(entry["name"], entry["previous"])
-        console.info(f"Restored {entry['name']}.")
+        out.info(f"Restored {entry['name']}.")
     elif step == K_STEP_WORKSPACE:
         rewrite_tool_paths(workspace_file(), new, old)
-        console.info(f"Restored the tool paths in {workspace_file().as_posix()}.")
+        out.info(f"Restored the tool paths in {workspace_file().as_posix()}.")
     elif step == K_STEP_REGISTRY and entry.get("created"):
         (new / K_REGISTRY_FILE).unlink(missing_ok=True)
 
@@ -192,17 +212,17 @@ def _is_named_by_environment(new: Path) -> bool:
     return bool(value) and Path(value).expanduser().resolve() == new.resolve()
 
 
-def _report_settled(old: Path, new: Path) -> None:
+def _report_settled(out: ConsolePort, old: Path, new: Path) -> None:
     """Say where the tree is, what the old path became and what the environment holds."""
-    console.success(f"The dependency tree is now at {new.as_posix()}.")
-    console.info(f"{old.as_posix()} is a link to it, so every path under it still resolves.")
+    out.success(f"The dependency tree is now at {new.as_posix()}.")
+    out.info(f"{old.as_posix()} is a link to it, so every path under it still resolves.")
     if _is_named_by_environment(new):
-        console.info(f"{home.ENV_HOME} was set to {new.as_posix()} for your user.")
-        console.info("Terminals opened before now must be reopened to see it.")
+        out.info(f"{home.ENV_HOME} was set to {new.as_posix()} for your user.")
+        out.info("Terminals opened before now must be reopened to see it.")
     else:
-        console.info(f"{home.ENV_HOME} is not set: {new.as_posix()} is the default root.")
-    console.info("Keep the old copy until every module builds, then run "
-                 "`hub migrate --finalize`. `hub migrate --rollback` undoes the move.")
+        out.info(f"{home.ENV_HOME} is not set: {new.as_posix()} is the default root.")
+    out.info("Keep the old copy until every module builds, then run "
+             "`hub migrate --finalize`. `hub migrate --rollback` undoes the move.")
 
 
 def _size(count: int) -> str:

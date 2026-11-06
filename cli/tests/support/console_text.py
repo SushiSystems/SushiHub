@@ -14,6 +14,11 @@ def said(console: RecordingConsole, text: str) -> bool:
     return any(text in call.text for call in console.calls)
 
 
+def printed(console: RecordingConsole, text: str) -> bool:
+    """Report whether any line the Rich console behind *console* printed contains *text*."""
+    return any(text in line.text for line in console.console.printed)
+
+
 class Recorder:
     """Stands in for the console and keeps every line and table it was given."""
 
