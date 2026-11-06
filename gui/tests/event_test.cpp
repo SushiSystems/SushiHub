@@ -60,17 +60,31 @@ Event parsed(const std::string& line)
     return std::get<Event>(outcome);
 }
 
+/** @brief Returns the recorded status and doctor runs, as paths under the fixture directory. */
+std::vector<std::string> recorded_files()
+{
+    return {"events/status.jsonl", "events/doctor.jsonl"};
+}
+
 /** @brief Returns every non-empty line of the recorded status and doctor runs, in file order. */
 std::vector<std::string> recorded_lines()
 {
-    std::vector<std::string> lines = fixture_lines("events/status.jsonl");
-    const std::vector<std::string> doctor = fixture_lines("events/doctor.jsonl");
-    lines.insert(lines.end(), doctor.begin(), doctor.end());
+    std::vector<std::string> lines;
+    for (const std::string& file : recorded_files())
+    {
+        const std::vector<std::string> recorded = fixture_lines(file);
+        lines.insert(lines.end(), recorded.begin(), recorded.end());
+    }
     return lines;
 }
 
 /** @brief Runs the parse check once per recorded line. */
 class Medium_RecordedEventTest : public ::testing::TestWithParam<std::string>
+{
+};
+
+/** @brief Runs the presence check once per recorded file. */
+class Medium_RecordedEventFileTest : public ::testing::TestWithParam<std::string>
 {
 };
 
@@ -88,6 +102,15 @@ TEST_P(Medium_RecordedEventTest, ParsesTheRecordedLine)
 
 INSTANTIATE_TEST_SUITE_P(StatusAndDoctorRuns, Medium_RecordedEventTest,
                          ::testing::ValuesIn(recorded_lines()));
+
+TEST_P(Medium_RecordedEventFileTest, HoldsAtLeastOneLine)
+{
+    EXPECT_FALSE(fixture_lines(GetParam()).empty())
+        << GetParam() << " is missing or empty, so no recorded line is parsed";
+}
+
+INSTANTIATE_TEST_SUITE_P(StatusAndDoctorRuns, Medium_RecordedEventFileTest,
+                         ::testing::ValuesIn(recorded_files()));
 
 TEST(Small_EventTest, ReadsATableWithItsColumnsAndRows)
 {

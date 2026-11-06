@@ -124,8 +124,8 @@ other configuration.
 
 GoogleTest, one suite per layer, discovered by `gtest_discover_tests`. `bridge_test` spawns a
 Python one-liner and reads its output back. `event_test` and `catalogue_test` parse the fixtures
-in `tests/fixtures/`: the recorded ones prove today's `hub` output parses, the hand-written ones
-cover every shape the contract allows, and the README there says which is which. `model_test`
+in `tests/fixtures/`, recorded from a real `hub`, which prove today's `hub` output parses; a recorded
+file that is missing or empty fails `event_test` rather than leave it with no cases. `model_test`
 feeds a scripted queue to a `CommandRun` and checks the fold, and pins `RunLog` to the run it was
 handed last. `install_facts_test` checks the install card's sentences against the recorded status
 payload. The rest of `ui/` has no unit tests; it is checked by running the application.
