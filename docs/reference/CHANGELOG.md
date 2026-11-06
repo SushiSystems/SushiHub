@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-07 — cli: Split the manifest parse from the file read and the tool-path move from the file write, so their rules are tested without a file (`module_manifest.py`, `tool_paths.py`).
 - 2026-11-07 — cli: Gave `hub pin` a git port that reads a tag's commit, so its tests need no network (`pins.py`, `git_ops.py`, `ports.py`).
 - 2026-11-07 — cli: Checked the catalog's module order against the link edges the test declares, not against a copy of `catalog.toml` (`cli/tests/test_catalog.py`).
 - 2026-11-07 — cli: Gave the doctor's detect step an `inventory` argument, so its output is tested without probing the machine (`detect_step.py`, `steps.py`).

@@ -42,34 +42,46 @@ def read(root: Path) -> Module | None:
         which is the ordinary case for a module the catalog already knows.
 
     Raises:
-        ValueError: The file is there and cannot be believed: a required key is
-            missing, ``name`` disagrees with the directory, or a table the reader
-            does not know is present. An unknown *key* is ignored instead, so a
-            newer module can add one.
+        ValueError: The file is there and cannot be believed; see :func:`parse`.
     """
     path = root / MANIFEST_FILE
     if not path.is_file():
         return None
-    with path.open("rb") as handle:
-        document = tomllib.load(handle)
+    return parse(path.read_text(encoding="utf-8"), root.name, str(path))
+
+
+def parse(text: str, directory: str, source: str = MANIFEST_FILE) -> Module:
+    """Return the module the manifest *text* describes.
+
+    Args:
+        text: The manifest's TOML text.
+        directory: The name of the directory the manifest sits in, which ``name`` must equal.
+        source: What an error names as the place the text came from.
+
+    Raises:
+        ValueError: The text cannot be believed: it is not TOML, a required key is missing,
+            ``name`` disagrees with *directory*, or a table the reader does not know is
+            present. An unknown *key* is ignored instead, so a newer module can add one.
+    """
+    document = tomllib.loads(text)
 
     unknown = [name for name in document if name != MODULE_TABLE]
     if unknown:
         raise ValueError(
-            f"{path}: unknown table(s) {', '.join(sorted(unknown))}. A reader that drops a "
+            f"{source}: unknown table(s) {', '.join(sorted(unknown))}. A reader that drops a "
             f"table it does not know is how a whole section goes missing in silence.")
     if MODULE_TABLE not in document:
-        raise ValueError(f"{path}: no [{MODULE_TABLE}] table, which is what this format is.")
+        raise ValueError(f"{source}: no [{MODULE_TABLE}] table, which is what this format is.")
 
     table = document[MODULE_TABLE]
     absent = [key for key in REQUIRED_KEYS if not table.get(key)]
     if absent:
-        raise ValueError(f"{path}: [{MODULE_TABLE}] declares no {', '.join(absent)}.")
+        raise ValueError(f"{source}: [{MODULE_TABLE}] declares no {', '.join(absent)}.")
 
     name = str(table["name"])
-    if name != root.name:
+    if name != directory:
         raise ValueError(
-            f"{path}: declares the name '{name}' in a directory called '{root.name}'. Every "
+            f"{source}: declares the name '{name}' in a directory called '{directory}'. Every "
             f"module's cmake resolves a sibling by its directory, so the two must agree.")
 
     return Module(

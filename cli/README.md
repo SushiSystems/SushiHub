@@ -409,7 +409,14 @@ around it.
 
 A checkout that carries a manifest describes itself, so `hub` can recognise it without a
 catalog entry. Which of the two wins when both a manifest and a catalog entry exist is decided
-where both are in scope, not in this module.
+where both are in scope, not in this module. `read` reads the file and `parse` turns its text into a
+module or refuses it, so the format's rules are checked without a file.
+
+### `sushihub/services/tool_paths.py`
+
+`rewrite_tool_paths` reads a workspace file, writes it back when a `[tool]` value moved, and leaves
+it alone otherwise. Which values move is `moved_document`'s decision, taken on the parsed document
+and the two roots.
 
 ### `sushihub/services/modules.py`
 

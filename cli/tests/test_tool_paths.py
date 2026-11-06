@@ -7,15 +7,16 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
+import pytest
 from sushicore.config_base import write_toml_document
 from sushicore.workspace import WORKSPACE_HEADER, read_toml
 
-from sushihub.services.tool_paths import rewrite_tool_paths
+from sushihub.services.tool_paths import moved_document, rewrite_tool_paths
 
-import pytest
-
-pytestmark = pytest.mark.medium
+K_OLD = Path("/ws/dependencies")
+K_NEW = Path("/deps")
 
 
 def _write(path, tool: dict, modules: dict | None = None) -> None:
@@ -33,6 +34,7 @@ def _filled(table: dict, old: str, new: str) -> dict:
             for key, value in table.items()}
 
 
+@pytest.mark.small
 @pytest.mark.parametrize(("tool", "moved", "count"), [
     ({"toolchain": "intel-llvm", "vcpkg_root": "{old}/vcpkg",
       "windows": {"llvm_root": "{old}/toolchains/llvm-sycl"}},
@@ -40,28 +42,46 @@ def _filled(table: dict, old: str, new: str) -> dict:
       "windows": {"llvm_root": "{new}/toolchains/llvm-sycl"}}, 2),
     ({"deps_root": "{old}"}, {"deps_root": "{new}"}, 1),
 ], ids=["under-the-old-root", "equal-to-the-old-root"])
-def test_values_at_or_under_the_old_root_move_to_the_new_root(tmp_path, tool, moved, count):
+def test_values_at_or_under_the_old_root_move_to_the_new_root(tool, moved, count):
     """A path under the old root, or the old root itself, in [tool] or a platform table, names the new root."""
-    target = tmp_path / "workspace.toml"
-    old, new = tmp_path / "ws" / "dependencies", tmp_path / "deps"
-    _write(target, _filled(tool, old.as_posix(), new.as_posix()))
-    assert rewrite_tool_paths(target, old, new) == count
-    assert read_toml(target)["tool"] == _filled(moved, old.as_posix(), new.as_posix())
+    document = {"workspace": {"version": "1"},
+                "tool": _filled(tool, K_OLD.as_posix(), K_NEW.as_posix())}
+    result, changed = moved_document(document, K_OLD, K_NEW)
+    assert (result["tool"], changed) == (_filled(moved, K_OLD.as_posix(), K_NEW.as_posix()), count)
 
 
-def test_a_sibling_folder_with_a_longer_name_is_left_alone(tmp_path):
+@pytest.mark.small
+def test_a_sibling_folder_with_a_longer_name_is_left_alone():
     """A path that only shares the old root's leading characters does not move."""
+    tool = {"vcpkg_root": f"{K_OLD.as_posix()}.pre-migrate/vcpkg",
+            "cmake_exe": "C:/Program Files/CMake/bin/cmake.exe"}
+    assert moved_document({"tool": tool}, K_OLD, K_NEW) == ({"tool": tool}, 0)
+
+
+@pytest.mark.small
+def test_other_tables_are_returned_unchanged():
+    """The [modules] table is kept as it was, even when it names the old root."""
+    modules = {"sushiai": f"{K_OLD.as_posix()}/checkout"}
+    document = {"workspace": {"version": "1"}, "modules": modules,
+                "tool": {"vcpkg_root": f"{K_OLD.as_posix()}/vcpkg"}}
+    result, _ = moved_document(document, K_OLD, K_NEW)
+    assert (result["modules"], result["workspace"]) == (modules, {"version": "1"})
+
+
+@pytest.mark.medium
+def test_the_file_is_not_written_when_no_value_moves(tmp_path):
+    """A file with nothing under the old root is left byte for byte as it was."""
     target = tmp_path / "workspace.toml"
     old, new = tmp_path / "dependencies", tmp_path / "deps"
-    value = f"{old.as_posix()}.pre-migrate/vcpkg"
-    _write(target, {"vcpkg_root": value, "cmake_exe": "C:/Program Files/CMake/bin/cmake.exe"})
+    _write(target, {"vcpkg_root": f"{old.as_posix()}.pre-migrate/vcpkg"})
     before = target.read_text(encoding="utf-8")
     assert rewrite_tool_paths(target, old, new) == 0
     assert target.read_text(encoding="utf-8") == before
 
 
+@pytest.mark.medium
 def test_other_tables_are_written_back_unchanged(tmp_path):
-    """The [modules] table survives a rewrite, even when it names the old root."""
+    """The [modules] table survives a rewrite of the file, even when it names the old root."""
     target = tmp_path / "workspace.toml"
     old, new = tmp_path / "dependencies", tmp_path / "deps"
     _write(target, {"vcpkg_root": f"{old.as_posix()}/vcpkg"},
@@ -72,6 +92,7 @@ def test_other_tables_are_written_back_unchanged(tmp_path):
     assert document["workspace"] == {"version": "1"}
 
 
+@pytest.mark.medium
 def test_a_rewrite_back_restores_the_file(tmp_path):
     """Swapping the roots puts every value back."""
     target = tmp_path / "workspace.toml"
@@ -83,6 +104,7 @@ def test_a_rewrite_back_restores_the_file(tmp_path):
     assert target.read_text(encoding="utf-8") == before
 
 
+@pytest.mark.medium
 def test_a_missing_file_is_not_created(tmp_path):
     """A workspace with no file has nothing to rewrite and gets no file."""
     target = tmp_path / "workspace.toml"
@@ -90,6 +112,7 @@ def test_a_missing_file_is_not_created(tmp_path):
     assert not target.exists()
 
 
+@pytest.mark.medium
 @pytest.mark.skipif(sys.platform != "win32", reason="only Windows compares paths without case")
 def test_a_drive_letter_in_another_case_still_moves(tmp_path):
     """The roots are compared the way the file system compares names."""

@@ -14,19 +14,30 @@ from sushicore.workspace import WORKSPACE_HEADER, read_toml
 
 
 def rewrite_tool_paths(target: Path, old_root: Path, new_root: Path) -> int:
-    """Point every ``[tool]`` value of *target* that lies under *old_root* at *new_root*.
+    """Point every ``[tool]`` value of the workspace file *target* under *old_root* at *new_root*.
 
-    Both ``[tool]`` and its ``[tool.<platform>]`` tables are covered, and every other
-    table is written back as it was. A file with no such value is not written.
+    A file with no such value is not written. See :func:`moved_document`.
 
     Returns:
         How many values changed.
     """
-    document = read_toml(target)
-    tool, changed = _moved_table(document.get("tool", {}), old_root, new_root)
+    moved, changed = moved_document(read_toml(target), old_root, new_root)
     if changed:
-        write_toml_document(target, {**document, "tool": tool}, WORKSPACE_HEADER)
+        write_toml_document(target, moved, WORKSPACE_HEADER)
     return changed
+
+
+def moved_document(document: dict, old_root: Path, new_root: Path) -> tuple[dict, int]:
+    """Return a workspace *document* with its ``[tool]`` paths under *old_root* moved to *new_root*.
+
+    Both ``[tool]`` and its ``[tool.<platform>]`` tables are covered, and every other table is
+    returned as it was.
+
+    Returns:
+        The moved document and how many values changed.
+    """
+    tool, changed = _moved_table(document.get("tool", {}), old_root, new_root)
+    return {**document, "tool": tool}, changed
 
 
 def _moved_table(table: dict, old_root: Path, new_root: Path) -> tuple[dict, int]:
