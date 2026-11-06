@@ -50,7 +50,7 @@ The scope is the commit scope. The entry never says why.
 
 ## Licence
 
-The source is under the PolyForm Noncommercial License 1.0.0; `LICENSE` at the repository root is
+The source is under the Apache License 2.0; `LICENSE` at the repository root is
 the binding text. Contributions from outside Sushi Systems are not accepted yet.
 
 ## Source comments

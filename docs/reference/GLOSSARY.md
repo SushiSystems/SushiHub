@@ -23,7 +23,7 @@ Words this repository's documents use in a specific sense.
 | Toolchain | A compiler bundle `hub install` downloads into `dependencies/` where a package manager is not used: intel/llvm, AdaptiveCpp, oneAPI. Each carries a stamp naming the release it came from |
 | Selection rule | sushicore's rule for which toolchain installs: none when the machine already holds one that provides the capability a module requires, otherwise the first the fragment declares |
 | Sushi Account | The identity service at `account.sushisystems.io`, built in the sushiweb repository. It issues the access tokens, the licence tokens and the signed release URLs `hub` asks for |
-| Licence | Two things. The licence of this source is PolyForm Noncommercial 1.0.0, in `LICENSE`. The licence `hub license` lists is the product licence Sushi Account issues for sushiengine |
+| Licence | Two things. The licence of this source is the Apache License 2.0, in `LICENSE`. The licence `hub license` lists is the product licence Sushi Account issues for sushiengine |
 | JSON contract | The shape of what `hub` prints under `--json`, one event per line, and of what `hub --describe` prints. Three schemas under `contract/` fix it for both sides |
 | Catalogue | What `hub --describe` prints: every subcommand with its arguments and options. The desktop application generates a form from it |
 | Wave | One step of a programme in `docs/backlog/README.md`, naming what it waits on |

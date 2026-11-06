@@ -1,8 +1,7 @@
 # test_add_binary.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Choosing between the source and the binary, and what the binary path writes."""
 
 from __future__ import annotations

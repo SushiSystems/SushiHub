@@ -1,8 +1,7 @@
 # identity.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Implements the Sushi Account client: the device grant, the account read, licences, releases.
 
 One class over the six endpoints written down in ``contract/sushi-account.md``. It prints

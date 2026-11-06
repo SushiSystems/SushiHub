@@ -1,8 +1,7 @@
 # fetched_sources.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Takes over the copies a module's own `setup` fetched: clones from them and clears unused ones.
 
 The rule is skills/dependencies in SushiSkills, "A Sushi library as a dependency", rule 6.

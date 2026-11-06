@@ -1,8 +1,7 @@
 # pins.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Moves the pin of one Sushi library in every module of the workspace that pins it.
 
 The rule is skills/dependencies in SushiSkills, "A Sushi library as a dependency", rule 5.

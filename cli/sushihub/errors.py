@@ -1,8 +1,7 @@
 # errors.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """The failures `hub` reports to its entry point as one line.
 
 Every class derives from :class:`HubError`, which derives from sushicore's base, so

@@ -23,7 +23,7 @@ English, British spelling in prose: "licence" the noun, "organisation", "catalog
 `hub --describe` prints. Identifiers keep the spelling the code uses: `hub license`,
 `cli/sushihub/catalog.toml`, the `licenses` key Sushi Account returns.
 
-"Licence" has two senses here. The licence of this source is PolyForm Noncommercial 1.0.0. The
+"Licence" has two senses here. The licence of this source is the Apache License 2.0. The
 licence `hub license` reports is the product licence Sushi Account issues for sushiengine. A
 sentence that could mean either says which.
 

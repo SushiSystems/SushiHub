@@ -42,8 +42,7 @@ The manual starts at [`docs/README.md`](docs/README.md); install steps are in
 
 ## Licence
 
-Source-available, free for non-commercial use under the PolyForm Noncommercial License 1.0.0;
-see `LICENSE`. Commercial use needs a licence from Sushi Systems; see `COMMERCIAL.md`.
-Third-party parts are listed in `NOTICE.md`. sushihub 0.1.0 and the commits before the one that
-replaced `LICENSE` stay available under the Apache License 2.0. The product licence `hub license`
-reports is a separate thing, issued by Sushi Account for sushiengine.
+Open source under the Apache License 2.0; see `LICENSE`. Third-party parts are listed in
+`NOTICE.md`. The commits between sushihub 0.1.0 and the return to Apache were published under
+the PolyForm Noncommercial License 1.0.0 and stay available under it. The product licence
+`hub license` reports is a separate thing, issued by Sushi Account for sushiengine.

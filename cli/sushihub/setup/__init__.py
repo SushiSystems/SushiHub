@@ -1,8 +1,7 @@
 # __init__.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Exports SushiHub's provisioning pipeline; the entry point is :func:`factory.build_pipeline`.
 
 The pipeline detects what is present, installs what the ``*.deps.toml`` fragments declare and

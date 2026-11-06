@@ -1,8 +1,7 @@
 # status_report.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Composes the payload `hub status` ends with from the readers that look at disk.
 
 Each fact has one reader: :mod:`.presence`, :mod:`.licence_file`, :mod:`.git_state` and

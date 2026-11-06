@@ -1,8 +1,7 @@
 # git_ops.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Git primitives: running a command and asking whether a remote is reachable.
 
 Every module checkout `hub` manages goes through these two calls, so a caller

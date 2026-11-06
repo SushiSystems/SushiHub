@@ -1,8 +1,7 @@
 # core_pin.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Moves the `sushicore` requirement of every module CLI of the workspace, and of this one.
 
 `sushicore` is a Python package, so its pin is the exact requirement in a `cli/pyproject.toml`,

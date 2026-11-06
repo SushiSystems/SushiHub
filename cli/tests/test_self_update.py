@@ -1,8 +1,7 @@
 # test_self_update.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """`hub sync` updates `hub` itself the way `hub` was installed.
 
 An install from the index is upgraded with pipx; an editable install tracks a

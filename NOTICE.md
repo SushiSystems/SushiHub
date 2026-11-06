@@ -1,7 +1,7 @@
 # Notices
 
-SushiHub is Copyright (c) 2026-present Mustafa Garip & Sushi Systems and licensed under the PolyForm Noncommercial
-License 1.0.0; see `LICENSE`. The material below keeps its own licence.
+SushiHub is Copyright (c) 2026-present Mustafa Garip & Sushi Systems and licensed under the Apache
+License 2.0; see `LICENSE`. The material below keeps its own licence.
 
 No third-party source is vendored in this repository, no file is ported from third-party code,
 and no third-party binary or data set is tracked or redistributed. The tables list what

@@ -1,8 +1,7 @@
 # session.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Runs the four Sushi Account commands: `hub login`, `logout`, `whoami` and `license`.
 
 Each function drives :class:`~sushihub.services.identity.SushiAccount`, writes to the console

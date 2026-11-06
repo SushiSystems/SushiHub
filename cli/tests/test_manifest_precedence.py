@@ -1,8 +1,7 @@
 # test_manifest_precedence.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """A checkout that describes itself, with and without a catalog entry.
 
 This is what wave 6 exists to make true: `hub` knows a module because the module

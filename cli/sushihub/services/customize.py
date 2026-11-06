@@ -1,8 +1,7 @@
 # customize.py
 # SushiHub - https://github.com/SushiSystems/SushiHub
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
-# Licensed under PolyForm Noncommercial 1.0.0. See LICENSE.
-# Commercial use requires a licence from Sushi Systems.
+# Licensed under the Apache License 2.0. See LICENSE.
 """Runs the interactive component picker behind `hub install --customize`.
 
 Keys are read directly (msvcrt on Windows, termios on Unix) and rows drawn with rich. A
