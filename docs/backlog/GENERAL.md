@@ -18,4 +18,3 @@
 
 | ID | Origin | Symptom | Workaround | Fix | Source | Opened |
 | --- | --- | --- | --- | --- | --- | --- |
-| KI-21 | own | The size checker reads no gui suite, since it takes only C++ files named test_* | Read the gui suite names by hand | none, the checker lives in SushiSkills; the orchestrator decides there | `docs/agent/2026_11_05_TEST_REVIEW/PLAN.md` | 2026-11-07 |
