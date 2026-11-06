@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-07 — gui: Deleted the two hand-written fixtures no test reads, `all_types.json` and `events/all_kinds.jsonl` (`gui/tests/fixtures/`).
 - 2026-11-07 — cli: Split the manifest parse from the file read and the tool-path move from the file write, so their rules are tested without a file (`module_manifest.py`, `tool_paths.py`).
 - 2026-11-07 — cli: Gave `hub pin` a git port that reads a tag's commit, so its tests need no network (`pins.py`, `git_ops.py`, `ports.py`).
 - 2026-11-07 — cli: Checked the catalog's module order against the link edges the test declares, not against a copy of `catalog.toml` (`cli/tests/test_catalog.py`).
