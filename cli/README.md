@@ -165,7 +165,9 @@ the size or the sha256 differs from what Sushi Account declared, unpacks it into
 the install that was there untouched. The release carries `sushi-release.json` at its top level:
 that file is what makes the directory a binary install, and `hub status` reads the version out of it
 ("binary 1.4.2"). Beside it `hub` writes `sushi-licence.jwt`, the licence token Sushi Account issued,
-which the engine reads at start-up and verifies offline against Sushi Account's JWKS.
+which the engine reads at start-up and verifies offline against Sushi Account's JWKS. `hub` asks for
+that token before it downloads anything, so an account that holds no licence is refused with the
+workspace, and any earlier install, untouched.
 
 A release brings its own sushiruntime and sushiblas, so it declares no dependency fragment and
 nothing provisions after it: a licensed user never downloads a SYCL toolchain. It also installs no

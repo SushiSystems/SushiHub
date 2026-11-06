@@ -16,29 +16,25 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .identity import SushiAccount
+from .identity import LicenceToken
 
 # The file a binary install carries beside its release manifest.
 LICENCE_FILE = "sushi-licence.jwt"
 
 
-def write_licence(root: Path, client: SushiAccount, product: str) -> str:
-    """Fetch the licence token for *product* and write it into the install at *root*.
+def store_licence(root: Path, token: LicenceToken) -> str:
+    """Write the licence *token* bare into the install at *root*.
 
     Args:
         root: The unpacked install's directory.
-        client: A Sushi Account client with a live session.
-        product: The product slug, which is the module name.
+        token: The token Sushi Account issued.
 
     Returns:
         The expiry Sushi Account declared, as an iso-8601 string.
 
     Raises:
-        NoLicence: The account holds no live licence for *product*.
-        SushiAccountError: Sushi Account refused the request otherwise.
         OSError: The file could not be written.
     """
-    token = client.licence_token(product)
     (root / LICENCE_FILE).write_text(token.token, encoding="utf-8")
     return token.expires_at
 

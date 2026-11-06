@@ -138,6 +138,22 @@ def test_add_reports_a_licence_the_account_does_not_hold(workspace, out):
     assert said(out, "no live licence")
 
 
+def test_add_without_a_licence_refuses_and_leaves_nothing_behind(workspace, out):
+    """A refused licence leaves no unpacked release in the workspace."""
+    account = engine_account(workspace / "served", licensed=False)
+    modules.add(["sushiengine"], provision=lambda dry_run: 0,
+                ports=memory_ports(console=out, account=account))
+    assert not (workspace / "sushiengine").exists()
+
+
+def test_update_without_a_licence_refuses_and_keeps_the_earlier_install(workspace, out):
+    """A refused licence leaves the earlier install as it was, not the newer release."""
+    binary_install(workspace / "sushiengine", "1.4.2")
+    account = engine_account(workspace / "served", "1.5.0", licensed=False)
+    modules.update(["sushiengine"], ports=memory_ports(console=out, account=account))
+    assert installed_version(workspace / "sushiengine") == "1.4.2"
+
+
 def test_add_refuses_a_download_whose_hash_does_not_match(workspace, out):
     """A download that differs from the declared sha256 is refused and nothing is left."""
     account = engine_account(workspace / "served", sha256="0" * 64)
@@ -185,11 +201,9 @@ def test_update_asks_for_a_login_before_refreshing_a_binary_install(workspace, o
     assert said(out, "Run `hub login` first.")
 
 
-def test_write_licence_returns_the_expiry_and_writes_the_bare_token(tmp_path):
+def test_store_licence_returns_the_expiry_and_writes_the_bare_token(tmp_path):
     """The licence file holds the token alone, and the expiry comes back."""
-    account = InMemoryAccount(ACCOUNT, signed_in=True,
-                              licences={"sushiengine": LicenceToken("licence-jwt", LICENCE_EXPIRY)})
-    expires_at = licence_file.write_licence(tmp_path, account, "sushiengine")
+    expires_at = licence_file.store_licence(tmp_path, LicenceToken("licence-jwt", LICENCE_EXPIRY))
     assert (expires_at, (tmp_path / LICENCE_FILE).read_text(encoding="utf-8")) == (
         LICENCE_EXPIRY, "licence-jwt")
 

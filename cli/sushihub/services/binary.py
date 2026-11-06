@@ -49,6 +49,9 @@ def install(name: str, dest: Path, client: AccountClient,
             info: ReleaseInfo | None = None, *, ports: Ports | None = None) -> bool:
     """Unpack a release of *name* at *dest* and write its licence beside it.
 
+    The licence is asked for first, so an account that holds none is refused before anything is
+    downloaded or unpacked.
+
     Args:
         name: The module, which is also the product slug Sushi Account knows.
         dest: Where the module lives in the workspace.
@@ -65,8 +68,9 @@ def install(name: str, dest: Path, client: AccountClient,
     ports = ports or Ports.machine(console)
     out = ports.console
     try:
+        token = client.licence_token(name)
         release = releases.install_release(name, dest, client, out, info=info, host=ports.host)
-        expires_at = licence_file.write_licence(dest, client, name)
+        expires_at = licence_file.store_licence(dest, token)
     except (SushiAccountError, ReleaseCorrupt, OSError) as error:
         out.error(f"{name}: {error}")
         return False

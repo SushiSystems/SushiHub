@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-07 — cli: Made a binary install ask for the licence before it downloads, so an account without one leaves no unpacked release and no replaced install behind (`binary.py`, `licence_file.py`).
 - 2026-11-07 — gui: Made a missing or empty recorded event file fail `Medium_RecordedEventFileTest`, so the recorded-line cases cannot vanish and pass (`gui/tests/event_test.cpp`).
 - 2026-11-07 — gui: Deleted the two hand-written fixtures no test reads, `all_types.json` and `events/all_kinds.jsonl` (`gui/tests/fixtures/`).
 - 2026-11-07 — cli: Split the manifest parse from the file read and the tool-path move from the file write, so their rules are tested without a file (`module_manifest.py`, `tool_paths.py`).
