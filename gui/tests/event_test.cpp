@@ -32,7 +32,6 @@
 
 #include <gtest/gtest.h>
 
-#include <set>
 #include <string>
 #include <variant>
 #include <vector>
@@ -40,11 +39,7 @@
 namespace
 {
 
-using SushiHub::Gui::CommandEvent;
 using SushiHub::Gui::Event;
-using SushiHub::Gui::HeaderEvent;
-using SushiHub::Gui::LineEvent;
-using SushiHub::Gui::PanelEvent;
 using SushiHub::Gui::ParseError;
 using SushiHub::Gui::ProgressEvent;
 using SushiHub::Gui::PromptEvent;
@@ -53,40 +48,6 @@ using SushiHub::Gui::TableEvent;
 using SushiHub::Gui::parse_event;
 using SushiHub::GuiTests::fixture_lines;
 
-/** @brief Returns the kind name of the alternative @p event holds. */
-std::string kind_of(const Event& event)
-{
-    if (std::holds_alternative<LineEvent>(event))
-    {
-        return "line";
-    }
-    if (std::holds_alternative<CommandEvent>(event))
-    {
-        return "command";
-    }
-    if (std::holds_alternative<HeaderEvent>(event))
-    {
-        return "header";
-    }
-    if (std::holds_alternative<PanelEvent>(event))
-    {
-        return "panel";
-    }
-    if (std::holds_alternative<TableEvent>(event))
-    {
-        return "table";
-    }
-    if (std::holds_alternative<ProgressEvent>(event))
-    {
-        return "progress";
-    }
-    if (std::holds_alternative<ResultEvent>(event))
-    {
-        return "result";
-    }
-    return "prompt";
-}
-
 /** @brief Parses @p line and fails the test with the reason when it is not an event. */
 Event parsed(const std::string& line)
 {
@@ -94,43 +55,41 @@ Event parsed(const std::string& line)
     if (std::holds_alternative<ParseError>(outcome))
     {
         ADD_FAILURE() << std::get<ParseError>(outcome).reason << " in: " << line;
-        return Event(LineEvent{});
+        return Event(SushiHub::Gui::LineEvent{});
     }
     return std::get<Event>(outcome);
 }
 
-}
-
-TEST(EventTest, EveryRecordedLineParses)
+/** @brief Returns every non-empty line of the recorded status and doctor runs, in file order. */
+std::vector<std::string> recorded_lines()
 {
-    for (const char* name : {"events/status.jsonl", "events/doctor.jsonl"})
-    {
-        const std::vector<std::string> lines = fixture_lines(name);
-        ASSERT_FALSE(lines.empty()) << name;
-        for (const std::string& line : lines)
-        {
-            EXPECT_TRUE(std::holds_alternative<Event>(parse_event(line))) << name << ": " << line;
-        }
-    }
+    std::vector<std::string> lines = fixture_lines("events/status.jsonl");
+    const std::vector<std::string> doctor = fixture_lines("events/doctor.jsonl");
+    lines.insert(lines.end(), doctor.begin(), doctor.end());
+    return lines;
 }
 
-TEST(EventTest, EveryHandWrittenLineParsesAndTheEightKindsAppear)
+/** @brief Runs the parse check once per recorded line. */
+class Medium_RecordedEventTest : public ::testing::TestWithParam<std::string>
 {
-    const std::vector<std::string> lines = fixture_lines("events/all_kinds.jsonl");
-    ASSERT_FALSE(lines.empty());
+};
 
-    std::set<std::string> kinds;
-    for (const std::string& line : lines)
-    {
-        kinds.insert(kind_of(parsed(line)));
-    }
+/** @brief Runs the refusal check once per malformed line. */
+class Small_EventRefusalTest : public ::testing::TestWithParam<std::string>
+{
+};
 
-    const std::set<std::string> expected{"line", "command", "header", "panel",
-                                         "table", "progress", "result", "prompt"};
-    EXPECT_EQ(kinds, expected);
 }
 
-TEST(EventTest, ReadsATableWithItsColumnsAndRows)
+TEST_P(Medium_RecordedEventTest, ParsesTheRecordedLine)
+{
+    EXPECT_TRUE(std::holds_alternative<Event>(parse_event(GetParam()))) << GetParam();
+}
+
+INSTANTIATE_TEST_SUITE_P(StatusAndDoctorRuns, Medium_RecordedEventTest,
+                         ::testing::ValuesIn(recorded_lines()));
+
+TEST(Small_EventTest, ReadsATableWithItsColumnsAndRows)
 {
     const Event event = parsed(
         R"({"event":"table","title":"Modules","columns":["A","B"],"rows":[["a1","b1"],["a2","b2"]]})");
@@ -144,37 +103,47 @@ TEST(EventTest, ReadsATableWithItsColumnsAndRows)
     EXPECT_EQ(table.rows[1][0], "a2");
 }
 
-TEST(EventTest, ReadsAProgressFractionAndItsAbsence)
+TEST(Small_EventTest, ReadsAProgressFraction)
 {
-    const Event known = parsed(
+    const Event event = parsed(
         R"({"event":"progress","label":"install","index":2,"count":4,"fraction":0.5})");
-    const ProgressEvent& measured = std::get<ProgressEvent>(known);
-    EXPECT_EQ(measured.label, "install");
-    EXPECT_EQ(measured.index, 2);
-    EXPECT_EQ(measured.count, 4);
-    ASSERT_TRUE(measured.fraction.has_value());
-    EXPECT_DOUBLE_EQ(measured.fraction.value(), 0.5);
+    const ProgressEvent& progress = std::get<ProgressEvent>(event);
 
-    const Event unknown = parsed(
-        R"({"event":"progress","label":"install","index":2,"count":4,"fraction":null})");
-    EXPECT_FALSE(std::get<ProgressEvent>(unknown).fraction.has_value());
+    EXPECT_EQ(progress.label, "install");
+    EXPECT_EQ(progress.index, 2);
+    EXPECT_EQ(progress.count, 4);
+    ASSERT_TRUE(progress.fraction.has_value());
+    EXPECT_DOUBLE_EQ(progress.fraction.value(), 0.5);
 }
 
-TEST(EventTest, ReadsAPromptDefaultAndItsAbsence)
+TEST(Small_EventTest, ReadsAProgressWithoutAFraction)
 {
-    const Event with_default = parsed(
+    const Event event = parsed(
+        R"({"event":"progress","label":"install","index":2,"count":4,"fraction":null})");
+
+    EXPECT_FALSE(std::get<ProgressEvent>(event).fraction.has_value());
+}
+
+TEST(Small_EventTest, ReadsAPromptDefault)
+{
+    const Event event = parsed(
         R"({"event":"prompt","id":"prompt-1","message":"Clone?","default":"n"})");
-    const PromptEvent& prompt = std::get<PromptEvent>(with_default);
+    const PromptEvent& prompt = std::get<PromptEvent>(event);
+
     EXPECT_EQ(prompt.id, "prompt-1");
     ASSERT_TRUE(prompt.default_answer.has_value());
     EXPECT_EQ(prompt.default_answer.value(), "n");
-
-    const Event without_default = parsed(
-        R"({"event":"prompt","id":"prompt-2","message":"Path?","default":null})");
-    EXPECT_FALSE(std::get<PromptEvent>(without_default).default_answer.has_value());
 }
 
-TEST(EventTest, ReadsAResultPayloadAsAnObject)
+TEST(Small_EventTest, ReadsAPromptWithoutADefault)
+{
+    const Event event = parsed(
+        R"({"event":"prompt","id":"prompt-2","message":"Path?","default":null})");
+
+    EXPECT_FALSE(std::get<PromptEvent>(event).default_answer.has_value());
+}
+
+TEST(Small_EventTest, ReadsAResultPayloadAsAnObject)
 {
     const Event event = parsed(R"({"event":"result","ok":true,"payload":{"modules":["a"]}})");
     const ResultEvent& result = std::get<ResultEvent>(event);
@@ -184,29 +153,23 @@ TEST(EventTest, ReadsAResultPayloadAsAnObject)
     EXPECT_EQ(result.payload["modules"][0].get<std::string>(), "a");
 }
 
-TEST(EventTest, RefusesABadLineWithAReasonInsteadOfThrowing)
+TEST_P(Small_EventRefusalTest, RefusesTheLineWithAReasonInsteadOfThrowing)
 {
-    const std::vector<std::string> refused{
-        "not json at all",
-        "[1, 2, 3]",
-        R"({"level":"info","message":"no kind"})",
-        R"({"event":"spinner","frame":3})",
-        R"({"event":"line","level":"shout","message":"unknown level"})",
-        R"({"event":"line","level":"info"})",
-        R"({"event":"table","title":"t","columns":["A"],"rows":[[1]]})",
-        R"({"event":"progress","label":"l","index":"two","count":4,"fraction":null})",
-        R"({"event":"result","ok":true,"payload":[]})"};
+    const std::variant<Event, ParseError> outcome = parse_event(GetParam());
 
-    for (const std::string& line : refused)
-    {
-        const std::variant<Event, ParseError> outcome = parse_event(line);
-        ASSERT_TRUE(std::holds_alternative<ParseError>(outcome)) << "accepted: " << line;
-        EXPECT_FALSE(std::get<ParseError>(outcome).reason.empty()) << "silent on: " << line;
-    }
+    ASSERT_TRUE(std::holds_alternative<ParseError>(outcome));
+    EXPECT_FALSE(std::get<ParseError>(outcome).reason.empty());
 }
 
-TEST(EventTest, RefusesAnEmptyLine)
-{
-    const std::variant<Event, ParseError> outcome = parse_event("");
-    EXPECT_TRUE(std::holds_alternative<ParseError>(outcome));
-}
+INSTANTIATE_TEST_SUITE_P(
+    BadLines, Small_EventRefusalTest,
+    ::testing::Values(
+        std::string(""), std::string("not json at all"), std::string("[1, 2, 3]"),
+        std::string(R"({"level":"info","message":"no kind"})"),
+        std::string(R"({"event":"spinner","frame":3})"),
+        std::string(R"({"event":"line","level":"shout","message":"unknown level"})"),
+        std::string(R"({"event":"line","level":"info"})"),
+        std::string(R"({"event":"table","title":"t","columns":["A"],"rows":[[1]]})"),
+        std::string(
+            R"({"event":"progress","label":"l","index":"two","count":4,"fraction":null})"),
+        std::string(R"({"event":"result","ok":true,"payload":[]})")));

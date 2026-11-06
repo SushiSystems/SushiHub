@@ -31,9 +31,7 @@
 
 #include <gtest/gtest.h>
 
-#include <chrono>
 #include <string>
-#include <thread>
 #include <vector>
 
 namespace
@@ -52,20 +50,11 @@ const char* python_executable()
 #endif
 }
 
-/** @brief Drains @p queue into a vector once the writing side has closed it. */
-std::vector<std::string> drain_until_closed(LineQueue& queue)
+/** @brief Pops every line @p queue holds; the caller has already waited for the writer. */
+std::vector<std::string> take_all(LineQueue& queue)
 {
     std::vector<std::string> collected;
     std::string line;
-    while (!queue.closed() || !queue.empty())
-    {
-        if (queue.try_pop(line))
-        {
-            collected.push_back(line);
-            continue;
-        }
-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
     while (queue.try_pop(line))
     {
         collected.push_back(line);
@@ -75,13 +64,10 @@ std::vector<std::string> drain_until_closed(LineQueue& queue)
 
 }
 
-TEST(LineQueueTest, PopsInPushOrderAndReportsClosure)
+TEST(Small_LineQueueTest, PopsInPushOrder)
 {
     LineQueue queue;
     std::string line;
-
-    EXPECT_FALSE(queue.try_pop(line));
-    EXPECT_FALSE(queue.closed());
 
     queue.push("first");
     queue.push("second");
@@ -91,12 +77,19 @@ TEST(LineQueueTest, PopsInPushOrderAndReportsClosure)
     ASSERT_TRUE(queue.try_pop(line));
     EXPECT_EQ(line, "second");
     EXPECT_FALSE(queue.try_pop(line));
+}
+
+TEST(Small_LineQueueTest, ReportsClosureOnlyAfterClose)
+{
+    LineQueue queue;
+    EXPECT_FALSE(queue.closed());
 
     queue.close();
+
     EXPECT_TRUE(queue.closed());
 }
 
-TEST(ProcessTest, ReadsTwoLinesAndExitsZero)
+TEST(Medium_ProcessTest, ReadsTwoLinesAndExitsZero)
 {
     LineQueue queue;
     const std::vector<std::string> argv{python_executable(), "-c", "print('a');print('b')"};
@@ -104,15 +97,16 @@ TEST(ProcessTest, ReadsTwoLinesAndExitsZero)
     auto process = Process::start(argv, queue);
     ASSERT_NE(process, nullptr);
 
-    const std::vector<std::string> lines = drain_until_closed(queue);
+    // exit_code() waits for the child and joins the reader, so every line is queued after it.
     EXPECT_EQ(process->exit_code(), 0);
 
+    const std::vector<std::string> lines = take_all(queue);
     ASSERT_EQ(lines.size(), 2U);
     EXPECT_EQ(lines[0], "a");
     EXPECT_EQ(lines[1], "b");
 }
 
-TEST(ProcessTest, EchoesALineWrittenToStandardInput)
+TEST(Medium_ProcessTest, EchoesALineWrittenToStandardInput)
 {
     LineQueue queue;
     const std::vector<std::string> argv{python_executable(), "-c",
@@ -122,15 +116,25 @@ TEST(ProcessTest, EchoesALineWrittenToStandardInput)
     ASSERT_NE(process, nullptr);
 
     process->write_line("hello");
-
-    const std::vector<std::string> lines = drain_until_closed(queue);
     EXPECT_EQ(process->exit_code(), 0);
 
+    const std::vector<std::string> lines = take_all(queue);
     ASSERT_EQ(lines.size(), 1U);
     EXPECT_EQ(lines[0], "hello");
 }
 
-TEST(ProcessTest, ReportsFailureForAProgramThatIsNotThere)
+TEST(Medium_ProcessTest, ReturnsAChildsNonZeroExitCode)
+{
+    LineQueue queue;
+    const std::vector<std::string> argv{python_executable(), "-c", "import sys;sys.exit(3)"};
+
+    auto process = Process::start(argv, queue);
+    ASSERT_NE(process, nullptr);
+
+    EXPECT_EQ(process->exit_code(), 3);
+}
+
+TEST(Medium_ProcessTest, ReportsFailureForAProgramThatIsNotThere)
 {
     LineQueue queue;
     const std::vector<std::string> argv{"sushihub_gui_no_such_program"};

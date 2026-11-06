@@ -67,7 +67,7 @@ nlohmann::json recorded_status_payload()
 
 }
 
-TEST(InstallFactsTest, TheRecordedPayloadCarriesTheEngineAndTheHubBlock)
+TEST(Medium_InstallFactsTest, TheRecordedPayloadCarriesTheEngineAndTheHubBlock)
 {
     const nlohmann::json payload = recorded_status_payload();
 
@@ -77,17 +77,49 @@ TEST(InstallFactsTest, TheRecordedPayloadCarriesTheEngineAndTheHubBlock)
     EXPECT_TRUE(engine->contains("binary"));
     ASSERT_TRUE(payload.contains("hub"));
     EXPECT_EQ(InstallFacts::text(payload["hub"], "command", ""), "hub");
+}
+
+TEST(Small_InstallFactsTest, FindsAModuleByName)
+{
+    const nlohmann::json payload =
+        nlohmann::json::parse(R"({"modules":[{"name":"a"},{"name":"b"}]})");
+
+    const nlohmann::json* found = InstallFacts::find_module(payload, "b");
+
+    ASSERT_NE(found, nullptr);
+    EXPECT_EQ(InstallFacts::text(*found, "name", ""), "b");
+}
+
+TEST(Small_InstallFactsTest, FindsNoModuleForAnUnknownName)
+{
+    const nlohmann::json payload = nlohmann::json::parse(R"({"modules":[{"name":"a"}]})");
+
     EXPECT_EQ(InstallFacts::find_module(payload, "nothing-called-this"), nullptr);
 }
 
-TEST(InstallFactsTest, WritesTheDistanceOrThatThereIsNoUpstream)
+TEST(Small_InstallFactsTest, ReadsTheStringAtAKey)
+{
+    const nlohmann::json object{{"command", "hub"}};
+
+    EXPECT_EQ(InstallFacts::text(object, "command", "fallback"), "hub");
+}
+
+TEST(Small_InstallFactsTest, ReturnsTheFallbackForANullOrMissingKey)
+{
+    const nlohmann::json object{{"command", nullptr}};
+
+    EXPECT_EQ(InstallFacts::text(object, "command", "fallback"), "fallback");
+    EXPECT_EQ(InstallFacts::text(object, "absent", "fallback"), "fallback");
+}
+
+TEST(Small_InstallFactsTest, WritesTheDistanceOrThatThereIsNoUpstream)
 {
     EXPECT_EQ(InstallFacts::distance(nlohmann::json{{"ahead", 2}, {"behind", 0}}), "+2 / -0");
     EXPECT_EQ(InstallFacts::distance(nlohmann::json{{"ahead", nullptr}, {"behind", nullptr}}),
               "no upstream");
 }
 
-TEST(InstallFactsTest, CountsTheLastFetchInWholeDays)
+TEST(Small_InstallFactsTest, CountsTheLastFetchInWholeDays)
 {
     const long today = InstallFacts::days_from_iso("2026-09-15");
     const auto fetched = [](const char* iso) { return nlohmann::json{{"last_fetch", iso}}; };
@@ -101,15 +133,23 @@ TEST(InstallFactsTest, CountsTheLastFetchInWholeDays)
               "never fetched");
 }
 
-TEST(InstallFactsTest, CountsDaysAcrossALeapDay)
+TEST(Small_InstallFactsTest, CountsEpochZeroAsDayZero)
 {
     EXPECT_EQ(InstallFacts::days_from_iso("1970-01-01"), 0);
+}
+
+TEST(Small_InstallFactsTest, CountsDaysAcrossALeapDay)
+{
     EXPECT_EQ(InstallFacts::days_from_iso("2024-03-01") - InstallFacts::days_from_iso("2024-02-28"),
               2);
+}
+
+TEST(Small_InstallFactsTest, ReadsAnUnreadableDateAsMinusOne)
+{
     EXPECT_EQ(InstallFacts::days_from_iso("not a date"), -1);
 }
 
-TEST(InstallFactsTest, SaysWhetherANewerReleaseExistsOnlyAfterACheck)
+TEST(Small_InstallFactsTest, SaysWhetherANewerReleaseExistsOnlyAfterACheck)
 {
     const nlohmann::json current{{"version", "1.4.2"}, {"latest_version", "1.4.2"}};
     const nlohmann::json behind{{"version", "1.4.0"}, {"latest_version", "1.4.2"}};
@@ -121,7 +161,7 @@ TEST(InstallFactsTest, SaysWhetherANewerReleaseExistsOnlyAfterACheck)
     EXPECT_EQ(InstallFacts::newer_release(unanswered, true), "could not check");
 }
 
-TEST(InstallFactsTest, ReadsTheLicenceExpiryAsADate)
+TEST(Small_InstallFactsTest, ReadsTheLicenceExpiryAsADate)
 {
     const nlohmann::json licensed{
         {"binary", {{"platform", "windows-x64"}, {"licence_expires_at", "2027-03-01T00:00:00Z"}}}};
@@ -132,15 +172,21 @@ TEST(InstallFactsTest, ReadsTheLicenceExpiryAsADate)
     EXPECT_EQ(InstallFacts::licence(unlicensed), "no licence file");
 }
 
-TEST(InstallFactsTest, NamesTheAliasAndTheHubsCurrency)
+TEST(Small_InstallFactsTest, NamesTheAlias)
 {
-    const nlohmann::json hub{{"alias", {{"name", "sh"}, {"defined_in", "/home/u/.bashrc"}}},
-                             {"source", {{"branch", "main"}, {"ahead", 0}, {"behind", 3},
-                                         {"last_fetch", nullptr}}}};
-    const nlohmann::json bare{{"alias", nullptr}, {"source", nullptr}};
+    const nlohmann::json hub{{"alias", {{"name", "sh"}, {"defined_in", "/home/u/.bashrc"}}}};
+    const nlohmann::json bare{{"alias", nullptr}};
 
     EXPECT_EQ(InstallFacts::alias(hub), "sh, in /home/u/.bashrc");
     EXPECT_EQ(InstallFacts::alias(bare), "not defined");
+}
+
+TEST(Small_InstallFactsTest, NamesTheHubsCurrency)
+{
+    const nlohmann::json hub{{"source", {{"branch", "main"}, {"ahead", 0}, {"behind", 3},
+                                         {"last_fetch", nullptr}}}};
+    const nlohmann::json bare{{"source", nullptr}};
+
     EXPECT_EQ(InstallFacts::hub_currency(hub, true), "3 commits behind");
     EXPECT_EQ(InstallFacts::hub_currency(bare, true), "unknown");
 }

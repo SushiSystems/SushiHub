@@ -32,10 +32,9 @@
 #include "model/RunLog.hpp"
 #include "model/RunState.hpp"
 
-#include "FixtureFile.hpp"
-
 #include <gtest/gtest.h>
 
+#include <initializer_list>
 #include <string>
 #include <vector>
 
@@ -46,10 +45,18 @@ using SushiHub::Gui::CommandRun;
 using SushiHub::Gui::LineQueue;
 using SushiHub::Gui::RunLog;
 using SushiHub::Gui::RunState;
-using SushiHub::GuiTests::fixture_lines;
+
+/** @brief Pushes each of @p lines into @p queue in order. */
+void push_lines(LineQueue& queue, std::initializer_list<const char*> lines)
+{
+    for (const char* line : lines)
+    {
+        queue.push(line);
+    }
+}
 
 /** @brief Holds a started run whose lines the test pushes by hand. */
-class ScriptedRun : public ::testing::Test
+class Small_ScriptedRun : public ::testing::Test
 {
 protected:
     /** @brief Starts the run before the test body pushes its first line. */
@@ -67,12 +74,20 @@ protected:
 
 }
 
-TEST_F(ScriptedRun, FoldsTheHandWrittenStreamIntoEveryProjection)
+TEST_F(Small_ScriptedRun, FoldsEveryEventKindIntoItsProjection)
 {
-    for (const std::string& line : fixture_lines("events/all_kinds.jsonl"))
-    {
-        queue_.push(line);
-    }
+    push_lines(queue_, {
+        R"({"event":"command","command":"hub --json status"})",
+        R"({"event":"header","title":"SushiStack Status"})",
+        R"({"event":"line","level":"info","message":"Workspace: ws"})",
+        R"({"event":"progress","label":"scan-modules","index":1,"count":2,"fraction":0.5})",
+        R"({"event":"progress","label":"read-dependencies","index":2,"count":2,"fraction":null})",
+        R"({"event":"table","title":"Modules","columns":["Module","Presence","Branch"],"rows":[["sushiruntime","cloned","main"],["sushiblas","linked","main"],["sushiengine","binary","-"]]})",
+        R"({"event":"panel","title":"sushiai is missing","body":"Run hub add sushiai."})",
+        R"({"event":"line","level":"warn","message":"1 declared module is not present."})",
+        R"({"event":"prompt","id":"prompt-1","message":"Clone sushiai now?","default":"n"})",
+        R"({"event":"line","level":"success","message":"Status read."})",
+        R"({"event":"result","ok":true,"payload":{"modules":[{"name":"sushiruntime"}]}})"});
     queue_.close();
     run_.poll();
 
@@ -100,55 +115,71 @@ TEST_F(ScriptedRun, FoldsTheHandWrittenStreamIntoEveryProjection)
     EXPECT_TRUE(state.result->payload.contains("modules"));
 }
 
-TEST_F(ScriptedRun, FoldsInStagesAndOnlyFinishesWhenTheQueueCloses)
+TEST_F(Small_ScriptedRun, FoldsOnlyTheLinesQueuedBeforeEachPoll)
 {
-    run_.poll();
-    EXPECT_FALSE(run_.state().finished);
-    EXPECT_TRUE(run_.state().events.empty());
-
     queue_.push(R"({"event":"header","title":"SushiStack Status"})");
     run_.poll();
-    EXPECT_EQ(run_.state().events.size(), 1U);
-    EXPECT_FALSE(run_.state().finished);
+    ASSERT_EQ(run_.state().events.size(), 1U);
 
     queue_.push(R"({"event":"line","level":"info","message":"one"})");
-    queue_.push(R"({"event":"result","ok":false,"payload":{}})");
+    queue_.push(R"({"event":"line","level":"info","message":"two"})");
+    run_.poll();
+
+    EXPECT_EQ(run_.state().events.size(), 3U);
+}
+
+TEST_F(Small_ScriptedRun, FinishesOnlyOnceTheQueueIsClosed)
+{
+    queue_.push(R"({"event":"line","level":"info","message":"one"})");
+    run_.poll();
+    ASSERT_FALSE(run_.state().finished);
+
     queue_.close();
     run_.poll();
 
     EXPECT_TRUE(run_.state().finished);
-    EXPECT_EQ(run_.state().events.size(), 3U);
-    ASSERT_TRUE(run_.state().result.has_value());
-    EXPECT_FALSE(run_.state().result->ok);
 }
 
-TEST_F(ScriptedRun, KeepsTheLatestProgressAndTheLatestPrompt)
+TEST_F(Small_ScriptedRun, KeepsTheLatestProgress)
 {
     queue_.push(R"({"event":"progress","label":"first","index":1,"count":2,"fraction":0.5})");
     queue_.push(R"({"event":"progress","label":"second","index":2,"count":2,"fraction":1.0})");
-    queue_.push(R"({"event":"prompt","id":"prompt-1","message":"a?","default":null})");
-    queue_.push(R"({"event":"prompt","id":"prompt-2","message":"b?","default":"y"})");
     run_.poll();
 
     ASSERT_TRUE(run_.state().progress.has_value());
     EXPECT_EQ(run_.state().progress->label, "second");
+}
+
+TEST_F(Small_ScriptedRun, KeepsTheLatestPrompt)
+{
+    queue_.push(R"({"event":"prompt","id":"prompt-1","message":"a?","default":null})");
+    queue_.push(R"({"event":"prompt","id":"prompt-2","message":"b?","default":"y"})");
+    run_.poll();
+
     ASSERT_TRUE(run_.state().pending_prompt.has_value());
     EXPECT_EQ(run_.state().pending_prompt->id, "prompt-2");
 }
 
-TEST_F(ScriptedRun, RecordsABadLineAsAnErrorAndKeepsFolding)
+TEST_F(Small_ScriptedRun, RecordsABadLineAsAnError)
+{
+    queue_.push("this is not JSON");
+    run_.poll();
+
+    ASSERT_EQ(run_.state().errors.size(), 1U);
+    EXPECT_FALSE(run_.state().errors.front().reason.empty());
+}
+
+TEST_F(Small_ScriptedRun, KeepsFoldingAfterABadLine)
 {
     queue_.push("this is not JSON");
     queue_.push(R"({"event":"line","level":"info","message":"after the bad line"})");
     run_.poll();
 
-    ASSERT_EQ(run_.state().errors.size(), 1U);
-    EXPECT_FALSE(run_.state().errors.front().reason.empty());
     ASSERT_EQ(run_.state().lines.size(), 1U);
     EXPECT_EQ(run_.state().lines.front().message, "after the bad line");
 }
 
-TEST_F(ScriptedRun, ClearsThePendingPromptWhenItIsAnswered)
+TEST_F(Small_ScriptedRun, ClearsThePendingPromptWhenItIsAnswered)
 {
     queue_.push(R"({"event":"prompt","id":"prompt-1","message":"Clone?","default":"n"})");
     run_.poll();
@@ -158,13 +189,13 @@ TEST_F(ScriptedRun, ClearsThePendingPromptWhenItIsAnswered)
     EXPECT_FALSE(run_.state().pending_prompt.has_value());
 }
 
-TEST_F(ScriptedRun, RefusesASecondStart)
+TEST_F(Small_ScriptedRun, RefusesASecondStart)
 {
     EXPECT_TRUE(run_.started());
     EXPECT_FALSE(run_.start());
 }
 
-TEST(CommandRunTest, ReportsAProgramThatCannotBeSpawned)
+TEST(Medium_CommandRunTest, ReportsAProgramThatCannotBeSpawned)
 {
     CommandRun run({"sushihub_gui_no_such_program", "--json", "status"});
 
@@ -174,7 +205,7 @@ TEST(CommandRunTest, ReportsAProgramThatCannotBeSpawned)
     EXPECT_EQ(run.state().lines.front().level, "error");
 }
 
-TEST(RunLogTest, HoldsNoRunBeforeTheFirstAdoption)
+TEST(Small_RunLogTest, HoldsNoRunBeforeTheFirstAdoption)
 {
     RunLog log;
 
@@ -182,7 +213,7 @@ TEST(RunLogTest, HoldsNoRunBeforeTheFirstAdoption)
     EXPECT_TRUE(log.label().empty());
 }
 
-TEST(RunLogTest, PointsAtTheRunItAdoptedAndKeepsItsLabel)
+TEST(Small_RunLogTest, PointsAtTheRunItAdopted)
 {
     LineQueue queue;
     CommandRun run({"hub", "--json", "status"}, queue);
@@ -192,10 +223,20 @@ TEST(RunLogTest, PointsAtTheRunItAdoptedAndKeepsItsLabel)
 
     ASSERT_TRUE(log.has_run());
     EXPECT_EQ(&log.run(), &run);
+}
+
+TEST(Small_RunLogTest, KeepsTheLabelItAdoptedWith)
+{
+    LineQueue queue;
+    CommandRun run({"hub", "--json", "status"}, queue);
+    RunLog log;
+
+    log.adopt(run, "hub status");
+
     EXPECT_EQ(log.label(), "hub status");
 }
 
-TEST(RunLogTest, FollowsTheRunAdoptedLast)
+TEST(Small_RunLogTest, FollowsTheRunAdoptedLast)
 {
     LineQueue first_queue;
     LineQueue second_queue;

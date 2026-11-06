@@ -22,7 +22,7 @@
 /**************************************************************************/
 
 /** @file catalogue_test.cpp
- *  @brief Checks that the recorded and hand-written catalogues parse and every type maps.
+ *  @brief Checks that catalogue documents parse, every parameter type maps and bad ones refuse.
  *  @author Mustafa Garip
  */
 
@@ -33,7 +33,6 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <set>
 #include <string>
 #include <variant>
 #include <vector>
@@ -50,28 +49,45 @@ using SushiHub::Gui::parse_catalogue;
 using SushiHub::Gui::parse_parameter_type;
 using SushiHub::GuiTests::fixture_text;
 
-/** @brief Parses the fixture @p name and fails the test with the reason when it will not. */
-Catalogue catalogue_from(const char* name)
+/** @brief Holds the command with one required multiple argument and one boolean option. */
+const char* const ADD_COMMAND = R"json({"name": "add", "help": "Clone modules.", "params": [
+    {"name": "modules", "kind": "argument", "type": "string", "multiple": true, "required": true,
+     "default": null, "choices": null, "flags": [], "help": "Modules to clone."},
+    {"name": "dry_run", "kind": "option", "type": "boolean", "multiple": false, "required": false,
+     "default": false, "choices": null, "flags": ["--dry-run"], "help": "Show only."}
+  ], "applies_to": ["cloned", "linked", "binary"]})json";
+
+/** @brief Holds the command with one choice option and one path option. */
+const char* const INSTALL_COMMAND = R"json({"name": "install", "help": "Provision.", "params": [
+    {"name": "prefix", "kind": "option", "type": "path", "multiple": false, "required": false,
+     "default": null, "choices": null, "flags": ["--prefix"], "help": "Where to write."},
+    {"name": "profile", "kind": "option", "type": "choice", "multiple": false, "required": false,
+     "default": "release", "choices": ["debug", "release", "relwithdebinfo"],
+     "flags": ["--profile"], "help": "Which profile."}
+  ], "applies_to": ["cloned", "linked", "binary"]})json";
+
+/** @brief Holds the command that takes no parameters. */
+const char* const STATUS_COMMAND = R"json({"name": "status", "help": "Show modules.",
+  "params": [], "applies_to": ["cloned", "linked", "binary"]})json";
+
+/** @brief Wraps @p commands, a comma-separated list of command objects, into a whole document. */
+std::string document_with(const std::string& commands)
 {
-    const std::variant<Catalogue, ParseError> outcome = parse_catalogue(fixture_text(name));
+    const std::string head =
+        R"json({"program": "hub", "version": "1.0.0", "contract": "1", "commands": [)json";
+    return head + commands + "]}";
+}
+
+/** @brief Parses @p document and fails the test with the reason when it will not parse. */
+Catalogue catalogue_from_text(const std::string& document)
+{
+    const std::variant<Catalogue, ParseError> outcome = parse_catalogue(document);
     if (std::holds_alternative<ParseError>(outcome))
     {
         ADD_FAILURE() << std::get<ParseError>(outcome).reason;
         return Catalogue{};
     }
     return std::get<Catalogue>(outcome);
-}
-
-/** @brief Parses what `hub --describe` printed when the fixture was last recorded. */
-Catalogue recorded_catalogue()
-{
-    return catalogue_from("describe.json");
-}
-
-/** @brief Parses the hand-written catalogue that carries one parameter of every type. */
-Catalogue hand_written_catalogue()
-{
-    return catalogue_from("all_types.json");
 }
 
 /** @brief Returns the command named @p name, or a default one when it is not there. */
@@ -106,64 +122,76 @@ Parameter parameter_named(const Command& command, const std::string& name)
     return *found;
 }
 
+/** @brief Pairs a type name the contract allows with the enumerator it must map to. */
+struct TypeRow
+{
+    /** @brief Holds the name as the catalogue spells it. */
+    const char* name;
+
+    /** @brief Holds the enumerator the name maps to. */
+    ParameterType type;
+};
+
+/** @brief Runs the name-to-type map once per row of TypeRow. */
+class Small_ParameterTypeTest : public ::testing::TestWithParam<TypeRow>
+{
+};
+
+/** @brief Runs the refusal check once per malformed document. */
+class Small_CatalogueRefusalTest : public ::testing::TestWithParam<std::string>
+{
+};
+
 }
 
-TEST(CatalogueTest, ReadsTheProgramVersionAndContract)
+TEST(Small_CatalogueTest, ReadsTheProgramVersionAndContract)
 {
-    const Catalogue catalogue = recorded_catalogue();
+    const Catalogue catalogue = catalogue_from_text(document_with(STATUS_COMMAND));
 
     EXPECT_EQ(catalogue.program, "hub");
-    EXPECT_FALSE(catalogue.version.empty());
+    EXPECT_EQ(catalogue.version, "1.0.0");
     EXPECT_EQ(catalogue.contract, "1");
-    EXPECT_FALSE(catalogue.commands.empty());
+    EXPECT_EQ(catalogue.commands.size(), 1U);
 }
 
-TEST(CatalogueTest, MapsEveryParameterTypeTheContractAllows)
+TEST_P(Small_ParameterTypeTest, MapsTheNameToItsEnumerator)
 {
     ParameterType type = ParameterType::string;
-    const char* names[] = {"string", "boolean", "integer", "number", "path", "choice"};
-    const ParameterType expected[] = {ParameterType::string, ParameterType::boolean,
-                                      ParameterType::integer, ParameterType::number,
-                                      ParameterType::path, ParameterType::choice};
 
-    for (std::size_t index = 0; index < 6; ++index)
-    {
-        ASSERT_TRUE(parse_parameter_type(names[index], type)) << names[index];
-        EXPECT_EQ(type, expected[index]);
-    }
+    ASSERT_TRUE(parse_parameter_type(GetParam().name, type));
+    EXPECT_EQ(type, GetParam().type);
+}
+
+INSTANTIATE_TEST_SUITE_P(ContractTypes, Small_ParameterTypeTest,
+                         ::testing::Values(TypeRow{"string", ParameterType::string},
+                                           TypeRow{"boolean", ParameterType::boolean},
+                                           TypeRow{"integer", ParameterType::integer},
+                                           TypeRow{"number", ParameterType::number},
+                                           TypeRow{"path", ParameterType::path},
+                                           TypeRow{"choice", ParameterType::choice}));
+
+TEST(Small_CatalogueTest, RefusesAParameterTypeTheContractDoesNotAllow)
+{
+    ParameterType type = ParameterType::string;
 
     EXPECT_FALSE(parse_parameter_type("colour", type));
 }
 
-TEST(CatalogueTest, TheHandWrittenCatalogueCarriesEveryParameterType)
+TEST(Small_CatalogueTest, ReadsAnArgumentsFields)
 {
-    const Catalogue catalogue = hand_written_catalogue();
-
-    std::set<ParameterType> seen;
-    for (const Command& command : catalogue.commands)
-    {
-        for (const Parameter& parameter : command.parameters)
-        {
-            seen.insert(parameter.type);
-        }
-    }
-
-    const std::set<ParameterType> expected{ParameterType::string, ParameterType::boolean,
-                                           ParameterType::integer, ParameterType::number,
-                                           ParameterType::path, ParameterType::choice};
-    EXPECT_EQ(seen, expected);
-}
-
-TEST(CatalogueTest, ReadsAnArgumentAndAnOptionOfTheSameCommand)
-{
-    const Command add = command_named(hand_written_catalogue(), "add");
+    const Command add = command_named(catalogue_from_text(document_with(ADD_COMMAND)), "add");
 
     const Parameter modules = parameter_named(add, "modules");
     EXPECT_TRUE(modules.is_argument);
     EXPECT_TRUE(modules.multiple);
     EXPECT_TRUE(modules.required);
     EXPECT_TRUE(modules.flags.empty());
-    EXPECT_FALSE(modules.help.empty());
+    EXPECT_EQ(modules.help, "Modules to clone.");
+}
+
+TEST(Small_CatalogueTest, ReadsAnOptionsFields)
+{
+    const Command add = command_named(catalogue_from_text(document_with(ADD_COMMAND)), "add");
 
     const Parameter dry_run = parameter_named(add, "dry_run");
     EXPECT_FALSE(dry_run.is_argument);
@@ -173,15 +201,22 @@ TEST(CatalogueTest, ReadsAnArgumentAndAnOptionOfTheSameCommand)
     EXPECT_FALSE(dry_run.default_value.get<bool>());
 }
 
-TEST(CatalogueTest, ReadsAChoiceWithItsValuesAndLeavesOthersEmpty)
+TEST(Small_CatalogueTest, ReadsAChoiceWithItsValuesAndDefault)
 {
-    const Command install = command_named(hand_written_catalogue(), "install");
+    const Command install =
+        command_named(catalogue_from_text(document_with(INSTALL_COMMAND)), "install");
 
     const Parameter profile = parameter_named(install, "profile");
     EXPECT_EQ(profile.type, ParameterType::choice);
     ASSERT_EQ(profile.choices.size(), 3U);
     EXPECT_EQ(profile.choices[0], "debug");
     EXPECT_EQ(profile.default_value.get<std::string>(), "release");
+}
+
+TEST(Small_CatalogueTest, LeavesChoicesAndDefaultEmptyOnAParameterThatHasNone)
+{
+    const Command install =
+        command_named(catalogue_from_text(document_with(INSTALL_COMMAND)), "install");
 
     const Parameter prefix = parameter_named(install, "prefix");
     EXPECT_EQ(prefix.type, ParameterType::path);
@@ -189,17 +224,19 @@ TEST(CatalogueTest, ReadsAChoiceWithItsValuesAndLeavesOthersEmpty)
     EXPECT_TRUE(prefix.default_value.is_null());
 }
 
-TEST(CatalogueTest, ReadsACommandWithNoParameters)
+TEST(Small_CatalogueTest, ReadsACommandWithNoParameters)
 {
-    const Command status = command_named(hand_written_catalogue(), "status");
+    const Command status =
+        command_named(catalogue_from_text(document_with(STATUS_COMMAND)), "status");
 
     EXPECT_TRUE(status.parameters.empty());
-    EXPECT_FALSE(status.applies_to.empty());
+    EXPECT_EQ(status.applies_to.size(), 3U);
 }
 
-TEST(CatalogueTest, TheRecordedCatalogueOffersTheUpdateCheck)
+TEST(Medium_CatalogueTest, TheRecordedCatalogueOffersTheUpdateCheck)
 {
-    const Command status = command_named(recorded_catalogue(), "status");
+    const Command status =
+        command_named(catalogue_from_text(fixture_text("describe.json")), "status");
 
     const Parameter check = parameter_named(status, "check_updates");
     EXPECT_EQ(check.type, ParameterType::boolean);
@@ -207,20 +244,19 @@ TEST(CatalogueTest, TheRecordedCatalogueOffersTheUpdateCheck)
     EXPECT_EQ(check.flags[0], "--check-updates");
 }
 
-TEST(CatalogueTest, RefusesABadCatalogueWithAReasonInsteadOfThrowing)
+TEST_P(Small_CatalogueRefusalTest, RefusesTheDocumentWithAReasonInsteadOfThrowing)
 {
-    const std::vector<std::string> refused{
-        "not json at all",
-        "[]",
-        R"({"program":"hub","version":"1","contract":"1"})",
-        R"({"program":"hub","version":"1","contract":"1","commands":{}})",
-        R"({"program":"hub","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"flag","type":"string","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})",
-        R"({"program":"hub","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"option","type":"colour","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})"};
+    const std::variant<Catalogue, ParseError> outcome = parse_catalogue(GetParam());
 
-    for (const std::string& document : refused)
-    {
-        const std::variant<Catalogue, ParseError> outcome = parse_catalogue(document);
-        ASSERT_TRUE(std::holds_alternative<ParseError>(outcome)) << "accepted: " << document;
-        EXPECT_FALSE(std::get<ParseError>(outcome).reason.empty());
-    }
+    ASSERT_TRUE(std::holds_alternative<ParseError>(outcome));
+    EXPECT_FALSE(std::get<ParseError>(outcome).reason.empty());
 }
+
+INSTANTIATE_TEST_SUITE_P(
+    BadDocuments, Small_CatalogueRefusalTest,
+    ::testing::Values(
+        std::string("not json at all"), std::string("[]"),
+        std::string(R"json({"program":"hub","version":"1","contract":"1"})json"),
+        std::string(R"json({"program":"hub","version":"1","contract":"1","commands":{}})json"),
+        std::string(R"json({"program":"hub","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"flag","type":"string","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})json"),
+        std::string(R"json({"program":"hub","version":"1","contract":"1","commands":[{"name":"a","help":"h","applies_to":[],"params":[{"name":"p","kind":"option","type":"colour","multiple":false,"required":false,"default":null,"choices":null,"flags":[],"help":""}]}]})json")));
