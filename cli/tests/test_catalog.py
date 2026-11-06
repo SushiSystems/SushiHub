@@ -15,10 +15,33 @@ pytestmark = pytest.mark.small
 MODULES = ["sushilog", "sushiprofiler", "sushiruntime", "sushiengine",
            "sushiai", "sushiblas", "sushitrack", "sushidsp"]
 
+#: The libraries each module links that the catalog lists ahead of it.
+K_LINKS = {
+    "sushiruntime": ["sushilog", "sushiprofiler"],
+    "sushiengine": ["sushilog", "sushiprofiler", "sushiruntime"],
+    "sushiai": ["sushilog", "sushiprofiler", "sushiruntime"],
+    "sushiblas": ["sushilog", "sushiprofiler", "sushiruntime"],
+    "sushitrack": ["sushilog", "sushiprofiler"],
+    "sushidsp": ["sushilog", "sushiprofiler"],
+}
+K_LINK_ROWS = [(module, upstream) for module, upstreams in K_LINKS.items()
+               for upstream in upstreams]
+
 
 def test_the_catalog_holds_the_eight_stack_modules():
-    """Eight modules are registered, in the order every command lists them."""
-    assert CATALOG.names() == MODULES
+    """Eight modules are registered, whatever their order."""
+    assert sorted(CATALOG.names()) == sorted(MODULES)
+
+
+@pytest.mark.parametrize("module, upstream", K_LINK_ROWS)
+def test_the_catalog_lists_a_library_ahead_of_the_module_that_links_it(module, upstream):
+    """Every library a module links comes before it in the order commands list them.
+
+    SushiBLAS, which SushiEngine and SushiAI link too, is listed after them, so those two edges
+    are not promised.
+    """
+    names = CATALOG.names()
+    assert names.index(upstream) < names.index(module)
 
 
 @pytest.mark.parametrize("name", MODULES)
