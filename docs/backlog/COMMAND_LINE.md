@@ -25,6 +25,7 @@
 | RW-54 | P2 | open | Give the command line and the desktop application a logger | both log through the `logging` skill's interface |  |  | 2026-10-19 |
 | RW-57 | P2 | open | Stop the hub CLI reading SushiHub where the module-install rule forbids it | check_module_install.py reports nothing for cli/sushihub |  |  | 2026-10-28 |
 | RW-59 | P2 | open | Add the module-install elements: sushi-module.toml, deps file, install headings | check_module_install.py reports no missing element for this repository |  |  | 2026-11-01 |
+| RW-66 | P3 | open | Give hub link and ProcessGit a console port so no test replaces modules.console | No test replaces modules.console, and ProcessGit prints through the console port |  | `cli/tests/test_link.py` | 2026-11-07 |
 
 ## Known issues
 
