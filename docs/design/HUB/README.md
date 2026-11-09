@@ -244,6 +244,7 @@ status is kept.
 | W5 | `hub add sushiengine` source-or-binary; download, verify, unpack; licence file. Waits on 2, 3. | built |
 | W6 | sushiengine: binary command set; `se editor --project`; runtime licence client. Waits on 5. | planned |
 | W7 | Install scripts fetch the desktop application; both journeys walked end to end. Waits on 4, 6. | planned |
+| W8 | Data packages: `[data.*]` tables, store, verified download and placement, `--no-data`, doctor rows ([DATA_PACKAGES.md](DATA_PACKAGES.md)) | built |
 
 Waves 1a and 1b touch disjoint files: 1a moves `cli/` and adds to `sushicore/sushicore/renderer.py` and
 `cli.py`; 1b edits `setup/factory.py`, `setup/steps.py` and the two install scripts. They land in

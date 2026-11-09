@@ -2,7 +2,7 @@
 checker = "documentation/check_docs_truth.py"
 rule = "rule_cited_paths"
 path = "cli/README.md"
-count = 9
+count = 10
 backlog = "RW-60"
 
 [[finding]]
@@ -128,7 +128,7 @@ backlog = "RW-60"
 checker = "documentation/check_module_install.py"
 rule = "rule_no_workspace_in_code"
 path = "cli/sushihub/cli.py"
-count = 14
+count = 16
 backlog = "RW-60"
 
 [[finding]]
@@ -199,4 +199,11 @@ checker = "testing/check_test_sizes.py"
 rule = "rule_unsized_python_test"
 path = "tools/tests/test_test_budget_settings.py"
 count = 1
+backlog = "RW-60"
+
+[[finding]]
+checker = "documentation/check_module_install.py"
+rule = "rule_no_workspace_in_code"
+path = "cli/sushihub/services/data/report.py"
+count = 2
 backlog = "RW-60"

@@ -76,6 +76,41 @@ checkout exists, so a name only a manifest knows cannot be added by name — the
 describes a checkout that is already on disk. A module can therefore be known to `hub status`
 and unknown to `hub add`, and both commands say so plainly.
 
+## Data packages
+
+A module that needs a large reference file in its tests or tools declares it in the dependency
+fragment, one `[data.<name>]` table per file. `hub install` downloads it from the publisher, checks
+it and copies it into the checkout.
+
+```toml
+[data.de440_ascii_1950]
+description = "JPL DE440 ephemeris, ASCII block from 1950."
+url         = "https://ssd.jpl.nasa.gov/ftp/eph/planets/ascii/de440/ascp01950.440"
+sha256      = "<64 hex digits>"
+bytes       = 0
+licence     = "JPL ephemerides: public, no restriction stated"
+destination = "assets/astro/raw/ascp01950.440"
+required    = false
+```
+
+| Key | Required | What it is |
+| --- | --- | --- |
+| `url` | yes | The publisher's `http` or `https` address of the file. Its last path segment names the file in the store and holds letters, digits and `. _ + % ~ -` only |
+| `sha256` | yes | The digest of the file, 64 hex digits |
+| `bytes` | yes | The length of the file |
+| `licence` | yes | The publisher's licence or terms, in one line |
+| `destination` | yes | Where the module reads the file, relative to its checkout. It must stay inside the checkout, and the module's `.gitignore` covers it |
+| `description` | no | What the file is for |
+| `required` | no | `true` makes a failed download fail `hub install`. The default is `false`: the failure is a warning |
+
+A table that lacks a required key, or holds a wrong value, is refused with an error that names the
+fragment, the table and the key. `hub install` keeps each verified file once per machine under
+`dependencies/data/<sha256>/<file name>`, so a second module declaring the same file makes no
+request. `hub install --no-data` skips the packages. `hub doctor` lists each as `OK`, `MISSING` or
+`CORRUPT` beside its owner. An archive is placed as downloaded; unpacking it and cooking it are
+the module's work, named in the module's install documentation. The steps are in
+`../../cli/README.md`, "Data packages".
+
 ## Where it is used
 
 - The catalog it falls back to: `cli/sushihub/catalog.toml`.

@@ -323,6 +323,7 @@ def update(
     rich_help_panel=K_DEPENDENCIES,
     epilog="hub install\n"
            "hub install --customize  # Pick toolchains interactively\n"
+           "hub install --no-data    # Leave the data packages out\n"
            "hub install --dry-run",
 )
 def install(
@@ -337,11 +338,16 @@ def install(
     refresh_toolchains: bool = typer.Option(
         False, "--refresh-toolchains",
         help="Re-download the SYCL toolchain even if one is already installed."),
+    no_data: bool = typer.Option(
+        False, "--no-data",
+        help="Skip the modules' data packages, the large reference files [bold]hub install[/bold] "
+             "downloads from their publishers."),
 ):
     """Provision the shared dependencies into the workspace's dependencies/ tree.
 
-    Installs what the present modules declare. Use [bold]--customize[/bold] to add
-    or drop a toolchain.
+    Installs what the present modules declare, then downloads each data package they
+    declare into dependencies/data and copies it where the module reads it, after checking
+    its size and SHA-256. Use [bold]--customize[/bold] to add or drop a toolchain.
     """
     selection = None
     if customize:
@@ -354,7 +360,8 @@ def install(
         if selection is None:
             _finish(1)
     _finish(setup_svc.run("provision", dry_run=dry_run, selection=selection,
-                          assume_yes=yes, refresh_toolchains=refresh_toolchains))
+                          assume_yes=yes, refresh_toolchains=refresh_toolchains,
+                          with_data=not no_data))
 
 
 @app.command(
@@ -375,7 +382,11 @@ def sync(
     epilog="hub doctor",
 )
 def doctor():
-    """Inventory tools, compilers, and dependencies; report what is missing."""
+    """Inventory tools, compilers, dependencies and data packages; report what is missing.
+
+    A data package is listed with its owner as present, missing or corrupt, judged by the
+    copy at the place its module reads it.
+    """
     _finish(setup_svc.run("detect", dry_run=False))
 
 

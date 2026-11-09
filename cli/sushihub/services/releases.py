@@ -19,7 +19,7 @@ import tempfile
 import urllib.request
 import zipfile
 from pathlib import Path
-from typing import Callable, Iterable
+from typing import Callable, Iterable, Mapping, Protocol
 from urllib.parse import urlparse
 
 from .identity import ReleaseInfo
@@ -37,6 +37,14 @@ TIMEOUT = 60.0
 
 # The machine names Sushi Account knows under another spelling.
 _ARCHITECTURES = {"amd64": "x64", "x86_64": "x64", "aarch64": "arm64"}
+
+
+class ByteDigest(Protocol):
+    """A running hash a download feeds as the bytes arrive, such as ``hashlib.sha256()``."""
+
+    def update(self, data: bytes, /) -> object:
+        """Adds *data* to the hash."""
+        ...
 
 
 class ReleaseCorrupt(RuntimeError):
@@ -66,7 +74,9 @@ class MachineHost:
 
 def download(url: str, dest: Path, *,
              on_progress: Callable[[int, int], None] | None = None,
-             http: Callable = urllib.request.urlopen) -> int:
+             http: Callable = urllib.request.urlopen,
+             headers: Mapping[str, str] | None = None,
+             digest: ByteDigest | None = None) -> int:
     """Stream *url* into *dest* and return how many bytes arrived.
 
     Args:
@@ -75,8 +85,12 @@ def download(url: str, dest: Path, *,
         on_progress: Called after every chunk with the bytes written so far and
             the total the response declares, zero when it declares none.
         http: What opens *url*; the seam a test replaces.
+        headers: Request headers to send; *url* is opened bare when None.
+        digest: A hash fed every chunk as it is written, so the caller needs no
+            second read of the file.
     """
-    with http(url, timeout=TIMEOUT) as response:
+    request = url if not headers else urllib.request.Request(url, headers=dict(headers))
+    with http(request, timeout=TIMEOUT) as response:
         total = int(response.headers.get("Content-Length") or 0)
         done = 0
         with dest.open("wb") as out:
@@ -85,10 +99,21 @@ def download(url: str, dest: Path, *,
                 if not chunk:
                     break
                 out.write(chunk)
+                if digest is not None:
+                    digest.update(chunk)
                 done += len(chunk)
                 if on_progress is not None:
                     on_progress(done, total)
     return done
+
+
+def sha256_of(path: Path) -> str:
+    """Return the lower-case hexadecimal SHA-256 of the file at *path*."""
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(CHUNK), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def verify(path: Path, sha256: str, size: int) -> None:
@@ -106,13 +131,10 @@ def verify(path: Path, sha256: str, size: int) -> None:
     if measured != size:
         raise ReleaseCorrupt(
             f"{path.name}: the size is {measured} bytes, not the {size} Sushi Account declared.")
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for chunk in iter(lambda: handle.read(CHUNK), b""):
-            digest.update(chunk)
-    if digest.hexdigest() != sha256:
+    measured_digest = sha256_of(path)
+    if measured_digest != sha256:
         raise ReleaseCorrupt(
-            f"{path.name}: the sha256 is {digest.hexdigest()}, not the {sha256} "
+            f"{path.name}: the sha256 is {measured_digest}, not the {sha256} "
             "Sushi Account declared.")
 
 
@@ -174,7 +196,7 @@ def install_release(name: str, root: Path, client: AccountClient, console, *,
     try:
         archive = staging / _archive_name(name, info)
         download(info.url, archive, http=http,
-                 on_progress=lambda done, total: _report(console, done, total or info.size))
+                 on_progress=lambda done, total: report_progress(console, done, total or info.size))
         verify(archive, info.sha256, info.size)
         unpacked = staging / name
         unpack(archive, unpacked)
@@ -188,7 +210,7 @@ def install_release(name: str, root: Path, client: AccountClient, console, *,
     return release
 
 
-def _report(console, done: int, total: int) -> None:
+def report_progress(console, done: int, total: int) -> None:
     """Emit one download progress event, with a fraction when the total is known."""
     console.progress(DOWNLOAD_LABEL, done, total, done / total if total else None)
 

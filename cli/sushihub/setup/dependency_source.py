@@ -28,6 +28,7 @@ from sushicore.provision.fragments import (  # noqa: F401
 
 from ..config import find_workspace_root
 from ..services import links
+from ..services.data import K_DATA_TABLE
 from ..services.presence import is_binary
 
 #: Path, relative to a module's repo root, of the fragment it contributes.
@@ -118,3 +119,11 @@ class TomlDependencySource(_CoreSource):
     def __init__(self, sources: list[tuple[Path, str]] | None = None) -> None:
         """Default to every manifest the workspace carries."""
         super().__init__(manifest_sources() if sources is None else sources)
+
+    def all(self) -> list[Dependency]:
+        """Every declared dependency; the ``[data.<name>]`` tables are not among them.
+
+        sushicore's reader takes the ``[data]`` table for a dependency called ``data``;
+        :mod:`sushihub.services.data` reads the tables, so this source drops that entry.
+        """
+        return [dep for dep in super().all() if dep.name != K_DATA_TABLE]

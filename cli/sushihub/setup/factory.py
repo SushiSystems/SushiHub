@@ -14,10 +14,23 @@ from __future__ import annotations
 
 from functools import partial
 
+from sushicore.provision import home as provision_home
 from sushicore.provision import probe, selection
 from sushicore.provision.sinks import WorkspaceSink
 
+from .. import console
 from ..config import DEFAULT_ACTIVE_TOOLCHAIN, TOOLCHAINS, Config, load_config, workspace_root
+from ..services.data import (
+    DataInstaller,
+    DataPlacer,
+    DataReport,
+    DataSource,
+    DataStore,
+    Downloader,
+    HttpDownloader,
+    WorkspaceDataSource,
+)
+from .data_step import DataStep
 from .dependency_source import IDependencySource, TomlDependencySource
 from .package_managers import (
     AptManager,
@@ -40,6 +53,9 @@ from .steps import (
 )
 
 STEP_NAMES = ("detect", "install", "configure", "provision")
+
+#: The folder of the dependency root that holds the data store: ``dependencies/data``.
+K_DATA_STORE = "data"
 
 #: What hub says where the shared provisioning code names the command that drives it.
 _HUB_WORDING = {
@@ -86,16 +102,20 @@ def build_pipeline(
     cfg: Config | None = None,
     source: IDependencySource | None = None,
     managers: list[IPackageManager] | None = None,
+    data: bool = True,
+    data_source: DataSource | None = None,
+    downloader: Downloader | None = None,
 ) -> tuple[InstallPipeline, InstallContext]:
     """Build the installer pipeline and its execution context.
 
     ``only`` selects a single step ('detect'|'install'|'configure') or all three
-    in that order ('provision'). By default one toolchain per capability the present
-    modules require is provisioned, and none when the machine already holds one.
-    ``selection`` overrides that per
+    in that order ('provision'), followed by the data step. By default one toolchain per
+    capability the present modules require is provisioned, and none when the machine
+    already holds one. ``selection`` overrides that per
     component (keys: ``install_intel_llvm``, ``install_acpp``, ``oneapi``,
-    ``gpu``), as gathered by ``hub install --customize``. ``source``/``managers``
-    can be injected for tests.
+    ``gpu``), as gathered by ``hub install --customize``. ``data`` is false for
+    ``hub install --no-data``: the data step is left out and the inventory lists no data package.
+    ``source``/``managers``/``data_source``/``downloader`` can be injected for tests.
     """
     cfg = cfg or load_config()
     source = source or TomlDependencySource()
@@ -105,15 +125,23 @@ def build_pipeline(
     sel = (derived.merged(selection) if selection else derived).as_dict()
     active_toolchain = _validated_toolchain(DEFAULT_ACTIVE_TOOLCHAIN)
 
+    data_source = data_source or WorkspaceDataSource()
+    placer = DataPlacer()
+    report = DataReport(data_source, placer, console)
     all_steps = {
         "detect":    DetectStep(source, managers,
-                                after_inventory=partial(report_readiness, source)),
+                                after_inventory=partial(report_readiness, source),
+                                data_rows=report.rows if data else None),
         "install":   InstallDepsStep(source, managers),
         "configure": ConfigureStep(WorkspaceSink(workspace_root())),
     }
 
     if only == "provision":
         ordered = list(all_steps.values())
+        if data:
+            store = DataStore(provision_home.root() / K_DATA_STORE, downloader or HttpDownloader())
+            ordered.append(DataStep(data_source, DataInstaller(store, placer, console),
+                                    placer, console))
     elif only in all_steps:
         ordered = [all_steps[only]]
     else:

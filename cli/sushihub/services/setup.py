@@ -18,13 +18,14 @@ from sushicore.provision.selection import enabled_keys
 
 def run(step: str = "provision", dry_run: bool = False,
         selection: dict[str, bool] | None = None, assume_yes: bool = False,
-        refresh_toolchains: bool = False) -> int:
+        refresh_toolchains: bool = False, with_data: bool = True) -> int:
     """Run one step, or all of them as ``provision``, and return a process exit code.
 
     What the present modules declare is provisioned; ``selection`` (from
     --customize) overrides that per component. ``assume_yes`` pre-answers the
     LLVM-download consent prompt so unattended runs (CI, scripted installs) don't
-    need a TTY to proceed.
+    need a TTY to proceed. ``with_data`` is false for ``--no-data``, which skips the
+    modules' data packages.
     """
     detect_only = step == "detect"
     console.header("SushiHub Doctor" if detect_only else "SushiHub Install")
@@ -33,7 +34,7 @@ def run(step: str = "provision", dry_run: bool = False,
 
     try:
         pipeline, ctx = build_pipeline(only=step, selection=selection, dry_run=dry_run,
-                                      refresh_toolchains=refresh_toolchains)
+                                      refresh_toolchains=refresh_toolchains, data=with_data)
     except (ValueError, FileNotFoundError) as exc:
         console.error(str(exc))
         return 1

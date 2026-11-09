@@ -31,3 +31,4 @@
 
 | ID | Origin | Symptom | Workaround | Fix | Source | Opened |
 | --- | --- | --- | --- | --- | --- | --- |
+| KI-22 | dependency | 21 test_migrate_command tests fail: sushicore 0.11.0 installed, hub pins <0.11 | install sushicore 0.10.x to run them | none, needs a hub release that moves the pin to 0.11 and adapts the workspace lambda | `cli/pyproject.toml` | 2026-11-10 |

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-10 — cli: Added data packages: `hub install` fetches each `[data.*]` file, checks its SHA-256 and places it; `--no-data`; doctor rows (`services/data/`).
 - 2026-11-07 — cli: Made a binary install ask for the licence before it downloads, so an account without one leaves no unpacked release and no replaced install behind (`binary.py`, `licence_file.py`).
 - 2026-11-07 — gui: Made a missing or empty recorded event file fail `Medium_RecordedEventFileTest`, so the recorded-line cases cannot vanish and pass (`gui/tests/event_test.cpp`).
 - 2026-11-07 — gui: Deleted the two hand-written fixtures no test reads, `all_types.json` and `events/all_kinds.jsonl` (`gui/tests/fixtures/`).

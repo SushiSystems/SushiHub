@@ -18,6 +18,7 @@ cli/
     gui_config.py        the desktop application's profile, config and root
     gui_env.py           its build environment, vcvars snapshot included
     services/            module lifecycle, Sushi Account, releases, the licence file, the gui build policy
+    services/data/       data packages: the `[data.*]` reader, the store, placement, the doctor rows
     setup/               the dependency sources and the pipeline wiring over `sushicore.provision`
     defaults.toml        defaults for the [tool], [cli] and [identity] tables
     manifests/           dependency fragments this package ships (*.deps.toml)
@@ -34,7 +35,7 @@ two see "Machine-readable output".
 | Command | What it does |
 |---|---|
 | `hub init` | Write the `.sushistack` workspace marker and add `dependencies/` to `.gitignore`. |
-| `hub install [--customize] [--dry-run] [--yes] [--refresh-toolchains]` | Download and install shared dependencies. `--customize` opens an interactive picker over the toolchains and the GPU toolkit, which is on by default. `--yes` answers the LLVM-download prompt for unattended runs. `--refresh-toolchains` re-downloads an installed SYCL toolchain, which is otherwise reused forever; reused installs report the release they came from and say when they carry no sanitizer runtime. |
+| `hub install [--customize] [--dry-run] [--yes] [--refresh-toolchains] [--no-data]` | Download and install shared dependencies, then the data packages the present modules declare. `--customize` opens an interactive picker over the toolchains and the GPU toolkit, which is on by default. `--yes` answers the LLVM-download prompt for unattended runs. `--refresh-toolchains` re-downloads an installed SYCL toolchain, which is otherwise reused forever; reused installs report the release they came from and say when they carry no sanitizer runtime. `--no-data` skips the data packages; see "Data packages". |
 | `hub add <sushiruntime\|sushiengine\|sushiai\|sushiblas\|sushitrack\|all> [--dry-run] [--skip-install] [--binary]` | Bring one or more modules into the workspace, install each one's CLI, and provision what they declare. `--skip-install` leaves the dependencies to a later `hub install`. `--binary` installs sushiengine from its release rather than its source; see "Binary installs". Aliases: `sr`, `se`, `sa`, `sb`, `st`. |
 | `hub link <module> <path> [--dry-run] [--skip-install]` | Register an existing checkout outside the workspace as a module, without cloning, then provision what it declares. `--skip-install` leaves that to a later `hub install`. Same names and aliases as `hub add`. |
 | `hub install-cli <module…> [--dry-run]` | Install a module's own CLI into an isolated pipx venv; `sushicore` arrives from PyPI as its dependency. Always editable. Same names, aliases and `all` as `hub add`. |
@@ -42,7 +43,7 @@ two see "Machine-readable output".
 | `hub sync [--dry-run]` | Update every module, then install missing dependencies. |
 | `hub pin <library> <version> [--commit HASH] [--dry-run]` | Move one Sushi library's `[sushisystems.<library>]` pin in every module of the workspace that pins it, to the release tag and the commit it points at. `--commit` names the commit when the repository is out of reach. Commit each module afterwards. `hub pin sushicore <version>` sets `sushicore==<version>` in the `cli/pyproject.toml` of every module of the workspace and of the hub, since `sushicore` is a Python package. |
 | `hub status [--json] [--check-updates]` | Which modules are present, in which form, on which branch and how far from upstream, and whether dependencies are installed. It reads the disk only; `--check-updates` first fetches every checkout and asks Sushi Account for each binary install's latest release. Its `--json` is the global flag under another name, kept for scripts written against the old spelling. |
-| `hub doctor` | Check tools, compilers and dependencies; report what is missing. |
+| `hub doctor` | Check tools, compilers, dependencies and data packages; report what is missing. A data package is listed with its owner as `OK`, `MISSING` or `CORRUPT`. |
 | `hub remove [--gpu] [--all] [--dry-run] [--yes]` | Remove installed dependencies. `--all` removes the whole `dependencies/` tree and asks first unless `--yes` is given. |
 | `hub clean [--dry-run]` | Remove each library copy a module's own `setup` fetched under `<sushicore home>/sources/` that no module of the workspace pins any more. `hub status` lists them. |
 | `hub migrate [--to PATH] [--dry-run] [--rollback] [--finalize [--drop-link]] [--yes]` | Move the `dependencies/` tree to another directory and leave a link at the old path; see "Moving the dependency tree". |
@@ -204,6 +205,39 @@ for the library.
 `hub add` and `hub link` run the provision pipeline for the module they bring in, unless you pass
 `--skip-install`.
 
+## Data packages
+
+A module's tests and tools can need a large reference file that does not belong in git, such as an
+ephemeris or a gravity model. The module declares it in its `cli/sushistack.deps.toml` as a
+`[data.<name>]` table; `docs/reference/MODULE_MANIFEST.md`, "Data packages", lists the keys. The
+design is `docs/design/HUB/DATA_PACKAGES.md`.
+
+After the toolchains, `hub install` walks the `[data.*]` tables of every cloned or linked module in
+fragment order. A binary install has no checkout to place a file in and is left out. For each package:
+
+1. A file at `dependencies/data/<sha256>/<file name>` with the pinned size and SHA-256 is used as it is.
+   No request is made.
+2. Otherwise the URL is fetched with a plain GET whose `User-Agent` is `sushihub/<version>`, streamed
+   into a temporary file beside the final place under the `download` progress label, and hashed while
+   it is written. A size or SHA-256 that differs deletes the file and fails that package; the
+   message gives the expected and the found value.
+3. The stored file is copied to the module-relative `destination` when the copy there is missing or
+   differs in size or hash. A `destination` that resolves outside the checkout, or to the checkout
+   itself, is refused before any request is made.
+
+A failed package does not stop the ones after it. A failed `required = true` package fails the
+step and `hub install`; a failed optional one is a warning printed at the end. `--dry-run` lists
+what would be fetched and where, and makes no request. `--no-data` leaves the step out of the run
+and the packages out of `hub doctor`'s table.
+
+`hub doctor` judges a package by the copy at its `destination`: `OK` when it has the pinned size and
+SHA-256, `MISSING` when nothing is there, `CORRUPT` when something else is. Its row sits after the
+rows of the module that declared it. A fragment whose `[data.*]` table is wrong is named as a warning,
+and no data row is listed.
+
+The hub never runs a module command. Unpacking an archive or cooking a raw file is the module's job,
+named in its own install documentation.
+
 ## Files it reads and writes
 
 | File | Owner | Purpose |
@@ -212,7 +246,7 @@ for the library.
 | `<workspace>/.sushistack/workspace.toml` | `hub init`, `hub install`, `hub link` | Everything the workspace owns: its format version, the resolved toolchain paths for this machine, and the modules linked from outside the tree. |
 | `<workspace>/sushiengine/sushi-release.json` | the release | Product, version, platform and what the package bundles. Its presence is what makes the directory a binary install. |
 | `<workspace>/sushiengine/sushi-licence.jwt` | `hub add`, `hub update` | The licence token the engine reads at start-up. Nothing but the token. |
-| `<workspace>/dependencies/` | `hub install`, `hub remove`, `hub migrate` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain. A link to the new directory after `hub migrate`. |
+| `<workspace>/dependencies/` | `hub install`, `hub remove`, `hub migrate` | Toolchains, vcpkg, portable cmake and ninja, with a stamp per installed toolchain, and the data store `data/<sha256>/<file name>`. A link to the new directory after `hub migrate`. |
 | `<workspace>/dependencies.pre-migrate/` | `hub migrate` | What was left of the old tree, kept until `hub migrate --finalize`. |
 | `<new directory>/.migrate-journal.jsonl` | `hub migrate` | The steps of a move that can still be rolled back; renamed to `.migrate-journal.done.jsonl` by `--finalize`. |
 | `SUSHISYSTEMS_HOME`, in the user's environment | `hub migrate` | The new directory, when it is not `~/.sushisystems`. |
@@ -454,6 +488,21 @@ Each of the four steps is a function of its own so a test can run it alone. The 
 unpacked into a temporary directory beside the module's own and moved over it last, so a
 download that fails leaves the install that was there untouched.
 
+`download`, `sha256_of` and `report_progress` are shared with the data packages, which pass the
+`headers` and `digest` arguments to name the client and to hash while writing.
+
+### `sushihub/services/data/`
+
+One file per responsibility, behind two ports in `ports.py`: `Downloader`, whose adapter is
+`HttpDownloader`, and `DataSource`, whose adapter is `WorkspaceDataSource`. `fragment_reader.py`
+reads the tables itself because sushicore's fragment reader takes `[data]` for a dependency called
+`data`; `TomlDependencySource.all` in `setup/dependency_source.py` drops that entry. `DataStore`
+owns `dependencies/data` and the verified download, `DataPlacer` owns the destination and the copy,
+`DataInstaller` runs them in order for each package, and `DataReport` makes the `hub doctor` rows.
+`setup/data_step.py` is the pipeline step; `factory.build_pipeline(data=False)` leaves it out. The
+tests reach a real server on 127.0.0.1 (`tests/support/data_server.py`) and a temporary folder,
+which is why they are `medium`; no filesystem port exists because the roots are constructor arguments.
+
 ### `sushihub/services/setup.py`
 
 Consent for the heavy LLVM download on Windows is gathered before the progress spinner starts,
@@ -484,7 +533,8 @@ vk-bootstrap and cgltf.
 `detect_step.DetectStep` is sushicore's detect step with one addition: an `inventory` argument, a
 function from the context and the dependency list to the inventory rows. Left out, the step probes the
 machine as sushicore does; given, the step prints and reports those rows, which is how `hub doctor`'s
-output is tested without a machine to probe.
+output is tested without a machine to probe. A `data_rows` argument, a function
+returning the data packages' rows, places each after the last row of its owner.
 
 ### `tests/conftest.py`
 
