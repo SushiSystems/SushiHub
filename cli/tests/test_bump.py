@@ -144,3 +144,47 @@ def test_hub_bump_dry_run_lists_every_module_and_writes_nothing(three_tiers, mon
     assert all(name in out for name in ("sushiruntime", "sushiblas", "sushiai"))
     text = (three_tiers / "sushiai" / "cli" / "sushistack.deps.toml").read_text(encoding="utf-8")
     assert f'commit = "{K_OLD}"' in text
+
+@pytest.mark.small
+def test_bump_skip_and_only_leave_other_modules_untouched(three_tiers):
+    """--skip leaves a module's pin and checks alone; --only moves just the modules named."""
+    runner = FakeRunner()
+    results = bump.bump(three_tiers, "sushilog", "v0.2.0", False, _git(), runner,
+                        skip=frozenset({"sushiblas"}))
+    rows = {r.module: r.detail for r in results}
+    assert rows["sushiblas"] == "skipped"
+    blas = (three_tiers / "sushiblas" / "cli" / "sushistack.deps.toml").read_text(encoding="utf-8")
+    assert f'commit = "{K_OLD}"' in blas
+    assert all(cwd.name != "sushiblas" for _, cwd in runner.calls)
+    results = bump.bump(three_tiers, "sushilog", "v0.2.0", True, _git(), FakeRunner(),
+                        only=frozenset({"sushiai"}))
+    assert {r.module: r.detail for r in results} == {
+        "sushiruntime": "skipped", "sushiblas": "skipped", "sushiai": "planned"}
+
+
+@pytest.mark.small
+def test_core_bump_finds_tools_only_repositories_beside_the_modules(tmp_path, monkeypatch):
+    """A repository that is no module but takes its tools from sushicore is a tools-only row."""
+    root = workspace_at(tmp_path, monkeypatch)
+    _module(root, "sushiruntime", [], check=False)
+    skills = root.parent / "sushiskills" / "tools"
+    skills.mkdir(parents=True)
+    (skills / "settings.py").write_text('K_TOOLING_PACKAGE = "sushicore"\n', encoding="utf-8")
+    other = root.parent / "unrelated" / "tools"
+    other.mkdir(parents=True)
+    (other / "settings.py").write_text('K_TOOLING_PACKAGE = "other"\n', encoding="utf-8")
+    results = bump.bump(root, "sushicore", "v0.9.8", True, InMemoryGit(), FakeRunner())
+    rows = {r.module: (r.old_pin, r.new_pin) for r in results}
+    assert rows["sushiskills"] == ("tools only", "tools 0.9.8")
+    assert "unrelated" not in rows
+
+
+@pytest.mark.small
+def test_core_bump_prints_the_range_it_writes(tmp_path, monkeypatch):
+    """A range requirement shows the range it becomes, not a == pin."""
+    root = workspace_at(tmp_path, monkeypatch)
+    (root / "cli").mkdir()
+    (root / "cli" / "pyproject.toml").write_text(
+        'dependencies = ["sushicore>=0.9.0,<0.10"]\n', encoding="utf-8")
+    results = bump.bump(root, "sushicore", "v0.9.8", True, InMemoryGit(), FakeRunner())
+    assert {r.module: r.new_pin for r in results}["sushihub"] == "sushicore>=0.9.8,<0.10"

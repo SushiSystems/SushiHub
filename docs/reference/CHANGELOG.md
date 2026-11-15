@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-16 — cli: Added `--skip` and `--only` to `hub bump`, let it reach tools-only repositories beside the modules and print the pin it writes (RW-70, `bump.py`).
 - 2026-11-16 — command_line: Fixed the 21 `test_migrate_command` failures, whose stub lacked the `windows` argument `default_environment` now takes (KI-22, `227a2ff`).
 - 2026-11-16 — tools: Took the shared tools from SushiCore v0.14.0 into a lock file and moved the SushiCore pin to 0.14 (`tools/shared_tools.lock`).
 - 2026-11-16 — cli: Added `hub bump <library> <tag>`, which moves a library in every module lowest tier first and runs each module's checks (RW-68, `bump.py`).

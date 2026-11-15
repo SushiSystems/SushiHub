@@ -499,12 +499,16 @@ def _pins_payload(report: pin_report.PinReport, newest: dict[str, str | None]) -
     "bump",
     rich_help_panel=K_MODULES,
     epilog="hub bump sushiruntime v0.6.0 --dry-run  # Show the modules it would move\n"
-           "hub bump sushicore 0.14.0",
+           "hub bump sushicore 0.14.0 --skip sushiai  # Leave sushiai as it is",
 )
 def bump(
     library: str = typer.Argument(..., help="The Sushi library to move, such as sushiruntime."),
     tag: str = typer.Argument(..., help="The release tag to move it to, such as v0.6.0."),
     dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't rewrite or run."),
+    skip: list[str] = typer.Option(
+        [], "--skip", metavar="MODULE", help="Leave this module untouched; repeatable."),
+    only: list[str] = typer.Option(
+        [], "--only", metavar="MODULE", help="Move only this module; repeatable."),
 ):
     """Move one Sushi library to a tag in every module that takes it, lowest tier first.
 
@@ -513,7 +517,8 @@ def bump(
     """
     try:
         results = bump_svc.bump(workspace_root(), library, tag, dry_run, git=_git(),
-                                runner=bump_svc.ProcessRunner())
+                                runner=bump_svc.ProcessRunner(), skip=frozenset(skip),
+                                only=frozenset(only))
     except bump_svc.BumpError as error:
         console.error(str(error))
         _finish(1)

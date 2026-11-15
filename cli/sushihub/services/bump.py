@@ -68,6 +68,7 @@ class _Target:
     checkout: Path
     pin_file: Path | None
     old_pin: str
+    new_pin: str
 
 
 class ProcessRunner:
@@ -84,11 +85,13 @@ class ProcessRunner:
 
 
 def bump(root: Path, library: str, tag: str, dry_run: bool, git: GitClient,
-         runner: CommandRunner) -> list[BumpResult]:
+         runner: CommandRunner, skip: frozenset[str] = frozenset(),
+         only: frozenset[str] = frozenset()) -> list[BumpResult]:
     """Move *library* to *tag* in every module of the workspace at *root* that takes it.
 
     Modules move lowest tier first; each is checked with its `tools/check_all.py` after.
-    A dry run changes no file and runs nothing.
+    A dry run changes no file and runs nothing. A module named in *skip*, or missing from a
+    non-empty *only*, is left untouched and reported as skipped.
 
     Raises:
         BumpError: When the tag has no commit, or the modules depend on one another in a cycle.
@@ -96,23 +99,25 @@ def bump(root: Path, library: str, tag: str, dry_run: bool, git: GitClient,
     if library == core_pin.K_LIBRARY:
         version = _core_version(tag)
         targets = _core_targets(root, version)
-        new_pin = f"sushicore=={version}"
         commit = ""
     else:
         repo = library_repo(library)
         commit = git.tag_commit(repo, tag) or ""
         if not commit:
             raise BumpError(f"{library}: no tag {tag} found in {repo}.")
-        targets = _library_targets(root, library)
-        new_pin = f"{tag} ({commit[:12]})"
+        targets = _library_targets(root, library, f"{tag} ({commit[:12]})")
     results: list[BumpResult] = []
     for target in _ordered(root, targets):
+        if target.module in skip or (only and target.module not in only):
+            results.append(BumpResult(target.module, target.old_pin, "-", False, None,
+                                      "skipped"))
+            continue
         if dry_run:
-            results.append(BumpResult(target.module, target.old_pin, new_pin, False, None,
-                                      "planned"))
+            results.append(BumpResult(target.module, target.old_pin, target.new_pin, False,
+                                      None, "planned"))
             continue
         _move(target, library, tag, commit)
-        results.append(_sync_and_check(target, library, tag, new_pin, runner))
+        results.append(_sync_and_check(target, library, tag, runner))
     return results
 
 
@@ -124,8 +129,8 @@ def _core_version(tag: str) -> str:
     return parsed.group(1)
 
 
-def _library_targets(root: Path, library: str) -> list[_Target]:
-    """Return every present module whose fragment pins *library*."""
+def _library_targets(root: Path, library: str, new_pin: str) -> list[_Target]:
+    """Return every present module whose fragment pins *library*, each moving to *new_pin*."""
     targets: list[_Target] = []
     for name, checkout in present_modules(root).items():
         fragment = fragment_of(name, checkout)
@@ -134,23 +139,52 @@ def _library_targets(root: Path, library: str) -> list[_Target]:
             continue
         for pin in parsed.pins:
             if pin.name == library:
-                targets.append(_Target(name, checkout, fragment, pin.version))
+                targets.append(_Target(name, checkout, fragment, pin.version, new_pin))
     return targets
 
 
 def _core_targets(root: Path, version: str) -> list[_Target]:
-    """Return every checkout whose CLI requires sushicore or whose tools come from it."""
-    checkouts = {"sushihub": root, **present_modules(root)}
+    """Return every checkout whose CLI requires sushicore or whose tools come from it.
+
+    Besides the hub and its modules, every directory beside a module checkout whose
+    `tools/settings.py` names sushicore is a tools-only target.
+    """
+    modules = present_modules(root)
+    checkouts = {"sushihub": root, **modules, **_tools_only_siblings(root, modules)}
     targets: list[_Target] = []
     for name, checkout in checkouts.items():
         pyproject = checkout / core_pin.K_PYPROJECT
         text = pyproject.read_text(encoding="utf-8") if pyproject.is_file() else ""
         found = core_pin.K_REQUIREMENT.search(text)
         if found is not None:
-            targets.append(_Target(name, checkout, pyproject, found.group(0).strip('"')))
+            targets.append(_Target(name, checkout, pyproject, found.group(0).strip('"'),
+                                   core_pin.moved_requirement(found, version).strip('"')))
         elif _takes_core_tools(checkout):
-            targets.append(_Target(name, checkout, None, "tools only"))
+            targets.append(_Target(name, checkout, None, "tools only", f"tools {version}"))
     return targets
+
+
+def _tools_only_siblings(root: Path, modules: dict[str, Path]) -> dict[str, Path]:
+    """Return name -> directory of each non-module repository beside *root* or a module
+    checkout whose tools come from sushicore; sushicore's own checkout is left out.
+    """
+    known = {path.resolve() for path in (root, *modules.values())}
+    folders = {path.resolve().parent for path in (root, *modules.values())} | {root.resolve()}
+    found: dict[str, Path] = {}
+    for folder in sorted(folders):
+        for child in sorted(folder.iterdir()):
+            if _is_tools_only(child, known, modules):
+                found.setdefault(child.name, child)
+    return found
+
+
+def _is_tools_only(child: Path, known: set[Path], modules: dict[str, Path]) -> bool:
+    """Return whether *child* is a repository outside *known* and *modules*, other than
+    sushicore itself, whose tools come from sushicore.
+    """
+    if not child.is_dir() or child.name == core_pin.K_LIBRARY or child.name in modules:
+        return False
+    return child.resolve() not in known and _takes_core_tools(child)
 
 
 def _takes_core_tools(checkout: Path) -> bool:
@@ -201,7 +235,7 @@ def _move(target: _Target, library: str, tag: str, commit: str) -> None:
     target.pin_file.write_bytes(text.encode("utf-8"))
 
 
-def _sync_and_check(target: _Target, library: str, tag: str, new_pin: str,
+def _sync_and_check(target: _Target, library: str, tag: str,
                     runner: CommandRunner) -> BumpResult:
     """Sync sushicore's shared tools when bumping it, then run the module's checks."""
     synced = False
@@ -209,14 +243,14 @@ def _sync_and_check(target: _Target, library: str, tag: str, new_pin: str,
         code, output = runner.run([sys.executable, "-m", "sushicore.shared_tools", "sync",
                                    str(target.checkout), "--tag", tag], target.checkout)
         if code != 0:
-            return BumpResult(target.module, target.old_pin, new_pin, False, False,
+            return BumpResult(target.module, target.old_pin, target.new_pin, False, False,
                               "sync: " + _first_line(output))
         synced = True
     if not (target.checkout / K_CHECK_ALL).is_file():
-        return BumpResult(target.module, target.old_pin, new_pin, synced, None, "no check_all")
+        return BumpResult(target.module, target.old_pin, target.new_pin, synced, None, "no check_all")
     code, output = runner.run([sys.executable, str(K_CHECK_ALL), "."], target.checkout)
     detail = "" if code == 0 else _first_line(output)
-    return BumpResult(target.module, target.old_pin, new_pin, synced, code == 0, detail)
+    return BumpResult(target.module, target.old_pin, target.new_pin, synced, code == 0, detail)
 
 
 def _first_line(output: str) -> str:
