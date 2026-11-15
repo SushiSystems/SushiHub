@@ -4,8 +4,6 @@
 
 | ID | Pri | State | Title | Done when | Blocked by | Source | Opened |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| RW-67 | P1 | open | Report every dependency pinned at more than one version with hub pins | on a fixture with SushiRuntime at two versions hub pins lists the split and exits 1 |  |  | 2026-11-16 |
-| RW-68 | P1 | open | Carry a release up the depends_on graph with hub bump | on a fixture graph hub bump moves pins lowest tier first and --dry-run changes no file |  |  | 2026-11-16 |
 
 ## Known issues
 

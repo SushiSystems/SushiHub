@@ -181,27 +181,6 @@ count = 1
 backlog = "RW-60"
 
 [[finding]]
-checker = "testing/check_test_sizes.py"
-rule = "rule_unsized_python_test"
-path = "tools/tests/test_check_test_additions.py"
-count = 1
-backlog = "RW-60"
-
-[[finding]]
-checker = "testing/check_test_sizes.py"
-rule = "rule_unsized_python_test"
-path = "tools/tests/test_record_cli_argv.py"
-count = 5
-backlog = "RW-60"
-
-[[finding]]
-checker = "testing/check_test_sizes.py"
-rule = "rule_unsized_python_test"
-path = "tools/tests/test_test_budget_settings.py"
-count = 1
-backlog = "RW-60"
-
-[[finding]]
 checker = "documentation/check_module_install.py"
 rule = "rule_no_workspace_in_code"
 path = "cli/sushihub/services/data/report.py"

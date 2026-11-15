@@ -22,14 +22,30 @@ from testing.test_budget import (  # noqa: E402
     evaluate,
     exit_code,
     main,
+    missing_limits,
     parse_exemptions,
+    parse_gtest_xml,
     parse_junit,
     parse_programs,
+    parse_results,
     render,
     suite_and_size,
 )
 
-K_LIMITS = {"small_test_s": 1, "medium_test_s": 10, "pre_merge_s": 300}
+K_LIMITS = {"small_test_s": 1, "medium_test_s": 10, "large_test_s": 60, "pre_merge_s": 300}
+
+
+def nunit(fixtures: dict[str, tuple[str, dict[str, tuple[float, str]]]]) -> str:
+    """Returns the text of an NUnit 3 results file: fixture name -> (category, {test: (seconds, result)})."""
+    suites = ""
+    for fixture, (category, tests) in fixtures.items():
+        properties = f'<properties><property name="Category" value="{category}" /></properties>' if category else ""
+        cases = "".join(
+            f'<test-case name="{test}" fullname="G.{fixture}.{test}" classname="G.{fixture}" result="{result}" '
+            f'duration="{seconds}" />' for test, (seconds, result) in tests.items())
+        suites += f'<test-suite type="TestFixture" name="{fixture}" fullname="G.{fixture}">{properties}{cases}</test-suite>'
+    return ('<?xml version="1.0" encoding="utf-8"?><test-run id="2" result="Passed"><test-suite type="Assembly" name="G.dll">'
+            f'<properties><property name="platform" value="EditMode" /></properties>{suites}</test-suite></test-run>')
 
 
 def junit(cases: dict[str, float], skipped: tuple[str, ...] = ()) -> str:
@@ -39,6 +55,15 @@ def junit(cases: dict[str, float], skipped: tuple[str, ...] = ()) -> str:
     rows += "".join(f'<testcase name="{name}" classname="{name}" time="0" status="run"><skipped/></testcase>'
                     for name in skipped)
     return f'<?xml version="1.0"?><testsuite name="(empty)" tests="{len(cases)}">{rows}</testsuite>'
+
+
+def gtest_xml(cases: dict[tuple[str, str], float], skipped: tuple[tuple[str, str], ...] = ()) -> str:
+    """Returns the text of a GoogleTest XML file with one case per (suite, case) entry."""
+    rows = "".join(f'<testcase name="{case}" status="run" result="completed" time="{seconds}" classname="{suite}"/>'
+                   for (suite, case), seconds in cases.items())
+    rows += "".join(f'<testcase name="{case}" status="run" result="skipped" time="0" classname="{suite}"/>'
+                    for suite, case in skipped)
+    return f'<?xml version="1.0"?><testsuites tests="{len(cases)}"><testsuite name="S">{rows}</testsuite></testsuites>'
 
 
 def judge(timings: list[Timing], **overrides) -> Report:
@@ -66,6 +91,36 @@ class TestReadingAndNames(unittest.TestCase):
     def test_reads_times_and_leaves_out_a_skipped_test(self) -> None:
         self.assertEqual(parse_junit(junit({"Small_A.One": 0.25}, skipped=("Large_B.Gpu",)).encode(), "a.xml"),
                          [Timing("Small_A.One", 0.25)])
+
+    def test_reads_a_gtest_case_as_suite_dot_case_and_leaves_out_a_skipped_one(self) -> None:
+        text = gtest_xml({("Small_A", "One"): 0.002, ("Rows/Medium_B", "Two/3"): 0.5}, skipped=(("Large_C", "Gpu"),))
+        self.assertEqual(parse_gtest_xml(text.encode(), "s.xml"),
+                         [Timing("Small_A.One", 0.002), Timing("Rows/Medium_B.Two/3", 0.5)])
+
+    def test_reads_an_nunit_test_with_the_size_of_its_fixture_and_leaves_out_a_skipped_one(self) -> None:
+        text = nunit({"ShapeTests": ("small", {"One": (0.25, "Passed"), "Gone": (0.0, "Skipped")}),
+                      "OtherTests": ("", {"Two": (1.5, "Failed")}), "WaveRun": ("benchmark", {"Run": (9.0, "Passed")})})
+        self.assertEqual(parse_results(text.encode(), "edit.xml"),
+                         [Timing("G.ShapeTests.One", 0.25, "small", "G.ShapeTests"),
+                          Timing("G.OtherTests.Two", 1.5, None, "G.OtherTests"),
+                          Timing("G.WaveRun.Run", 9.0, None, "G.WaveRun")])
+
+    def test_a_test_category_beats_the_fixture_category_in_an_nunit_file(self) -> None:
+        text = ('<test-run><test-suite type="TestFixture" name="A"><properties><property name="Category" value="small" />'
+                '</properties><test-case name="T" fullname="A.T" classname="A" result="Passed" duration="2">'
+                '<properties><property name="Category" value="medium" /></properties></test-case></test-suite></test-run>')
+        self.assertEqual(parse_results(text.encode(), "edit.xml"), [Timing("A.T", 2.0, "medium", "A")])
+
+    def test_two_nunit_cases_that_share_a_set_name_are_told_apart_by_their_method(self) -> None:
+        case = ('<test-case name="Suburb" fullname="A.Suburb" methodname="{0}" classname="A" result="Passed" '
+                'duration="1" />')
+        text = ('<test-run><test-suite type="TestFixture" name="A">' + case.format("Fits") + case.format("Keeps")
+                + '</test-suite></test-run>')
+        self.assertEqual([timing.name for timing in parse_results(text.encode(), "edit.xml")],
+                         ["A.Fits.Suburb", "A.Keeps.Suburb"])
+
+    def test_a_junit_file_is_still_read_as_junit_by_the_results_reader(self) -> None:
+        self.assertEqual(parse_results(junit({"Small_A.One": 0.25}).encode(), "a.xml"), [Timing("Small_A.One", 0.25)])
 
     def test_refuses_a_file_with_a_doctype_or_an_entity(self) -> None:
         with self.assertRaises(SystemExit):
@@ -110,13 +165,22 @@ class TestEvaluate(unittest.TestCase):
         self.assertEqual(report.line,
                          "budget: small 0.2 s (core), pre-merge 3 s sum of 300 s, shape 50% small, 50% medium, 0% large")
 
-    def test_a_large_test_has_no_time_limit_and_counts_in_the_shape(self) -> None:
-        report = run({"Large_M.Crush": 5000.0, "Small_A.One": 0.1, "Small_A.Two": 0.1, "Small_A.Three": 0.1},
-                     scope="large", wall=5001.0)
-        self.assertEqual(report.findings, ())
-        self.assertEqual(report.rerun, ())
-        self.assertIn("large tier 5000 s sum, 5001 s wall", report.line)
+    def test_a_large_test_within_its_limit_counts_in_the_shape_and_the_large_total(self) -> None:
+        report = run({"Large_M.Scene": 50.0, "Small_A.One": 0.1, "Small_A.Two": 0.1, "Small_A.Three": 0.1},
+                     scope="large", wall=51.0)
+        self.assertEqual((report.findings, report.rerun), ((), ()))
+        self.assertIn("large tier 50 s sum, 51 s wall", report.line)
         self.assertIn("shape 75% small, 0% medium, 25% large", report.line)
+
+    def test_a_large_test_over_its_limit_is_named_for_a_rerun_and_judged_alone(self) -> None:
+        first = run({"Large_M.Crush": 61.0}, scope="large")
+        self.assertEqual(first.rerun, ("Large_M.Crush",))
+        alone = run({"Large_M.Crush": 61.0}, scope="large", rerun=[Timing("Large_M.Crush", 62.0)])
+        self.assertEqual(alone.findings, ("Large_M.Crush: 62.0 s alone, over the large limit of 60 s",))
+
+    def test_a_budget_without_every_limit_names_the_missing_ones(self) -> None:
+        self.assertEqual(missing_limits({"small_test_s": 1, "pre_merge_s": 300}), ["medium_test_s", "large_test_s"])
+        self.assertEqual(missing_limits(K_LIMITS), [])
 
     def test_a_test_over_its_limit_is_named_for_a_rerun_and_judged_by_the_rerun(self) -> None:
         first = run({"Small_A.Slow": 1.5})
@@ -144,11 +208,16 @@ class TestEvaluate(unittest.TestCase):
 
     def test_an_exempt_test_is_left_out_and_a_stale_exemption_is_a_finding(self) -> None:
         exempt = {"Medium_M.Crush": "RW-40", "Small_A.Fine": "RW-41"}
-        report = run({"Medium_M.Crush": 700.0, "Small_A.Fine": 0.1}, exemptions=exempt, scope="default",
+        report = run({"Medium_M.Crush": 700.0, "Small_A.Fine": 0.4}, exemptions=exempt, scope="default",
                      open_backlog=frozenset({"RW-40", "RW-41"}))
         self.assertEqual(len(report.findings), 1)
-        self.assertIn("Small_A.Fine: exempt as RW-41 but within its limit", report.findings[0])
+        self.assertIn("Small_A.Fine: exempt as RW-41 but well within its limit", report.findings[0])
         self.assertIn("2 exempt, 700 s left out", report.line)
+
+    def test_an_exempt_test_that_hovers_just_under_its_limit_keeps_its_entry(self) -> None:
+        report = run({"Medium_M.Edge": 9.9}, exemptions={"Medium_M.Edge": "RW-40"}, scope="partial",
+                     open_backlog=frozenset({"RW-40"}))
+        self.assertEqual(report.findings, ())
 
     def test_an_exemption_needs_an_open_backlog_id(self) -> None:
         report = run({"Medium_M.Crush": 700.0}, exemptions={"Medium_M.Crush": "RW-40"}, open_backlog=frozenset())
@@ -198,6 +267,61 @@ class TestMainCommand(unittest.TestCase):
             "rerun: ^(Small_A\\.Slow)$",
             "Small_A.Slow: 5.0 s, over the small limit of 1 s (not rerun)",
         ]))
+
+    def test_adds_the_per_case_times_of_the_shard_files_and_ignores_the_shard_entry_of_ctest(self) -> None:
+        cases = Path(self._folder.name) / "cases"
+        cases.mkdir()
+        (cases / "shard_1.xml").write_text(gtest_xml({("Small_A", "Slow"): 5.0}), encoding="utf-8")
+        (cases / "shard_2.xml").write_text(gtest_xml({("Small_A", "Fast"): 0.01}), encoding="utf-8")
+        self.junit.write_text(junit({"core_tests.small.shard_1of2": 5.0}), encoding="utf-8")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = main([str(self.junit), "--cases", str(cases), "--programs", str(self.programs), "--gate"],
+                        budget=K_LIMITS)
+        self.assertEqual((code, out.getvalue().splitlines()), (1, [
+            "budget: small 5.0 s (core), whole run not measured, shape 100% small, 0% medium, 0% large",
+            "rerun: ^(Small_A\\.Slow)$",
+            "Small_A.Slow: 5.0 s, over the small limit of 1 s (not rerun)",
+        ]))
+
+
+    def test_refuses_a_budget_without_the_large_limit(self) -> None:
+        err = io.StringIO()
+        with contextlib.redirect_stderr(err):
+            code = main([str(self.junit)], budget={"small_test_s": 1, "medium_test_s": 10, "pre_merge_s": 300})
+        self.assertEqual((code, err.getvalue().strip()), (2, "K_TEST_TIMES in tools/settings.py lacks large_test_s"))
+
+    def test_list_over_writes_the_tests_over_a_limit_and_prints_nothing(self) -> None:
+        listed = Path(self._folder.name) / "over.txt"
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = main([str(self.junit), "--gate", "--list-over", str(listed)], budget=K_LIMITS)
+        self.assertEqual((code, out.getvalue(), listed.read_text(encoding="utf-8")), (0, "", "Small_A.Slow\n"))
+
+    def test_reads_an_nunit_results_file_and_names_each_test_over_the_limit_of_its_size(self) -> None:
+        run = Path(self._folder.name) / "edit.xml"
+        run.write_text(nunit({"ShapeTests": ("small", {"Fast": (0.01, "Passed"), "Slow": (5.0, "Passed")}),
+                              "LoadTests": ("medium", {"Load": (5.0, "Passed")}),
+                              "WaveRun": ("benchmark", {"Run": (50.0, "Passed")})}), encoding="utf-8")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = main([str(run), "--scope", "default", "--gate"], budget=K_LIMITS)
+        self.assertEqual((code, out.getvalue().splitlines()), (1, [
+            "budget: small 5.0 s (no program map), pre-merge 10 s sum of 300 s, shape 67% small, 33% medium, 0% large",
+            "rerun: ^(G\\.ShapeTests\\.Slow)$",
+            "G.ShapeTests.Slow: 5.0 s, over the small limit of 1 s (not rerun)",
+        ]))
+
+    def test_joins_the_times_of_every_rerun_file(self) -> None:
+        first = Path(self._folder.name) / "first.xml"
+        second = Path(self._folder.name) / "second.xml"
+        self.junit.write_text(junit({"Small_A.Slow": 5.0, "Small_A.Late": 5.0}), encoding="utf-8")
+        first.write_text(junit({"Small_A.Slow": 0.2}), encoding="utf-8")
+        second.write_text(junit({"Small_A.Late": 3.0}), encoding="utf-8")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = main([str(self.junit), "--rerun", str(first), "--rerun", str(second), "--gate"], budget=K_LIMITS)
+        self.assertEqual((code, out.getvalue().splitlines()[1:]), (1, ["Small_A.Late: 3.0 s alone, over the small limit of 1 s"]))
 
 
 if __name__ == "__main__":

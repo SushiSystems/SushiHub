@@ -58,7 +58,7 @@ def workspace(tmp_path, monkeypatch) -> Path:
     monkeypatch.delenv(home.ENV_HOME, raising=False)
     monkeypatch.setattr(home, "default_root", lambda: tmp_path / "default")
     store = ProfileEnvironment(tmp_path / "profile")
-    monkeypatch.setattr(user_environment, "default_environment", lambda: store)
+    monkeypatch.setattr(user_environment, "default_environment", lambda windows=None: store)
     return root
 
 

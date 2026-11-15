@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- 2026-11-16 — tools: Took the shared tools from SushiCore v0.14.0 into a lock file and moved the SushiCore pin to 0.14 (`tools/shared_tools.lock`).
 - 2026-11-16 — cli: Added `hub bump <library> <tag>`, which moves a library in every module lowest tier first and runs each module's checks (RW-68, `bump.py`).
 - 2026-11-16 — cli: Added `hub pins`, which lists each module's pin of every library and exits 1 on a split; a `sushicore` range now moves as a range (RW-67, `pin_report.py`).
 - 2026-11-10 — cli: Added data packages: `hub install` fetches each `[data.*]` file, checks its SHA-256 and places it; `--no-data`; doctor rows (`services/data/`).

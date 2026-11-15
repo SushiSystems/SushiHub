@@ -10,11 +10,15 @@ import shutil
 import subprocess
 from pathlib import Path
 
+import pytest
+
 _SPEC = importlib.util.spec_from_file_location(
     "record_cli_argv",
     Path(__file__).resolve().parent.parent / "record_cli_argv.py")
 _REC = importlib.util.module_from_spec(_SPEC)
 _SPEC.loader.exec_module(_REC)
+
+pytestmark = pytest.mark.small
 
 
 @contextlib.contextmanager

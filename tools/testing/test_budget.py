@@ -2,11 +2,11 @@
 # SushiSkills - https://github.com/SushiSystems/SushiSkills
 # Copyright (c) 2026-present Mustafa Garip & Sushi Systems
 # Licensed under the Apache License 2.0. See LICENSE.
-"""Applies the time limits of `testing` to the times of one test run and prints a line and the findings.
+"""Applies the time limits of `testing` to a run (JUnit, NUnit 3 or GoogleTest XML) and prints a line and the findings.
 
-Usage: python tools/testing/test_budget.py JUNIT [--programs MAP] [--exemptions TOML] [--rerun JUNIT]
-           [--scope default|large|partial] [--wall SECONDS] [--root ROOT --base REVISION]
-           [--not-rebuilt] [--gate] [--factor N]
+Usage: python tools/testing/test_budget.py RESULTS [--cases FOLDER] [--programs MAP] [--exemptions TOML]
+           [--rerun JUNIT_OR_FOLDER ...] [--scope default|large|partial] [--wall SECONDS] [--root ROOT --base REVISION]
+           [--not-rebuilt] [--gate] [--factor N] [--list-over FILE]
 """
 
 from __future__ import annotations
@@ -27,23 +27,16 @@ import settings  # noqa: E402
 from commits.check_backlog_trailer import K_ID_PATTERN, open_ids  # noqa: E402
 from commits.history import commits_since  # noqa: E402
 from testing.added_tests import added_cases  # noqa: E402
+from testing.nunit_results import K_ROOT_TAG, parse_nunit  # noqa: E402
+from testing.timing import Timing  # noqa: E402
 
 K_BUDGET: dict[str, float] = getattr(settings, "K_TEST_TIMES", {})
 K_NOISE_FACTOR: float = getattr(settings, "K_TEST_NOISE_FACTOR", 1.25)
 K_SIZES = ("small", "medium", "large")
-K_TEST_LIMITS = {"small": "small_test_s", "medium": "medium_test_s"}
+K_TEST_LIMITS = {"small": "small_test_s", "medium": "medium_test_s", "large": "large_test_s"}
 K_EXIT_CLEAN = 0
 K_EXIT_FINDINGS = 1
 K_EXIT_USAGE = 2
-
-
-@dataclass(frozen=True, slots=True)
-class Timing:
-    """Holds the time one test took in one run, and its size when the JUnit file gives one as a property."""
-
-    name: str
-    seconds: float
-    size: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -55,25 +48,70 @@ class Report:
     rerun: tuple[str, ...]
 
 
-def parse_junit(data: bytes, name: str) -> list[Timing]:
-    """Returns the time of each test that ran in a JUnit file; skipped and not-run tests are left out.
+def _parse_root(data: bytes, name: str) -> ElementTree.Element:
+    """Returns the root of an XML test file; a file with a DOCTYPE or an ENTITY is refused unread.
 
-    A file with a DOCTYPE or an ENTITY is refused unread: CTest writes neither, and the standard
-    library parser, the only one a checker may use, expands them.
+    CTest and GoogleTest write neither, and the standard library parser, the only one a checker may
+    use, expands them.
     """
     if b"<!DOCTYPE" in data or b"<!ENTITY" in data:
-        raise SystemExit(f"{name}: a JUnit file from CTest has no DOCTYPE or ENTITY; refusing to parse it")
+        raise SystemExit(f"{name}: a test result file has no DOCTYPE or ENTITY; refusing to parse it")
+    return ElementTree.fromstring(data)
+
+
+def _was_skipped(case: ElementTree.Element) -> bool:
+    """Returns whether a test case did not run: CTest and GoogleTest mark that by a child or a status."""
+    return (case.find("skipped") is not None or case.get("status") == "notrun"
+            or case.get("result") in ("skipped", "suppressed"))
+
+
+def _junit_timings(root: ElementTree.Element) -> list[Timing]:
+    """Returns the time of each test that ran under a JUnit root; skipped and not-run tests are left out."""
+    return [Timing(case.get("name", ""), float(case.get("time", "0") or 0), _property_size(case))
+            for case in root.iter("testcase") if not _was_skipped(case)]
+
+
+def parse_junit(data: bytes, name: str) -> list[Timing]:
+    """Returns the time of each test that ran in a JUnit file; skipped and not-run tests are left out."""
+    return _junit_timings(_parse_root(data, name))
+
+
+def parse_results(data: bytes, name: str) -> list[Timing]:
+    """Returns the times in a results file, read by the reader of its format: NUnit 3 `test-run` or JUnit."""
+    root = _parse_root(data, name)
+    return parse_nunit(root) if root.tag == K_ROOT_TAG else _junit_timings(root)
+
+
+def parse_gtest_xml(data: bytes, name: str) -> list[Timing]:
+    """Returns the time of each case that ran in a GoogleTest XML file, named `Suite.Case`.
+
+    GoogleTest writes the suite as `classname` and the case as `name`; a parametrised case keeps its
+    `/index` and its instantiation prefix, so `Prefix/Suite.Case/0` reads as `suite_and_size` expects.
+    """
     timings: list[Timing] = []
-    for case in ElementTree.fromstring(data).iter("testcase"):
-        if case.find("skipped") is not None or case.get("status") == "notrun":
-            continue
-        timings.append(Timing(case.get("name", ""), float(case.get("time", "0") or 0), _property_size(case)))
+    for case in _parse_root(data, name).iter("testcase"):
+        if not _was_skipped(case):
+            timings.append(Timing(f"{case.get('classname', '')}.{case.get('name', '')}",
+                                  float(case.get("time", "0") or 0)))
     return timings
 
 
-def read_junit(path: Path) -> list[Timing]:
-    """Returns the times of the tests in a JUnit file on disk."""
-    return parse_junit(path.read_bytes(), str(path))
+def read_results(path: Path) -> list[Timing]:
+    """Returns the times of the tests in a JUnit or NUnit results file on disk."""
+    return parse_results(path.read_bytes(), str(path))
+
+
+def read_gtest_folder(folder: Path) -> list[Timing]:
+    """Returns the per-case times of every GoogleTest XML file in a folder, the files of the shards of a run."""
+    timings: list[Timing] = []
+    for path in sorted(folder.glob("*.xml")):
+        timings.extend(parse_gtest_xml(path.read_bytes(), str(path)))
+    return timings
+
+
+def read_times(path: Path) -> list[Timing]:
+    """Returns the times in a results file, or in the GoogleTest files of a folder."""
+    return read_gtest_folder(path) if path.is_dir() else read_results(path)
 
 
 def _property_size(case: ElementTree.Element) -> str | None:
@@ -93,6 +131,14 @@ def suite_and_size(name: str) -> tuple[str | None, str | None]:
     return None, None
 
 
+def _suite_and_size_of(timing: Timing) -> tuple[str | None, str | None]:
+    """Returns the suite and size a timing is judged by: its name's pattern, else the size its file gave."""
+    suite, size = suite_and_size(timing.name)
+    if size is None and timing.suite is not None:
+        return timing.suite, timing.size
+    return suite, size
+
+
 def parse_exemptions(text: str) -> dict[str, str]:
     """Returns the test name and backlog ID of each entry under `[exempt]` in TOML text."""
     table = tomllib.loads(text).get("exempt", {})
@@ -104,9 +150,18 @@ def parse_programs(text: str) -> dict[str, str]:
     return json.loads(text)
 
 
+def missing_limits(budget: dict[str, float]) -> list[str]:
+    """Returns the keys of the limits the reader needs that *budget* does not hold, in a fixed order."""
+    return [key for key in (*K_TEST_LIMITS.values(), "pre_merge_s") if key not in budget]
+
+
 def _limit(budget: dict[str, float], key: str) -> float:
     """Returns one limit of the budget."""
     return float(budget[key])
+
+
+#: The share of its limit an exempt test falls to before its entry must go.
+K_EXEMPT_RETURN_SHARE = 0.5
 
 
 def evaluate(timings: list[Timing], *, programs: dict[str, str], exemptions: dict[str, str],
@@ -115,7 +170,7 @@ def evaluate(timings: list[Timing], *, programs: dict[str, str], exemptions: dic
              budget: dict[str, float] | None = None) -> Report:
     """Applies the time limits to a run and returns its line, its findings and the tests to rerun.
 
-    A `large` test has no time limit, only its timeout, so it counts in the shape and the totals alone.
+    Each size has a per-test limit; only `small` and `medium` count toward the pre-merge total.
     *budget* holds the limits and defaults to K_TEST_TIMES of the settings.
     """
     budget = K_BUDGET if budget is None else budget
@@ -127,7 +182,7 @@ def evaluate(timings: list[Timing], *, programs: dict[str, str], exemptions: dic
     counts: dict[str, int] = defaultdict(int)
     exempt_seconds = 0.0
     for timing in timings:
-        suite, size = suite_and_size(timing.name)
+        suite, size = _suite_and_size_of(timing)
         if (size or timing.size) in K_SIZES:
             counts[size or timing.size] += 1
         if size is None or suite is None:
@@ -135,8 +190,8 @@ def evaluate(timings: list[Timing], *, programs: dict[str, str], exemptions: dic
         key = K_TEST_LIMITS.get(size)
         if timing.name in exemptions:
             exempt_seconds += timing.seconds
-            if key is not None and timing.seconds <= _limit(budget, key):
-                findings.append(f"{timing.name}: exempt as {exemptions[timing.name]} but within its limit; "
+            if key is not None and timing.seconds <= K_EXEMPT_RETURN_SHARE * _limit(budget, key):
+                findings.append(f"{timing.name}: exempt as {exemptions[timing.name]} but well within its limit; "
                                 f"remove the entry")
             continue
         sized[size] += timing.seconds
@@ -228,10 +283,13 @@ def exit_code(report: Report, *, gate: bool, rebuilt: bool) -> int:
 def _arguments(argv: list[str]) -> argparse.Namespace:
     """Returns the parsed command line."""
     parser = argparse.ArgumentParser(description="Apply the time limits of testing to one test run.")
-    parser.add_argument("junit", type=Path)
+    parser.add_argument("junit", type=Path, help="JUnit or NUnit 3 results file")
+    parser.add_argument("--cases", type=Path,
+                        help="folder of the GoogleTest XML files the shards wrote; their per-case times join JUNIT")
     parser.add_argument("--programs", type=Path, help="JSON object from suite name to test program")
     parser.add_argument("--exemptions", type=Path)
-    parser.add_argument("--rerun", type=Path, help="JUnit file of the tests named by `rerun:`, run alone")
+    parser.add_argument("--rerun", type=Path, action="append",
+                        help="JUnit file, or folder of GoogleTest XML files, of tests run alone; repeatable")
     parser.add_argument("--scope", choices=("default", "large", "partial"), default="partial")
     parser.add_argument("--wall", type=float, help="wall time of the whole run, in seconds")
     parser.add_argument("--root", type=Path, help="the repository root, for open backlog IDs and added cases")
@@ -239,23 +297,30 @@ def _arguments(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--not-rebuilt", action="store_true", help="the run did not rebuild; it never gates")
     parser.add_argument("--gate", action="store_true", help="exit 1 when there is a finding")
     parser.add_argument("--factor", type=float, default=K_NOISE_FACTOR)
+    parser.add_argument("--list-over", type=Path,
+                        help="write the tests over a limit to this file, one per line, and print nothing else")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None, *, budget: dict[str, float] | None = None) -> int:
     """Prints the budget line, the tests to rerun and the findings of a run; returns the exit code.
 
-    The JUnit file is what `ctest --output-junit` writes, with `Suite.Case` names. MAP is a JSON object
+    The JUnit file is what `ctest --output-junit` writes. A sharded C++ program is one CTest test per
+    shard, so its cases come from --cases, the folder of the GoogleTest XML files, as `Suite.Case`
+    names; a CTest entry named after no size counts nowhere. MAP is a JSON object
     from suite name to test program. The exemption TOML holds `"Suite.Case" = "RW-12"` under
     `[exempt]`, and an exempt test is left out of every limit and total. The first run names the tests
     over a limit in a `rerun:` line; the caller reruns them alone and passes that file as --rerun, and
-    then only a test over its limit alone is a finding. Without --gate the exit code is 0. *budget* holds
+    then only a test over its limit alone is a finding. --rerun may be given more than once, and
+    --list-over writes the names of that `rerun:` line to a file for a caller that reads them, printing
+    nothing. Without --gate the exit code is 0. *budget* holds
     the limits and defaults to K_TEST_TIMES of the settings.
     """
     budget = K_BUDGET if budget is None else budget
     arguments = _arguments(sys.argv[1:] if argv is None else argv)
-    if not budget:
-        print("no K_TEST_TIMES in tools/settings.py", file=sys.stderr)
+    missing = missing_limits(budget)
+    if missing:
+        print(f"K_TEST_TIMES in tools/settings.py lacks {', '.join(missing)}", file=sys.stderr)
         return K_EXIT_USAGE
     exemptions = parse_exemptions(arguments.exemptions.read_text(encoding="utf-8")) if arguments.exemptions else {}
     programs = parse_programs(arguments.programs.read_text(encoding="utf-8")) if arguments.programs else {}
@@ -265,11 +330,18 @@ def main(argv: list[str] | None = None, *, budget: dict[str, float] | None = Non
         open_backlog = open_ids(arguments.root, None)
         if arguments.base:
             added = sum(len(added_cases(commit)) for commit in commits_since(arguments.root, arguments.base))
+    timings = read_results(arguments.junit)
+    if arguments.cases:
+        timings += read_gtest_folder(arguments.cases)
     report = evaluate(
-        read_junit(arguments.junit), programs=programs, exemptions=exemptions,
-        rerun=read_junit(arguments.rerun) if arguments.rerun else None, scope=arguments.scope,
+        timings, programs=programs, exemptions=exemptions,
+        rerun=[timing for path in arguments.rerun for timing in read_times(path)] if arguments.rerun else None,
+        scope=arguments.scope,
         wall=arguments.wall, factor=arguments.factor, added=added, base=arguments.base,
         rebuilt=not arguments.not_rebuilt, open_backlog=open_backlog, budget=budget)
+    if arguments.list_over:
+        arguments.list_over.write_text("".join(f"{name}\n" for name in report.rerun), encoding="utf-8")
+        return K_EXIT_CLEAN
     for line in render(report, rerun_given=arguments.rerun is not None):
         print(line)
     return exit_code(report, gate=arguments.gate, rebuilt=not arguments.not_rebuilt)
