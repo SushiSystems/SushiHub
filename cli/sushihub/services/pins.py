@@ -15,7 +15,7 @@ from pathlib import Path
 from .. import console
 from ..config import workspace_root
 from . import core_pin
-from .catalog import CATALOG
+from .catalog import library_repo
 from .git_ops import K_COMMIT
 from .module_fragments import workspace_pins
 from .ports import Ports
@@ -73,7 +73,7 @@ def pin(name: str, version: str, commit: str | None, dry_run: bool,
     ports = ports or Ports.machine(console)
     out = ports.console
     if commit is None:
-        repo = CATALOG[name].repo if name in CATALOG else f"https://github.com/sushisystems/{name}.git"
+        repo = library_repo(name)
         commit = ports.git.tag_commit(repo, version)
         if commit is None:
             out.error(f"{name}: no tag {version} found in {repo}. Check the tag, or pass "

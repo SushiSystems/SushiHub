@@ -81,6 +81,10 @@ class GitClient(Protocol):
         """Returns the commit the tag *version* of *repo* points at, or None when not found."""
         ...
 
+    def latest_tag(self, repo_url: str) -> str | None:
+        """Returns the highest release tag of *repo_url*, or None when it has none or is out of reach."""
+        ...
+
 
 class PipxInstall(Protocol):
     """How pipx holds one distribution."""

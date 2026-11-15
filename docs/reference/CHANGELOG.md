@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- 2026-11-16 — cli: Added `hub bump <library> <tag>`, which moves a library in every module lowest tier first and runs each module's checks (RW-68, `bump.py`).
+- 2026-11-16 — cli: Added `hub pins`, which lists each module's pin of every library and exits 1 on a split; a `sushicore` range now moves as a range (RW-67, `pin_report.py`).
 - 2026-11-10 — cli: Added data packages: `hub install` fetches each `[data.*]` file, checks its SHA-256 and places it; `--no-data`; doctor rows (`services/data/`).
 - 2026-11-07 — cli: Made a binary install ask for the licence before it downloads, so an account without one leaves no unpacked release and no replaced install behind (`binary.py`, `licence_file.py`).
 - 2026-11-07 — gui: Made a missing or empty recorded event file fail `Medium_RecordedEventFileTest`, so the recorded-line cases cannot vanish and pass (`gui/tests/event_test.cpp`).

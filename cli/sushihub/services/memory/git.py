@@ -37,6 +37,7 @@ class InMemoryGit:
         self._codes: list[int] = []
         self._reachable: set[str] = set()
         self._tags: dict[tuple[str, str], str] = {}
+        self._latest: dict[str, str] = {}
 
     def script(self, exit_code: int) -> "InMemoryGit":
         """Queues the exit code of the next unanswered command and returns this client."""
@@ -66,3 +67,12 @@ class InMemoryGit:
     def tag_commit(self, repo: str, version: str) -> str | None:
         """Returns the commit the tag was made to point at, or None when it was not."""
         return self._tags.get((repo, version))
+
+    def latest(self, repo: str, tag: str) -> "InMemoryGit":
+        """Makes *tag* the latest release tag of *repo* and returns this client."""
+        self._latest[repo] = tag
+        return self
+
+    def latest_tag(self, repo_url: str) -> str | None:
+        """Returns the tag made the latest of *repo_url*, or None when none was."""
+        return self._latest.get(repo_url)

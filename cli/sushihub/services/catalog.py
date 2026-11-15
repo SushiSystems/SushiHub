@@ -95,3 +95,8 @@ def load_catalog() -> ModuleCatalog:
 
 
 CATALOG = load_catalog()
+
+
+def library_repo(name: str) -> str:
+    """Returns the git URL of library *name*: the catalog's when it lists it, else the default."""
+    return CATALOG[name].repo if name in CATALOG else f"https://github.com/sushisystems/{name}.git"

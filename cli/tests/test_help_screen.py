@@ -18,7 +18,7 @@ K_SUSHICORE_GROUPS = ("backlog", "design")
 
 K_GROUPS = {
     "Workspace": ["init", "home", "status", "docs"],
-    "Modules": ["add", "link", "install-cli", "update", "sync", "pin"],
+    "Modules": ["add", "link", "install-cli", "update", "sync", "pin", "pins", "bump"],
     "Dependencies": ["install", "doctor", "remove", "clean", "migrate"],
     "Account": ["login", "logout", "whoami", "license"],
     "Desktop app": ["gui"],

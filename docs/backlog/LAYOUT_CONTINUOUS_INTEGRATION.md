@@ -11,6 +11,7 @@
 | RW-41 | P2 | open | Move `record_cli_argv.py` into an area | `tools/record_cli_argv.py` sits under `tools/<area>/` |  |  | 2026-10-19 |
 | RW-42 | P2 | open | Take the whole shared tool set | `tools/` holds SushiSkills' checkers and `tools/check_all.py` passes |  |  | 2026-10-19 |
 | RW-60 | P2 | open | Clear the known findings of the shared checkers | tools/known_findings.toml holds no entry and tools/check_all.py is clean without it |  | `tools/check_all.py` | 2026-11-05 |
+| RW-69 | P3 | decision | Open a pull request per dependent when a library tags a release | a tag push opens one bump pull request in each module that pins the library |  |  | 2026-11-16 |
 
 ## Known issues
 

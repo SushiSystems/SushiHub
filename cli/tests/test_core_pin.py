@@ -43,6 +43,22 @@ def test_rewrite_sets_the_exact_form_whatever_the_operator_was(operator):
 
 
 @pytest.mark.small
+def test_a_range_requirement_is_read_and_moved_as_a_range():
+    """`>=0.10.4,<0.11` is found, reads 0.10.4, and moves to `>=0.14.0,<0.15`."""
+    text = K_TEXT.format(operator=">=0.10.4,<0.11")
+    assert core_pin.K_REQUIREMENT.search(text).group(1) == "0.10.4"
+    assert core_pin.rewrite_requirement(text, "0.14.0") == K_TEXT.format(operator=">=0.14.0,<0.15")
+
+
+@pytest.mark.small
+def test_an_exact_requirement_is_read_and_moved_as_exact():
+    """`==0.9.7` reads 0.9.7 and moves to `==0.14.0`."""
+    text = K_TEXT.format(operator="==0.9.7")
+    assert core_pin.K_REQUIREMENT.search(text).group(1) == "0.9.7"
+    assert core_pin.rewrite_requirement(text, "0.14.0") == K_TEXT.format(operator="==0.14.0")
+
+
+@pytest.mark.small
 def test_rewrite_refuses_a_file_without_the_requirement():
     """A pyproject that does not require sushicore is an error, not a silent no-op."""
     with pytest.raises(ValueError):

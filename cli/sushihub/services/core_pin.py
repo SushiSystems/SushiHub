@@ -23,26 +23,39 @@ K_LIBRARY = "sushicore"
 #: A release number, with or without the leading `v` of its tag.
 K_VERSION = re.compile(r"v?(\d+\.\d+\.\d+)")
 
-#: The `sushicore` requirement string of a dependency list, whatever operator it carries.
-K_REQUIREMENT = re.compile(r'"sushicore\s*(?:==|>=|<=|~=|>|<)\s*([0-9][^"\s,;]*)"')
+#: The `sushicore` requirement, any operator, optional `,<bound>`: group 1 version, group 2 bound.
+K_REQUIREMENT = re.compile(
+    r'"sushicore\s*(?:==|>=|<=|~=|>|<)\s*([0-9][^"\s,;]*)(?:\s*,\s*<\s*([0-9][^"\s,;]*))?"')
 
 #: Where a module keeps the requirements of its CLI.
 K_PYPROJECT = Path("cli") / "pyproject.toml"
 
 
+def moved_requirement(found: re.Match[str], version: str) -> str:
+    """Return the quoted requirement *found* becomes at *version*.
+
+    A range `>=a,<b` stays a range, `>=<version>,<` the next minor; any other form becomes
+    `==<version>`.
+    """
+    if found.group(2) is None:
+        return f'"sushicore=={version}"'
+    major, minor, _ = version.split(".", 2)
+    return f'"sushicore>={version},<{major}.{int(minor) + 1}"'
+
+
 def rewrite_requirement(text: str, version: str) -> str:
-    """Return a `pyproject.toml` text with its `sushicore` requirement set to `==<version>`.
+    """Return a `pyproject.toml` text with its `sushicore` requirement moved to *version*.
 
     Raises:
         ValueError: When the text has no `sushicore` requirement.
     """
     if K_REQUIREMENT.search(text) is None:
         raise ValueError("no sushicore requirement")
-    return K_REQUIREMENT.sub(f'"sushicore=={version}"', text)
+    return K_REQUIREMENT.sub(lambda found: moved_requirement(found, version), text)
 
 
 def move_core_pin(root: Path, version: str, dry_run: bool) -> list[tuple[str, str]]:
-    """Set `sushicore==<version>` in the CLI of every module at *root*, and in the hub's own.
+    """Move the `sushicore` requirement to *version* in the CLI of every module at *root* and the hub.
 
     Returns:
         Each project whose requirement changed and the requirement it moved from.
@@ -55,7 +68,7 @@ def move_core_pin(root: Path, version: str, dry_run: bool) -> list[tuple[str, st
             continue
         text = pyproject.read_bytes().decode("utf-8")
         found = K_REQUIREMENT.search(text)
-        if found is None or found.group(0) == f'"sushicore=={version}"':
+        if found is None or found.group(0) == moved_requirement(found, version):
             continue
         if not dry_run:
             pyproject.write_bytes(rewrite_requirement(text, version).encode("utf-8"))

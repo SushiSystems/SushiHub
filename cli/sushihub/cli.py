@@ -31,11 +31,14 @@ from . import DISTRIBUTION, console
 from .config import deps_dir, find_workspace_root, upgrade_workspace, workspace_root
 from .describe import catalogue
 from .errors import HubError
-from .services.catalog import CATALOG
+from .services.catalog import CATALOG, library_repo
+from .services.ports import GitClient, Ports
+from .services import bump as bump_svc
 from .services import fetched_sources as fetched_sources_svc
 from .services import gui as gui_svc
 from .services import migrate as migrate_svc
 from .services import modules as modules_svc
+from .services import pin_report
 from .services import pins as pins_svc
 from .services import setup as setup_svc
 from .services import status_report
@@ -430,6 +433,104 @@ def pin(
     each module's cli/pyproject.toml.
     """
     _finish(pins_svc.pin(library, version, commit, dry_run))
+
+
+@app.command(
+    "pins",
+    rich_help_panel=K_MODULES,
+    epilog="hub pins\n"
+           "hub pins --latest  # Add the latest release tag of each library\n"
+           "hub pins --json",
+)
+def pins(
+    json_output: bool = typer.Option(
+        False, "--json", help="Print machine-readable JSON instead of a table."),
+    latest: bool = typer.Option(
+        False, "--latest", help="Ask each library's repository for its latest release tag."),
+):
+    """List each module's pinned version of every Sushi library and the libraries pinned twice.
+
+    Exits 1 when a library is pinned at more than one version. [bold]sushicore[/bold] is read
+    from each module's cli/pyproject.toml.
+    """
+    if json_output:
+        console.set_machine(True)
+    report = pin_report.collect(workspace_root())
+    git = _git() if latest else None
+    newest = ({name: git.latest_tag(library_repo(name))
+               for name in report.dependencies()} if git is not None else {})
+    _finish(_render_pins(report, newest, latest), _pins_payload(report, newest))
+
+
+def _git() -> GitClient:
+    """Returns the git client of this machine's ports."""
+    return Ports.machine(console).git
+
+
+def _render_pins(report: pin_report.PinReport, newest: dict[str, str | None], latest: bool) -> int:
+    """Prints the pin table and a line per split; returns 1 when any library is split."""
+    columns = ["Dependency", "Module", "Pinned", *(["Latest"] if latest else [])]
+    console.table(columns, [
+        [pin.dependency, pin.module, pin.version,
+         *([newest[pin.dependency] or "—"] if latest else [])]
+        for pin in report.pins], title="Pins")
+    for split in report.splits:
+        detail = "; ".join(f"{version} in {', '.join(modules)}"
+                           for version, modules in split.modules_by_version.items())
+        console.warn(f"{split.dependency} is pinned at "
+                     f"{len(split.modules_by_version)} versions: {detail}.")
+    return 1 if report.splits else 0
+
+
+def _pins_payload(report: pin_report.PinReport, newest: dict[str, str | None]) -> dict:
+    """Returns the pin report as the object `hub pins --json` prints."""
+    return {
+        "pins": [{"dependency": pin.dependency, "module": pin.module, "version": pin.version,
+                  **({"latest": newest[pin.dependency]} if newest else {})}
+                 for pin in report.pins],
+        "splits": [{"dependency": split.dependency,
+                    "versions": {version: list(modules)
+                                 for version, modules in split.modules_by_version.items()}}
+                   for split in report.splits],
+    }
+
+
+@app.command(
+    "bump",
+    rich_help_panel=K_MODULES,
+    epilog="hub bump sushiruntime v0.6.0 --dry-run  # Show the modules it would move\n"
+           "hub bump sushicore 0.14.0",
+)
+def bump(
+    library: str = typer.Argument(..., help="The Sushi library to move, such as sushiruntime."),
+    tag: str = typer.Argument(..., help="The release tag to move it to, such as v0.6.0."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Show, don't rewrite or run."),
+):
+    """Move one Sushi library to a tag in every module that takes it, lowest tier first.
+
+    Each module's tools/check_all.py runs after its move; nothing is committed. Exits 1 when a
+    check fails.
+    """
+    try:
+        results = bump_svc.bump(workspace_root(), library, tag, dry_run, git=_git(),
+                                runner=bump_svc.ProcessRunner())
+    except bump_svc.BumpError as error:
+        console.error(str(error))
+        _finish(1)
+        return
+    _finish(_render_bump(results))
+
+
+def _render_bump(results: list[bump_svc.BumpResult]) -> int:
+    """Prints one row per module of a bump; returns 1 when any module's check failed."""
+    if not results:
+        console.info("No module of the workspace takes that library.")
+        return 0
+    console.table(["Module", "From", "To", "Sync", "Check", "Detail"], [
+        [result.module, result.old_pin, result.new_pin, "synced" if result.synced else "-",
+         {None: "not run", True: "passed", False: "FAILED"}[result.check_passed], result.detail]
+        for result in results], title="Bump")
+    return 1 if any(result.check_passed is False for result in results) else 0
 
 
 @app.command(

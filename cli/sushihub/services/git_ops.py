@@ -27,6 +27,32 @@ K_COMMIT = re.compile(r"[0-9a-f]{40}")
 #: Seconds `git ls-remote` may take to read a tag.
 K_LS_REMOTE_TIMEOUT = 30
 
+#: A release tag ref of `git ls-remote --tags`; a pre-release or a peeled `^{}` ref never fits.
+K_RELEASE_REF = re.compile(r"refs/tags/(v(\d+)\.(\d+)\.(\d+))")
+
+
+def highest_release_tag(ls_remote: str) -> str | None:
+    """Returns the highest `vX.Y.Z` tag in the output of `git ls-remote --tags`, or None.
+
+    Pre-releases and the `^{}` lines of annotated tags are ignored.
+    """
+    found = []
+    for line in ls_remote.splitlines():
+        match = K_RELEASE_REF.fullmatch(line.split("\t", 1)[-1].strip())
+        if match is not None:
+            found.append((tuple(int(part) for part in match.groups()[1:]), match.group(1)))
+    return max(found)[1] if found else None
+
+
+def latest_tag(repo_url: str) -> str | None:
+    """Returns the highest release tag of *repo_url*, or None when it has none or is out of reach."""
+    try:
+        completed = subprocess.run(["git", "ls-remote", "--tags", repo_url],
+                                   capture_output=True, text=True, timeout=K_LS_REMOTE_TIMEOUT)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    return highest_release_tag(completed.stdout)
+
 
 class ProcessGit:
     """Runs git as a child process; the machine adapter of :class:`~.ports.GitClient`."""
@@ -69,3 +95,7 @@ class ProcessGit:
                     for line in completed.stdout.splitlines() if "	" in line)
         commit = refs.get(f"refs/tags/{version}^{{}}") or refs.get(f"refs/tags/{version}")
         return commit if commit and K_COMMIT.fullmatch(commit) else None
+
+    def latest_tag(self, repo_url: str) -> str | None:
+        """Returns the highest release tag of *repo_url*, or None when it has none or is out of reach."""
+        return latest_tag(repo_url)
