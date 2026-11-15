@@ -4,6 +4,7 @@
 
 | ID | Pri | State | Title | Done when | Blocked by | Source | Opened |
 | --- | --- | --- | --- | --- | --- | --- | --- |
+| RW-70 | P1 | open | Let hub bump skip modules, reach tools-only repositories and print the pin it writes | hub bump --skip X leaves X untouched, lists sushiskills and sushiweb as tools-only, and prints the range it writes |  |  | 2026-11-16 |
 
 ## Known issues
 
