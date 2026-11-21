@@ -28,8 +28,10 @@ jobs:
         run: python -m pytest cli/tests -q
       - name: Test the argv recorder
         # tools/record_cli_argv.py is this repository's evidence mechanism for a
-        # CLI change, so its own tests run here rather than nowhere.
-        run: python -m pytest tools/tests -q
+        # CLI change, so its own tests run here rather than nowhere. The other
+        # checker tests read tomllib, which Python 3.10 lacks; the checkers job
+        # runs them on 3.11.
+        run: python -m pytest tools/tests/test_record_cli_argv.py -q
 
   checkers:
     name: Checkers (${{ matrix.os }})
