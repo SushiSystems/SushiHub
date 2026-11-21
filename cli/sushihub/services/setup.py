@@ -66,7 +66,7 @@ def run(step: str = "provision", dry_run: bool = False,
 
     # sudo is primed here, on Linux, while its prompt still owns the terminal; see cli/README.md.
     if not dry_run and not detect_only and not ctx.cfg.is_windows:
-        from ..setup.package_managers import prime_sudo
+        from ..setup.sudo_prompt import prime_sudo
         prime_sudo()
 
     ok = pipeline.run(ctx, show_progress=not detect_only)

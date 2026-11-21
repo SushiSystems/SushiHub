@@ -11,9 +11,9 @@ import re
 from pathlib import Path
 
 import pytest
-from sushicore import build_console, provision
-from sushicore.provision import home as provision_home
-from sushicore.provision import steps as provision_steps
+from sushicore import build_console
+from sushicore.provision import detect_step as core_detect_step
+from sushicore.provision.dependency_home import DependencyHome
 
 from sushihub import console as hub_console
 from sushihub.setup.pipeline import InstallContext
@@ -33,34 +33,35 @@ _ROWS = [_OK_ROW, _MISSING_ROW, _NOT_NEEDED_ROW]
 
 
 @pytest.fixture
-def bind_console(monkeypatch):
-    """Return a function that points sushicore's provision output at a console built for a test.
-
-    The binding made for the session is put back after the test.
-    """
-    def bind(*, machine: bool) -> None:
-        """Bind a fake 100-column colour terminal, or JSON events when *machine*."""
-        monkeypatch.setenv("COLUMNS", "100")
-        monkeypatch.setenv("FORCE_COLOR", "1")
-        monkeypatch.delenv("NO_COLOR", raising=False)
-        built = build_console([], machine=machine)
-        provision.bind_console(lambda: built)
-
-    yield bind
-    provision.bind_console(lambda: hub_console)
-    provision_home.bind_root(None)
+def held():
+    """Return the console the test built, which the detect step prints through; hub's before one is."""
+    return {"console": hub_console}
 
 
 @pytest.fixture
-def run_doctor(monkeypatch, fake_cfg):
+def bind_console(monkeypatch, held):
+    """Return a function that builds the console a test's detect step prints through."""
+    def bind(*, machine: bool) -> None:
+        """Build a fake 100-column colour terminal, or JSON events when *machine*."""
+        monkeypatch.setenv("COLUMNS", "100")
+        monkeypatch.setenv("FORCE_COLOR", "1")
+        monkeypatch.delenv("NO_COLOR", raising=False)
+        held["console"] = build_console([], machine=machine)
+
+    return bind
+
+
+@pytest.fixture
+def run_doctor(monkeypatch, fake_cfg, held):
     """Return a function that runs the detect step over given rows, off the machine."""
 
     def run(rows):
         """Run the step over *rows* and return its result."""
-        monkeypatch.setattr(provision_steps, "refresh_windows_path", lambda: None)
-        provision_home.bind_root(lambda: Path("/deps"))
-        step = DetectStep(MemorySource([]), inventory=lambda ctx, all_deps: list(rows))
-        return step.run(InstallContext(cfg=fake_cfg, rerun_command="hub install"))
+        monkeypatch.setattr(core_detect_step, "refresh_windows_path", lambda: None)
+        step = DetectStep(MemorySource([]), inventory=lambda ctx, all_deps: list(rows),
+                          console=held["console"])
+        return step.run(InstallContext(cfg=fake_cfg, rerun_command="hub install",
+                                       home=DependencyHome(lambda: Path("/deps"))))
 
     return run
 

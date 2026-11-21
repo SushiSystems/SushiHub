@@ -23,7 +23,6 @@ os.environ.setdefault("SUSHISTACK_HOME", str(_REPO_ROOT))
 sys.path[:] = [p for p in sys.path if p and Path(p).resolve() != _REPO_ROOT]
 sys.modules.pop("sushicore", None)
 
-from sushicore import provision  # noqa: E402
 from sushicore.console_memory import RecordingConsole  # noqa: E402
 
 from sushihub import console  # noqa: E402
@@ -36,20 +35,6 @@ from sushihub.setup.dependency_source import (  # noqa: E402
 
 from .support import fake_account_server  # noqa: E402
 from .support.memory_keyring import DictBackend  # noqa: E402
-
-
-@pytest.fixture(autouse=True, scope="session")
-def _bind_provision_console():
-    """Bind hub's console to sushicore.provision, mirroring `hub`'s CLI root callback.
-
-    Pytest never runs through ``sushihub.cli``'s Typer root, so nothing performs
-    the ``provision.bind_console`` call the real CLI makes on startup; without
-    it, any test that reaches real (unmocked) sushicore provisioning code fails
-    with "sushicore.provision has no console".
-    """
-    provision.bind_console(lambda: console)
-    yield
-    provision.bind_console(None)
 
 
 @pytest.fixture(autouse=True)

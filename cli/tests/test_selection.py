@@ -24,7 +24,7 @@ def workspace(monkeypatch, tmp_path):
 @pytest.fixture
 def bare_machine(monkeypatch):
     """Report no SYCL toolchain on this machine."""
-    monkeypatch.setattr(probe, "toolchain_status", lambda cfg, gpu: [
+    monkeypatch.setattr(probe, "toolchain_status", lambda cfg, gpu, home=None: [
         ("intel-llvm", False, ""), ("adaptivecpp", False, ""), ("oneapi", False, "")])
 
 
@@ -50,7 +50,7 @@ def test_a_bare_install_selects_one_sycl_toolchain(fake_cfg, bare_machine):
 
 @pytest.mark.small
 def test_a_present_toolchain_selects_no_download(fake_cfg, monkeypatch):
-    monkeypatch.setattr(probe, "toolchain_status", lambda cfg, gpu: [
+    monkeypatch.setattr(probe, "toolchain_status", lambda cfg, gpu, home=None: [
         ("intel-llvm", False, ""), ("adaptivecpp", False, ""), ("oneapi", True, "")])
     sel = derived_selection(_runtime(), fake_cfg)
     assert not (sel.install_intel_llvm or sel.install_acpp or sel.oneapi)

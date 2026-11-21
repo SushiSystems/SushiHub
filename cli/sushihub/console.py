@@ -14,7 +14,7 @@ from pathlib import Path
 
 from sushicore import build_console
 from sushicore.cli_console import LazyConsole
-from sushicore.errors import SushiCoreError
+from sushicore.errors import ProjectRootNotFoundError, SushiCoreError
 
 from .config import find_workspace_root, legacy_cli_dir
 
@@ -23,12 +23,12 @@ def _theme_dir() -> Path:
     """Returns the directory the `[cli]` theme is read from.
 
     Raises:
-        SystemExit: Outside a workspace, which is how
+        ProjectRootNotFoundError: Outside a workspace, which is how
             :class:`~sushicore.cli_console.LazyConsole` is told there is none.
     """
     root = find_workspace_root()
     if root is None:
-        raise SystemExit(0)
+        raise ProjectRootNotFoundError("Not inside a SushiStack workspace")
     return legacy_cli_dir(root)
 
 

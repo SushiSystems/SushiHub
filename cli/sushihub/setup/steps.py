@@ -6,11 +6,9 @@
 
 from __future__ import annotations
 
-from sushicore.provision.steps import (  # noqa: F401
-    ConfigureStep,
-    InstallDepsStep,
-    UninstallStep,
-)
+from sushicore.provision.configure_step import ConfigureStep  # noqa: F401
+from sushicore.provision.install_deps_step import InstallDepsStep  # noqa: F401
+from sushicore.provision.uninstall_step import UninstallStep  # noqa: F401
 
 from .. import console
 from ..services.ports import ConsolePort

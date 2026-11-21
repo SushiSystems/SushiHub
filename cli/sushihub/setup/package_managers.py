@@ -20,14 +20,9 @@ from sushicore.provision.packages import (  # noqa: F401
     ZypperManager,
     download,
     ensure_intel_oneapi_repo,
-    gh_latest_asset,
-    gh_latest_asset_including_prerelease,
-    gh_latest_release_asset,
     gh_tagged_asset,
     install_gpu_stack,
-    prime_sudo,
     refresh_windows_path,
-    run,
     tools_dir,
 )
 

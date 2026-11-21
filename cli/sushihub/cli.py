@@ -18,11 +18,10 @@ from pathlib import Path
 from typing import List, Optional
 
 import typer
-from sushicore import entry, provision
+from sushicore import entry
 from sushicore.backlog import register_backlog_commands
 from sushicore.docs_bundle import register_docs_commands
 from sushicore.design import register_design_commands
-from sushicore.provision import home as provision_home
 from sushicore.root_options import version_line, version_option
 from sushicore.typer_help import help_group
 from sushicore.workspace import has_marker, walk_up
@@ -82,8 +81,6 @@ def _root(
     show_version: Optional[bool] = version_option(lambda: [version_line(DISTRIBUTION)]),
 ) -> None:
     """Select the output mode before any command body runs."""
-    provision.bind_console(lambda: console)
-    provision_home.bind_root(deps_dir)
     console.set_machine(json_output)
     if describe:
         # The catalogue is UTF-8 whatever the console's code page, like every JSON event.

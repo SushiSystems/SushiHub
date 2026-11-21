@@ -11,6 +11,7 @@ from dataclasses import replace
 
 import pytest
 
+from sushihub import console
 from sushihub.services.data import DataFragmentError, DataPackage, DataPlacer, DataReport
 from sushihub.setup.detect_step import DetectStep
 from sushihub.setup.pipeline import InstallContext
@@ -58,6 +59,7 @@ def test_detect_step_puts_each_data_row_after_the_last_row_of_its_owner(fake_cfg
     rows = [("cmake", "OK", "shared", ""), ("acpp", "OK", "ai", ""), ("gtest", "OK", "astro", ""),
             ("opencl", "OK", "ai", "")]
     data = [("egm", "OK", "ai", ""), ("lonely", "OK", "other", "")]
-    step = DetectStep(MemorySource([]), inventory=lambda ctx, deps: rows, data_rows=lambda: data)
+    step = DetectStep(MemorySource([]), inventory=lambda ctx, deps: rows, data_rows=lambda: data,
+                      console=console)
     merged = step.inventory_rows(InstallContext(cfg=fake_cfg), [])
     assert [row[0] for row in merged] == ["cmake", "acpp", "gtest", "opencl", "egm", "lonely"]

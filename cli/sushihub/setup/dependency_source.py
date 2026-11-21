@@ -14,7 +14,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from importlib.resources import as_file, files
 from pathlib import Path
-from typing import Iterator
+from typing import Any, Iterator
 
 from sushicore import deps_fragment
 from sushicore.provision import manifests
@@ -26,6 +26,7 @@ from sushicore.provision.fragments import (  # noqa: F401
     _parse_manifest,
 )
 
+from .. import console as hub_console
 from ..config import find_workspace_root
 from ..services import links
 from ..services.data import K_DATA_TABLE
@@ -116,9 +117,11 @@ def manifest_paths() -> list[Path]:
 class TomlDependencySource(_CoreSource):
     """Hub's source: the core source fed the workspace-wide manifest list."""
 
-    def __init__(self, sources: list[tuple[Path, str]] | None = None) -> None:
-        """Default to every manifest the workspace carries."""
-        super().__init__(manifest_sources() if sources is None else sources)
+    def __init__(self, sources: list[tuple[Path, str]] | None = None, *,
+                 console: Any = None) -> None:
+        """Default to every manifest the workspace carries, and to hub's console."""
+        super().__init__(manifest_sources() if sources is None else sources,
+                         console=hub_console if console is None else console)
 
     def all(self) -> list[Dependency]:
         """Every declared dependency; the ``[data.<name>]`` tables are not among them.

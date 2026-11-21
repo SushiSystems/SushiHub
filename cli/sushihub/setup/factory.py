@@ -16,10 +16,18 @@ from functools import partial
 
 from sushicore.provision import home as provision_home
 from sushicore.provision import probe, selection
+from sushicore.provision.dependency_home import DependencyHome
 from sushicore.provision.sinks import WorkspaceSink
 
 from .. import console
-from ..config import DEFAULT_ACTIVE_TOOLCHAIN, TOOLCHAINS, Config, load_config, workspace_root
+from ..config import (
+    DEFAULT_ACTIVE_TOOLCHAIN,
+    TOOLCHAINS,
+    Config,
+    deps_dir,
+    load_config,
+    workspace_root,
+)
 from ..services.data import (
     DataInstaller,
     DataPlacer,
@@ -57,6 +65,9 @@ STEP_NAMES = ("detect", "install", "configure", "provision")
 #: The folder of the dependency root that holds the data store: ``dependencies/data``.
 K_DATA_STORE = "data"
 
+#: The dependency root of this workspace, which every provisioning object of a run reads.
+K_HOME = DependencyHome(deps_dir)
+
 #: What hub says where the shared provisioning code names the command that drives it.
 _HUB_WORDING = {
     "program": "hub",
@@ -77,10 +88,13 @@ def _validated_toolchain(toolchain: str) -> str:
 def _managers_for(cfg: Config) -> list[IPackageManager]:
     """Return the package managers this platform installs through, in preference order."""
     if cfg.is_windows:
-        return [WingetManager(), DirectDownloadWindowsManager(), VcpkgManager(cfg)]
+        return [WingetManager(console=console),
+                DirectDownloadWindowsManager(console=console, home=K_HOME),
+                VcpkgManager(cfg, console=console, home=K_HOME)]
     # VcpkgManager serves Linux for Dependency.vcpkg_fallback_ports; see cli/README.md.
-    return [AptManager(), DnfManager(), YumManager(), PacmanManager(), ZypperManager(),
-            VcpkgManager(cfg)]
+    return [AptManager(console=console), DnfManager(console=console), YumManager(console=console),
+            PacmanManager(console=console), ZypperManager(console=console),
+            VcpkgManager(cfg, console=console, home=K_HOME)]
 
 
 def derived_selection(source: IDependencySource, cfg: Config) -> ToolchainSelection:
@@ -89,7 +103,8 @@ def derived_selection(source: IDependencySource, cfg: Config) -> ToolchainSelect
     The toolchains follow sushicore's rule. The GPU component is on whatever the
     modules declare; ``docs/design/GPU_BACKEND_PROVISIONING/README.md`` §3 says why.
     """
-    present = {name: found for name, found, _detail in probe.toolchain_status(cfg, False)}
+    present = {name: found
+               for name, found, _detail in probe.toolchain_status(cfg, False, home=K_HOME)}
     return selection.derive(source, present).merged({"gpu": True})
 
 
@@ -131,15 +146,16 @@ def build_pipeline(
     all_steps = {
         "detect":    DetectStep(source, managers,
                                 after_inventory=partial(report_readiness, source),
-                                data_rows=report.rows if data else None),
-        "install":   InstallDepsStep(source, managers),
-        "configure": ConfigureStep(WorkspaceSink(workspace_root())),
+                                data_rows=report.rows if data else None, console=console,
+                                toolchain_status=partial(probe.toolchain_status, home=K_HOME)),
+        "install":   InstallDepsStep(source, managers, console=console),
+        "configure": ConfigureStep(WorkspaceSink(workspace_root()), console=console),
     }
 
     if only == "provision":
         ordered = list(all_steps.values())
         if data:
-            store = DataStore(provision_home.root() / K_DATA_STORE, downloader or HttpDownloader())
+            store = DataStore(provision_home.root(home=K_HOME) / K_DATA_STORE, downloader or HttpDownloader())
             ordered.append(DataStep(data_source, DataInstaller(store, placer, console),
                                     placer, console))
     elif only in all_steps:
@@ -150,10 +166,10 @@ def build_pipeline(
     ctx = InstallContext(
         cfg=cfg, selection=ToolchainSelection(**sel), consumer="sushistack",
         active_toolchain=active_toolchain,
-        refresh_toolchains=refresh_toolchains, dry_run=dry_run,
+        refresh_toolchains=refresh_toolchains, dry_run=dry_run, home=K_HOME,
         **_HUB_WORDING,
     )
-    return InstallPipeline(ordered), ctx
+    return InstallPipeline(ordered, console=console), ctx
 
 
 def build_uninstall_pipeline(
@@ -170,7 +186,8 @@ def build_uninstall_pipeline(
     source = source or TomlDependencySource()
     managers = managers if managers is not None else _managers_for(cfg)
 
-    step = UninstallStep(source, managers, WorkspaceSink(workspace_root()))
+    step = UninstallStep(source, managers, WorkspaceSink(workspace_root()), console=console,
+                         dependency_home=K_HOME)
     ctx = InstallContext(cfg=cfg, selection=ToolchainSelection(gpu=gpu), consumer="sushistack",
-                         dry_run=dry_run, everything=everything, **_HUB_WORDING)
-    return InstallPipeline([step]), ctx
+                         dry_run=dry_run, everything=everything, home=K_HOME, **_HUB_WORDING)
+    return InstallPipeline([step], console=console), ctx

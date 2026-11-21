@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Callable
 
 from sushicore.provision import probe
-from sushicore.provision.steps import DetectStep as CoreDetectStep
+from sushicore.provision.detect_step import DetectStep as CoreDetectStep
 
 from .dependency_source import Dependency, IDependencySource
 from .package_managers import IPackageManager
@@ -42,6 +42,7 @@ class DetectStep(CoreDetectStep):
         toolchain_status: Reads the SYCL toolchains off the machine.
         gpu_vendor: Reads the discrete-GPU vendor off the machine.
         data_rows: Returns the rows of the data packages, which follow their owner's rows.
+        console: The console the step prints through.
     """
 
     def __init__(self, source: IDependencySource,
@@ -50,10 +51,12 @@ class DetectStep(CoreDetectStep):
                  *, inventory: Inventory | None = None,
                  toolchain_status=probe.toolchain_status,
                  gpu_vendor=probe.detect_gpu_vendor,
-                 data_rows: Callable[[], list[InventoryRow]] | None = None) -> None:
+                 data_rows: Callable[[], list[InventoryRow]] | None = None,
+                 console=None) -> None:
         """Wire the sources, the managers, the machine probes, the inventory and the data rows."""
         super().__init__(source, managers, after_inventory,
-                         toolchain_status=toolchain_status, gpu_vendor=gpu_vendor)
+                         toolchain_status=toolchain_status, gpu_vendor=gpu_vendor,
+                         console=console)
         self._inventory = inventory
         self._data_rows = data_rows
 
