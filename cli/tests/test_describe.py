@@ -30,7 +30,7 @@ def _visible_names(group: click.Group, prefix: str = "") -> set[str]:
     for name, command in group.commands.items():
         if command.hidden:
             continue
-        if isinstance(command, click.Group):
+        if hasattr(command, "commands"):
             names |= _visible_names(command, f"{prefix}{name} ")
         else:
             names.add(f"{prefix}{name}")

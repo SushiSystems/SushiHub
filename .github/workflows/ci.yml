@@ -40,18 +40,12 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
         with:
           python-version: "3.11"
       - name: Install the hub CLI, so the checkers find sushicore
-        run: pip install -e "./cli"
-      - name: python tools/documentation/check_source_comments.py .
-        run: python tools/documentation/check_source_comments.py .
-      - name: python tools/documentation/check_docs_layout.py .
-        run: python tools/documentation/check_docs_layout.py .
-      - name: python tools/documentation/check_changelog.py .
-        run: python tools/documentation/check_changelog.py .
-      - name: python tools/layering/check_layering.py .
-        run: python tools/layering/check_layering.py .
-      - name: python -m unittest discover -s tools/tests
-        run: python -m unittest discover -s tools/tests
+        run: pip install -e "./cli[test]"
+      - name: python tools/check_all.py .
+        run: python tools/check_all.py .
