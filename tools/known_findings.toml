@@ -2,42 +2,28 @@
 checker = "documentation/check_docs_truth.py"
 rule = "rule_cited_paths"
 path = "cli/README.md"
-count = 10
-backlog = "RW-60"
-
-[[finding]]
-checker = "documentation/check_docs_truth.py"
-rule = "rule_cited_paths"
-path = "docs/architecture/WORKSPACE.md"
-count = 1
+count = 6
 backlog = "RW-60"
 
 [[finding]]
 checker = "documentation/check_docs_truth.py"
 rule = "rule_cited_paths"
 path = "docs/getting_started/INSTALL.md"
-count = 2
-backlog = "RW-60"
-
-[[finding]]
-checker = "documentation/check_docs_truth.py"
-rule = "rule_cited_paths"
-path = "docs/guides/FAQ.md"
-count = 3
+count = 1
 backlog = "RW-60"
 
 [[finding]]
 checker = "documentation/check_docs_truth.py"
 rule = "rule_cited_paths"
 path = "docs/guides/LINKING_CHECKOUTS.md"
-count = 3
+count = 1
 backlog = "RW-60"
 
 [[finding]]
 checker = "documentation/check_docs_truth.py"
 rule = "rule_cited_paths"
 path = "docs/reference/GLOSSARY.md"
-count = 2
+count = 1
 backlog = "RW-60"
 
 [[finding]]

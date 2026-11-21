@@ -1,0 +1,3 @@
+^cli/(config|modules)\.local\.toml$ # the per-machine override files, which git ignores
+^\.sushistack/workspace\.toml$ # the workspace file hub init writes into a workspace, which git ignores here
+^gui/build/hub$ # the build folder of hub gui build, which git ignores
