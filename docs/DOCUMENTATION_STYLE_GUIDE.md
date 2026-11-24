@@ -2,8 +2,8 @@
 
 Prose in this repository follows the `humanizer` skill of SushiSkills. Where a document goes,
 the status line of a design document and the shape of a changelog entry follow the
-`documentation` skill. Neither is restated here. `tools/documentation/check_docs_layout.py` and
-`tools/documentation/check_changelog.py` check both.
+`documentation` skill. Neither is restated here. `sushicore.tools.documentation.check_docs_layout` and
+`sushicore.tools.documentation.check_changelog` check both.
 
 ## Names
 

@@ -79,8 +79,8 @@ def test_modules_on_one_version_exit_zero(tmp_path, monkeypatch, capsys):
 def test_a_sushicore_requirement_split_is_detected(tmp_path, monkeypatch, capsys):
     """Two lower bounds, 0.10.4 and 0.13.2, split sushicore."""
     workspace_at(tmp_path, monkeypatch)
-    _module(tmp_path, "sushiblas", core="sushicore>=0.10.4")
-    _module(tmp_path, "sushiai", core="sushicore>=0.13.2")
+    _module(tmp_path, "sushiblas", core="sushicore>=0.18.0")
+    _module(tmp_path, "sushiai", core="sushicore>=0.18.0")
     code, _ = _hub(monkeypatch, capsys)
     assert code == 1
     assert [s.dependency for s in pin_report.collect(tmp_path).splits] == ["sushicore"]

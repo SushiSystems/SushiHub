@@ -53,5 +53,5 @@ jobs:
           python-version: "3.11"
       - name: Install the hub CLI, so the checkers find sushicore
         run: pip install -e "./cli[test]"
-      - name: python tools/check_all.py .
-        run: python tools/check_all.py .
+      - name: python -m sushicore.tools check .
+        run: python -m sushicore.tools check .

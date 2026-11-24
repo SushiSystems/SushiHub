@@ -76,13 +76,6 @@ count = 1
 backlog = "RW-60"
 
 [[finding]]
-checker = "documentation/check_docs_truth.py"
-rule = "rule_named_symbols"
-path = "tools/README.md"
-count = 5
-backlog = "RW-60"
-
-[[finding]]
 checker = "documentation/check_module_install.py"
 rule = "rule_elements"
 path = "cli/sushistack.deps.toml"

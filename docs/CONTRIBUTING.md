@@ -56,7 +56,7 @@ the binding text. Contributions from outside Sushi Systems are not accepted yet.
 ## Source comments
 
 Every source file opens with the license block of the `source-comments` skill, which
-`tools/licensing/write_license_block.py` writes. A comment says what a thing does and nothing
+`sushicore.tools.licensing.write_license_block` writes. A comment says what a thing does and nothing
 else. Python carries a module docstring and Google-style function docstrings whose first line
 starts with its verb; C++ carries Doxygen blocks. History, reasons and TODO do not go in source;
 a reason is a design document the comment cites by path.
@@ -66,9 +66,9 @@ a reason is a design document the comment cites by path.
 ```
 python -m pytest cli/tests -q
 python -m unittest discover -s tools/tests
-python tools/documentation/check_docs_layout.py .
-python tools/documentation/check_changelog.py .
-python tools/documentation/check_source_comments.py .
+python -m sushicore.tools.documentation.check_docs_layout .
+python -m sushicore.tools.documentation.check_changelog .
+python -m sushicore.tools.documentation.check_source_comments .
 ```
 
 `sushicore`'s own suite runs in its repository. Never invoke `cmake`, `ninja` or `ctest`

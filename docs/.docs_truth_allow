@@ -1,3 +1,4 @@
 ^cli/(config|modules)\.local\.toml$ # the per-machine override files, which git ignores
 ^\.sushistack/workspace\.toml$ # the workspace file hub init writes into a workspace, which git ignores here
 ^gui/build/hub$ # the build folder of hub gui build, which git ignores
+^(sushicore\.tools(\.[\w.]+)?|check_[a-z_]+|write_license_block|gtest_discover_tests)$  # the shared checkers and test helpers, held in the sushicore package

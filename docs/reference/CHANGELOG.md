@@ -18,10 +18,10 @@
 - 2026-11-07 — cli: Gave the doctor's detect step an `inventory` argument, so its output is tested without probing the machine (`detect_step.py`, `steps.py`).
 - 2026-11-07 — cli: Gave `hub migrate` and the readiness step a console port, so their tests read a recording console instead of replacing the module console (`migrate.py`, `steps.py`, `ports.py`).
 - 2026-11-07 — cli: Moved the fixtures and builders that test files imported from one another into `conftest.py` and `tests/support/`, so no test file imports another (`cli/tests/`).
-- 2026-11-07 — tools: Took the shared checkers of SushiSkills db89ffa, whose size checker reads the gui suites (`tools/testing/check_test_sizes.py`).
+- 2026-11-07 — tools: Took the shared checkers of SushiSkills db89ffa, whose size checker reads the gui suites (`sushicore.tools.testing.check_test_sizes`).
 - 2026-11-07 — cli: Gave `hub install-cli` the ports every other command takes, and split the licence token and release manifest parses from their file reads (`cli_install.py`, `licence_file.py`, `presence.py`).
 - 2026-11-07 — cli: Gave every command ports for the console, git, pipx, Sushi Account and the release host, with in-memory adapters, and asked for sushicore 0.10.12 (`ports.py`, `services/memory/`).
-- 2026-11-07 — tools: Took the shared checkers of 2026-11-07 (`tools/testing/`).
+- 2026-11-07 — tools: Took the shared checkers of 2026-11-07 (`sushicore.tools.testing`).
 - 2026-11-06 — licence: Relicensed SushiHub under the Apache License 2.0 and removed `COMMERCIAL.md`; every source file's licence block follows (`LICENSE`, `tools/settings.py`).
 - 2026-11-05 — tools: Took the shared checkers of 2026-11-05 with a baseline of the findings they meet, which RW-60 clears.
 - 2026-10-29 — docs: Named `sushihub`, the service `token_store.py` writes, as the credential store service of the Sushi Account session (`sushi-account.md`).
@@ -31,7 +31,7 @@
 - 2026-10-28 — cli: Added sushidsp to the module catalog with the alias `sd` (`catalog.toml`).
 - 2026-10-26 — cli: Made `hub pin` write `[sushisystems.<name>]` pin tables and rename a fragment's deprecated `[sushi.<name>]` tables as it writes (`sushihub/services/pins.py`).
 - 2026-10-26 — cli: Added sushiprofiler to the module catalog with the alias `sp` (`catalog.toml`).
-- 2026-10-21 — docs: Reshaped the three design documents into the five sections with a phase table, and copied the design format checker (`docs/design/`, `tools/documentation/check_design_format.py`).
+- 2026-10-21 — docs: Reshaped the three design documents into the five sections with a phase table, and copied the design format checker (`docs/design/`, `sushicore.tools.documentation.check_design_format`).
 - 2026-10-21 — cli: Made `hub link` refuse a checkout whose manifest names another module, for a catalog name as for any other (`modules.py`).
 - 2026-10-21 — cli: Added sushitrack to the module catalog with the alias `st` (`catalog.toml`).
 - 2026-10-20 — docs: Moved 6 known issues with a scheduled fix and no workaround into the backlog entries that fix them (`KNOWN_ISSUES.md`, `REMAINING_WORK.md`).
@@ -60,7 +60,7 @@
 ## v0.2.0 — 2026-10-07
 
 - 2026-10-07 — licence: Named Mustafa Garip and Sushi Systems as the copyright holders in the licence and notice files (`LICENSE`, `NOTICE.md`).
-- 2026-10-06 — licence: Restored the three-section license box and named both holders in the copyright line of every source file (`tools/licensing/write_license_block.py`, `tools/documentation/check_source_comments.py`).
+- 2026-10-06 — licence: Restored the three-section license box and named both holders in the copyright line of every source file (`sushicore.tools.licensing.write_license_block`, `sushicore.tools.documentation.check_source_comments`).
 - 2026-10-05 — cli: Reset the console to the terminal renderer after each test, so a `--json` test no longer breaks the next file under click 8.5 (`cli/tests/conftest.py`).
 - 2026-10-05 — docs: Moved the reasoning held in module docstrings and comment paragraphs to the component READMEs (`cli/README.md`, `tools/README.md`, `cli/sushihub/`, `tools/record_cli_argv.py`).
 - 2026-10-05 — docs: Moved the agent specs, plans and reports to the archive, promoted the hub design to `docs/design/HUB/README.md`, and added the SushiSkills checkers (`docs/`, `tools/`).
